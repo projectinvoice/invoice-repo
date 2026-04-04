@@ -3,11 +3,14 @@ from django.contrib.auth.models import AbstractUser
 
 # Modèle utilisateur personnalisé (l'entreprise elle-même est l'utilisateur)
 class User(AbstractUser):
+    Company_logo = models.ImageField(upload_to="/media")
     # Champs supplémentaires pour l'entreprise
-    company_name = models.CharField(max_length=255, verbose_name="Nom de l'entreprise")
-    phone = models.CharField(max_length=20, blank=True, verbose_name="Téléphone")
+    #company_name = models.CharField(max_length=255, verbose_name="Nom de l'entreprise")
+    company_email = models.EmailField(verbose_name="adresse email")
+    #phone = models.CharField(max_length=20, blank=True, verbose_name="Téléphone")
     address = models.TextField(blank=True, verbose_name="Adresse")
-    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Date de création")
+    #created_at = models.DateTimeField(auto_now_add=True, verbose_name="Date de création")
+    add_date = models.DateTimeField(auto_now_add=True, verbose_name="Date d'inscription")
 
     def __str__(self):
         return self.company_name
@@ -68,6 +71,7 @@ class Engine(models.Model):
 # Modèle pour les produits
 class Product(models.Model):
     company = models.ForeignKey(User, on_delete=models.CASCADE, related_name='products', verbose_name="Entreprise")
+    Product_img = models.ImageField(upload_to="/media")
     name = models.CharField(max_length=255, verbose_name="Nom du produit")
     description = models.TextField(blank=True, verbose_name="Description")
     price = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Prix")
