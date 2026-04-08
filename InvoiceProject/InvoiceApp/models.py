@@ -1,16 +1,15 @@
 from django.db import models
-
-# Create your models here.
-from django.db import models
 from django.contrib.auth.models import AbstractUser
 
 # Modèle utilisateur personnalisé (l'entreprise elle-même est l'utilisateur)
 class User(AbstractUser):
+    logo = models.ImageField(upload_to="company_logos/", blank=True, null=True, verbose_name="Logo de l'entreprise")
     # Champs supplémentaires pour l'entreprise
     company_name = models.CharField(max_length=255, verbose_name="Nom de l'entreprise")
+    company_email = models.EmailField(verbose_name="Adresse email")
     phone = models.CharField(max_length=20, blank=True, verbose_name="Téléphone")
     address = models.TextField(blank=True, verbose_name="Adresse")
-    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Date de création")
+    add_date = models.DateTimeField(auto_now_add=True, verbose_name="Date d'inscription")
 
     def __str__(self):
         return self.company_name
@@ -21,7 +20,8 @@ class User(AbstractUser):
 
 # Modèle pour les rôles d'agent
 class AgentRole(models.Model):
-    name = models.CharField(max_length=100, unique=True, verbose_name="Nom du rôle")
+    company = models.ForeignKey(User, on_delete=models.CASCADE, related_name='agent_roles', verbose_name="Entreprise")
+    name = models.CharField(max_length=100, verbose_name="Nom du rôle")
     description = models.TextField(blank=True, verbose_name="Description")
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="Date de création")
 
@@ -31,6 +31,7 @@ class AgentRole(models.Model):
     class Meta:
         verbose_name = "Rôle d'agent"
         verbose_name_plural = "Rôles d'agents"
+        unique_together = ('company', 'name')
 
 # Modèle pour les agents (sous-utilisateurs ajoutés par l'entreprise, sans authentification)
 class Agent(models.Model):
@@ -71,6 +72,7 @@ class Engine(models.Model):
 # Modèle pour les produits
 class Product(models.Model):
     company = models.ForeignKey(User, on_delete=models.CASCADE, related_name='products', verbose_name="Entreprise")
+    image = models.ImageField(upload_to="product_images/", blank=True, null=True, verbose_name="Image du produit")
     name = models.CharField(max_length=255, verbose_name="Nom du produit")
     description = models.TextField(blank=True, verbose_name="Description")
     price = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Prix")
@@ -102,7 +104,8 @@ class Client(models.Model):
 
 # Modèle pour les types de paiement
 class PaymentType(models.Model):
-    name = models.CharField(max_length=100, unique=True, verbose_name="Nom du type de paiement")
+    company = models.ForeignKey(User, on_delete=models.CASCADE, related_name='payment_types', verbose_name="Entreprise")
+    name = models.CharField(max_length=100, verbose_name="Nom du type de paiement")
     description = models.TextField(blank=True, verbose_name="Description")
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="Date de création")
 
@@ -112,6 +115,7 @@ class PaymentType(models.Model):
     class Meta:
         verbose_name = "Type de paiement"
         verbose_name_plural = "Types de paiement"
+        unique_together = ('company', 'name')
 
 # Modèle pour les modes de paiement
 class PaymentMethod(models.Model):
