@@ -1,3 +1,4 @@
+from django.shortcuts import render
 from django.contrib.auth import authenticate, login, logout, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_http_methods
@@ -27,6 +28,7 @@ def register_company(request):
         password_confirm = request.POST.get("password_confirm")
         phone = request.POST.get("phone", "")
         address = request.POST.get("address", "")
+        logo = request.FILES.get("logo")
 
         if not company_name or not email or not password:
             return JsonResponse({"success": False, "error": "company_name, email et password obligatoires"}, status=400)
@@ -43,10 +45,11 @@ def register_company(request):
             company_email=email,
             phone=phone,
             address=address,
+            logo=logo,
         )
         return JsonResponse({"success": True, "message": "Compte créé", "user_id": user.id})
 
-    return HttpResponse("Envoyer un POST avec company_name, email, password et password_confirm.")
+    return render(request, 'register.html')
 
 @require_http_methods(["GET", "POST"])
 def login_view(request):
@@ -61,9 +64,30 @@ def login_view(request):
             return JsonResponse({"success": False, "error": "Identifiants invalides"}, status=400)
 
         login(request, user)
-        return JsonResponse({"success": True, "message": "Connecté", "user_id": user.id})
+        return JsonResponse({"success": True, "message": "Connecté", "redirect": '/dashboard/'} )
 
-    return HttpResponse("Envoyer un POST avec email et password.")
+    return render(request, 'login.html')
+
+@require_http_methods(["GET"])
+@login_required
+def dashboard(request):
+    user = request.user
+    context = {
+        'company_name': user.company_name,
+        'company_logo_url': user.logo.url if user.logo else None,
+        'agents_count': user.agents.count(),
+        'agent_roles_count': user.agent_roles.count(),
+        'engines_count': user.engines.count(),
+        'products_count': user.products.count(),
+        'clients_count': user.clients.count(),
+        'suppliers_count': user.suppliers.count(),
+        'payment_methods_count': user.payment_methods.count(),
+        'payment_types_count': user.payment_types.count(),
+        'sales_count': user.sales.count(),
+        'supplies_count': user.supplies.count(),
+        'invoices_count': user.invoices.count(),
+    }
+    return render(request, 'dashboard.html', context)
 
 @require_http_methods(["POST"])
 @login_required
