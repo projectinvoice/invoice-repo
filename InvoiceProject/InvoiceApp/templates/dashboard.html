@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tableau de bord - {{ company_name }}</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f4f6fb;
+            color: #333;
+            min-height: 100vh;
+        }
+
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px 20px;
+        }
+
+        .header-inner {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            gap: 20px;
+            align-items: center;
+        }
+
+        h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        .header-info {
+            color: #dde3ff;
+            font-size: 16px;
+        }
+
+        .dashboard-container {
+            max-width: 1200px;
+            margin: -40px auto 40px;
+            padding: 0 20px;
+        }
+
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 18px;
+            padding: 25px;
+            box-shadow: 0 15px 35px rgba(24, 32, 56, 0.08);
+            border: 1px solid #edf1f7;
+        }
+
+        .card h2 {
+            font-size: 14px;
+            color: #7b8ba5;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+
+        .card p {
+            font-size: 36px;
+            font-weight: 700;
+            margin-bottom: 10px;
+            color: #1f2d3d;
+        }
+
+        .card small {
+            color: #718096;
+            font-size: 13px;
+        }
+
+        .section {
+            margin-bottom: 30px;
+        }
+
+        .section header {
+            margin-bottom: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .section header h2 {
+            font-size: 20px;
+            color: #212b36;
+        }
+
+        .section header a {
+            text-decoration: none;
+            color: #667eea;
+            font-weight: 600;
+        }
+
+        .hero {
+            padding: 5px;
+            background: linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0.6) 100%);
+            border-radius: 20px;
+            border: 1px solid rgba(255,255,255,0.7);
+        }
+
+        .hero p {
+            font-size: 16px;
+            line-height: 1.7;
+            color: #4b5563;
+        }
+
+        .logout-link {
+            display: inline-block;
+            margin-top: 12px;
+            color: #fff;
+            background: rgba(255,255,255,0.1);
+            padding: 8px 16px;
+            border-radius: 10px;
+            text-decoration: none;
+            transition: background 0.3s;
+        }
+
+        .logout-link:hover {
+            background: rgba(255,255,255,0.2);
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="header-inner">
+            <div style="display:flex; align-items:center; gap:16px;">
+                {% if company_logo_url %}
+                <img src="{{ company_logo_url }}" alt="Logo de l'entreprise" style="width:72px; height:72px; object-fit:contain; border-radius:14px; background:#fff; padding:10px; border:1px solid rgba(255,255,255,0.18);">
+                {% endif %}
+                <div>
+                    <h1>Tableau de bord</h1>
+                    <div class="header-info">Entreprise : {{ company_name }}</div>
+                </div>
+            </div>
+            <a class="logout-link" href="/admin/logout/">Déconnexion</a>
+        </div>
+    </header>
+    <br>
+    <br>
+    <main class="dashboard-container">
+        <div class="hero">
+            <p>Bienvenue sur votre tableau de bord. Ici vous pouvez voir l'état général de votre entreprise, les données de vos agents, produits, ventes, factures et plus encore.</p>
+        </div>
+
+        <div class="card-grid">
+            <div class="card">
+                <h2>Agents</h2>
+                <p>{{ agents_count }}</p>
+                <small>Agents ajoutés</small>
+            </div>
+            <div class="card">
+                <h2>Rôles d'agent</h2>
+                <p>{{ agent_roles_count }}</p>
+                <small>Types de rôle</small>
+            </div>
+            <div class="card">
+                <h2>Engins</h2>
+                <p>{{ engines_count }}</p>
+                <small>Équipements enregistrés</small>
+            </div>
+            <div class="card">
+                <h2>Produits</h2>
+                <p>{{ products_count }}</p>
+                <small>Produits en stock</small>
+            </div>
+            <div class="card">
+                <h2>Clients</h2>
+                <p>{{ clients_count }}</p>
+                <small>Clients enregistrés</small>
+            </div>
+            <div class="card">
+                <h2>Fournisseurs</h2>
+                <p>{{ suppliers_count }}</p>
+                <small>Fournisseurs</small>
+            </div>
+            <div class="card">
+                <h2>Modes de paiement</h2>
+                <p>{{ payment_methods_count }}</p>
+                <small>Modes actifs</small>
+            </div>
+            <div class="card">
+                <h2>Types de paiement</h2>
+                <p>{{ payment_types_count }}</p>
+                <small>Catégories</small>
+            </div>
+            <div class="card">
+                <h2>Ventes</h2>
+                <p>{{ sales_count }}</p>
+                <small>Transactions</small>
+            </div>
+            <div class="card">
+                <h2>Approvisionnements</h2>
+                <p>{{ supplies_count }}</p>
+                <small>Achats stock</small>
+            </div>
+            <div class="card">
+                <h2>Factures</h2>
+                <p>{{ invoices_count }}</p>
+                <small>Documents émis</small>
+            </div>
+        </div>
+    </main>
+</body>
+</html>
