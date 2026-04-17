@@ -6,10 +6,10 @@ class User(AbstractUser):
     logo = models.ImageField(upload_to="company_logos/", blank=True, null=True, verbose_name="Logo de l'entreprise")
     # Champs supplémentaires pour l'entreprise
     company_name = models.CharField(max_length=255, verbose_name="Nom de l'entreprise")
-    company_email = models.EmailField(verbose_name="Adresse email")
+    company_email = models.EmailField(blank=True, null=True,verbose_name="Adresse email")
     phone = models.CharField(max_length=20, blank=True, verbose_name="Téléphone")
     address = models.TextField(blank=True, verbose_name="Adresse")
-    add_date = models.DateTimeField(auto_now_add=True, verbose_name="Date d'inscription")
+    add_date = models.DateTimeField(auto_now_add=True, verbose_name="Date d'inscription",blank=True, null=True,)
 
     def __str__(self):
         return self.company_name
@@ -20,7 +20,7 @@ class User(AbstractUser):
 
 # Modèle pour les rôles d'agent
 class AgentRole(models.Model):
-    company = models.ForeignKey(User, on_delete=models.CASCADE, related_name='agent_roles', verbose_name="Entreprise")
+    company = models.ForeignKey(User, on_delete=models.CASCADE, related_name='agent_roles', verbose_name="Entreprise", default=1)
     name = models.CharField(max_length=100, verbose_name="Nom du rôle")
     description = models.TextField(blank=True, verbose_name="Description")
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="Date de création")
@@ -104,7 +104,7 @@ class Client(models.Model):
 
 # Modèle pour les types de paiement
 class PaymentType(models.Model):
-    company = models.ForeignKey(User, on_delete=models.CASCADE, related_name='payment_types', verbose_name="Entreprise")
+    company = models.ForeignKey(User, on_delete=models.CASCADE, related_name='payment_types', verbose_name="Entreprise", default=1)
     name = models.CharField(max_length=100, verbose_name="Nom du type de paiement")
     description = models.TextField(blank=True, verbose_name="Description")
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="Date de création")

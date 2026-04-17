@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Connexion - Plateforme de Gestion de Stock</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            max-width: 400px;
+            width: 100%;
+            padding: 40px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 28px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+            font-family: inherit;
+            transition: border-color 0.3s;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .required {
+            color: #e74c3c;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 30px;
+        }
+
+        button {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-submit {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-submit:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-submit:active {
+            transform: translateY(0);
+        }
+
+        .btn-reset {
+            background: #ecf0f1;
+            color: #333;
+        }
+
+        .btn-reset:hover {
+            background: #bdc3c7;
+        }
+
+        .message {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 5px;
+            font-size: 14px;
+            display: none;
+        }
+
+        .message.success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+
+        .message.error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+
+        .message.show {
+            display: block;
+        }
+
+        .register-link {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 14px;
+            color: #666;
+        }
+
+        .register-link a {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .register-link a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Connexion</h1>
+
+        <form id="loginForm">
+            {% csrf_token %}
+
+            <!-- Email -->
+            <div class="form-group">
+                <label for="email">Email <span class="required">*</span></label>
+                <input type="email" id="email" name="email" required placeholder="utilisateur@exemple.com">
+            </div>
+
+            <!-- Mot de passe -->
+            <div class="form-group">
+                <label for="password">Mot de passe <span class="required">*</span></label>
+                <input type="password" id="password" name="password" required placeholder="Entrez votre mot de passe">
+            </div>
+
+            <!-- Message d'erreur/succès -->
+            <div id="message" class="message"></div>
+
+            <!-- Boutons -->
+            <div class="btn-group">
+                <button type="submit" class="btn-submit">Se connecter</button>
+                <button type="reset" class="btn-reset">Réinitialiser</button>
+            </div>
+
+            <div class="register-link">
+                Vous n'avez pas de compte? <a href="{% url 'register' %}">S'inscrire</a>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        const form = document.getElementById('loginForm');
+        const messageDiv = document.getElementById('message');
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const formData = new FormData(form);
+
+            try {
+                const response = await fetch('{% url "login" %}', {
+                    method: 'POST',
+                    body: formData,
+                });
+
+                const data = await response.json();
+
+                messageDiv.classList.remove('success', 'error');
+                messageDiv.textContent = data.message || data.error;
+                messageDiv.classList.add(data.success ? 'success' : 'error');
+                messageDiv.classList.add('show');
+
+                if (data.success) {
+                    form.reset();
+                    setTimeout(() => {
+                        window.location.href = data.redirect || '/dashboard/';
+                    }, 1500);
+                }
+            } catch (error) {
+                messageDiv.classList.remove('success');
+                messageDiv.classList.add('error', 'show');
+                messageDiv.textContent = 'Erreur lors de la connexion. Veuillez réessayer.';
+            }
+        });
+    </script>
+</body>
+</html>
