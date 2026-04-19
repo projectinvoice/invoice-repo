@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Interface Vendeur</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <style>
+        body {
+            background-color: #f4f6f9;
+        }
+
+        .card {
+            border-radius: 10px;
+        }
+
+        .total-box {
+            font-size: 24px;
+            font-weight: bold;
+            color: #28a745;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container mt-5">
+
+    <h2 class="mb-4">🛒 Interface Vendeur</h2>
+
+    <div class="row">
+
+        <!-- PRODUITS -->
+        <div class="col-md-8">
+            <div class="card p-3 shadow">
+                <h5>Liste des produits</h5>
+
+                <table class="table table-hover mt-3">
+                    <thead>
+                        <tr>
+                            <th>Produit</th>
+                            <th>Prix</th>
+                            <th>Stock</th>
+                            <th>Quantité</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        {% for product in products %}
+                        <tr>
+                            <td>{{ product.name }}</td>
+                            <td>{{ product.price }} FCFA</td>
+                            <td>{{ product.stock_quantity }}</td>
+
+                            <td>
+                                <input type="number" min="1" class="form-control quantity" data-price="{{ product.price }}">
+                            </td>
+
+                            <td>
+                                <button class="btn btn-success btn-sm add-to-cart"
+                                        data-name="{{ product.name }}"
+                                        data-price="{{ product.price }}">
+                                    Ajouter
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+
+            </div>
+        </div>
+
+        <!-- PANIER -->
+        <div class="col-md-4">
+            <div class="card p-3 shadow">
+
+                <h5>🧾 Panier</h5>
+
+                <ul class="list-group mb-3" id="cart">
+                </ul>
+
+                <div class="total-box">
+                    Total : <span id="total">0</span> FCFA
+                </div>
+
+                <button class="btn btn-primary w-100 mt-3">
+                    Valider la vente
+                </button>
+
+            </div>
+        </div>
+
+    </div>
+
+</div>
+
+<!-- JS -->
+<script>
+    let total = 0;
+
+    document.querySelectorAll('.add-to-cart').forEach(button => {
+        button.addEventListener('click', function() {
+
+            let row = this.closest('tr');
+            let quantity = row.querySelector('.quantity').value;
+
+            if (!quantity || quantity <= 0) {
+                alert("Entrer une quantité valide");
+                return;
+            }
+
+            let name = this.dataset.name;
+            let price = parseFloat(this.dataset.price);
+
+            let itemTotal = price * quantity;
+            total += itemTotal;
+
+            // Ajouter au panier
+            let cart = document.getElementById('cart');
+            let li = document.createElement('li');
+            li.classList.add('list-group-item');
+            li.innerText = name + " x" + quantity + " = " + itemTotal + " FCFA";
+
+            cart.appendChild(li);
+
+            document.getElementById('total').innerText = total;
+        });
+    });
+</script>
+
+</body>
+</html>
