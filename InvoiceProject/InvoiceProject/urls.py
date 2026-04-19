@@ -27,6 +27,9 @@ urlpatterns = [
     path('dashboard/', invoice_views.dashboard, name='dashboard'),
     path('change-password/', invoice_views.change_password, name='change_password'),
     path('delete-account/', invoice_views.delete_account, name='delete_account'),
+    path('stock/', invoice_views.stock, name='stock'),
+    path('seller/', invoice_views.seller, name='seller'),
+    path('suppliers/', invoice_views.supplier_list, name='supplier_list'),
 
     path('add-agent-role/', invoice_views.add_agent_role, name='add_agent_role'),
     path('delete-agent-role/', invoice_views.delete_agent_role, name='delete_agent_role'),

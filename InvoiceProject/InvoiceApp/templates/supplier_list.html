@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Fournisseurs</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <style>
+        body {
+            background-color: #f4f6f9;
+        }
+
+        .card {
+            border-radius: 10px;
+        }
+
+        .table th {
+            background-color: #343a40;
+            color: white;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container mt-5">
+
+    <!-- HEADER -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>🏢 Liste des fournisseurs</h2>
+        <a href="#" class="btn btn-primary">+ Ajouter fournisseur</a>
+    </div>
+
+    <!-- CARD -->
+    <div class="card shadow p-3">
+
+        <!-- SEARCH -->
+        <input type="text" class="form-control mb-3" placeholder="🔍 Rechercher un fournisseur...">
+
+        <table class="table table-hover">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Nom</th>
+                    <th>Email</th>
+                    <th>Téléphone</th>
+                    <th>Adresse</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+
+            <tbody>
+
+                {% for supplier in suppliers %}
+                <tr>
+                    <td>{{ forloop.counter }}</td>
+
+                    <td>{{ supplier.name }}</td>
+
+                    <td>
+                        {% if supplier.email %}
+                            {{ supplier.email }}
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
+
+                    <td>{{ supplier.phone }}</td>
+
+                    <td>{{ supplier.address }}</td>
+
+                    <td>
+                        <a href="#" class="btn btn-sm btn-warning">Modifier</a>
+                        <a href="#" class="btn btn-sm btn-danger">Supprimer</a>
+                    </td>
+                </tr>
+
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="text-center">Aucun fournisseur enregistré</td>
+                </tr>
+                {% endfor %}
+
+            </tbody>
+        </table>
+
+    </div>
+
+</div>
+
+</body>
+</html>
