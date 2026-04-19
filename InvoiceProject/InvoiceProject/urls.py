@@ -16,14 +16,20 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path
+from django.conf import settings
+from django.conf.urls.static import static
 from InvoiceApp import views as invoice_views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('register/', invoice_views.register_company, name='register'),
     path('login/', invoice_views.login_view, name='login'),
+    path('dashboard/', invoice_views.dashboard, name='dashboard'),
     path('change-password/', invoice_views.change_password, name='change_password'),
     path('delete-account/', invoice_views.delete_account, name='delete_account'),
+    path('stock/', invoice_views.stock, name='stock'),
+    path('seller/', invoice_views.seller, name='seller'),
+    path('suppliers/', invoice_views.supplier_list, name='supplier_list'),
 
     path('add-agent-role/', invoice_views.add_agent_role, name='add_agent_role'),
     path('delete-agent-role/', invoice_views.delete_agent_role, name='delete_agent_role'),
@@ -48,3 +54,6 @@ urlpatterns = [
     path('add-invoice/', invoice_views.add_invoice, name='add_invoice'),
     path('delete-invoice/', invoice_views.delete_invoice, name='delete_invoice'),
 ]
+
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
