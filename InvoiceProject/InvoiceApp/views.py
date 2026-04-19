@@ -324,7 +324,7 @@ def delete_supply(request):
     return JsonResponse({"success": True, "message": "Approvisionnement supprimé"})
 
 @require_http_methods(["POST"])
-@login_required
+@login_required 
 def add_sale(request):
     client_id = request.POST.get("client_id")
     product_id = request.POST.get("product_id")
@@ -382,4 +382,4 @@ def delete_invoice(request):
     if not invoice_id:
         return JsonResponse({"success": False, "error": "invoice_id requis"}, status=400)
     Invoice.objects.filter(id=invoice_id, company=request.user).delete()
-    return JsonResponse({"success": True, "message": "Facture supprimée"})
+    return JsonResponse({"success": True, "message": "Facture supprimée"}) 
