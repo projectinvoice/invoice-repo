@@ -1,4 +1,4 @@
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from django.contrib.auth import authenticate, login, logout, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_http_methods
@@ -115,6 +115,11 @@ def delete_account(request):
     request.user.delete()
     logout(request)
     return JsonResponse({"success": True, "message": "Compte supprimé"})
+
+@require_http_methods(["GET", "POST"])
+def logout_view(request):
+    logout(request)
+    return redirect('login')
 
 # Ajout et suppression des éléments des modèles
 

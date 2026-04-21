@@ -122,3 +122,6 @@ STATIC_URL = 'static/'
 # Media files (upload d'images pour logo et produits)
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
+
+# Configuration de l'authentification
+LOGIN_URL = '/login/'
