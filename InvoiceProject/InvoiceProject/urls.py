@@ -24,6 +24,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('register/', invoice_views.register_company, name='register'),
     path('login/', invoice_views.login_view, name='login'),
+    path('logout/', invoice_views.logout_view, name='logout'),
     path('dashboard/', invoice_views.dashboard, name='dashboard'),
     path('change-password/', invoice_views.change_password, name='change_password'),
     path('delete-account/', invoice_views.delete_account, name='delete_account'),
