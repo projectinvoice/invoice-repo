@@ -21,6 +21,7 @@ from django.conf.urls.static import static
 from InvoiceApp import views as invoice_views
 
 urlpatterns = [
+    path('', invoice_views.landing, name='landing'),
     path('admin/', admin.site.urls),
     path('register/', invoice_views.register_company, name='register'),
     path('login/', invoice_views.login_view, name='login'),
