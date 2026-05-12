@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Supprimer le Compte</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            max-width: 600px;
+            width: 100%;
+            padding: 40px;
+        }
+
+        .header-section {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+
+        .warning-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+
+        h1 {
+            color: #e74c3c;
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .breadcrumb {
+            margin-bottom: 20px;
+        }
+
+        .breadcrumb a {
+            color: #667eea;
+            text-decoration: none;
+            font-size: 14px;
+        }
+
+        .breadcrumb a:hover {
+            text-decoration: underline;
+        }
+
+        .warning-box {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            border-radius: 5px;
+            padding: 20px;
+            margin-bottom: 25px;
+        }
+
+        .warning-box h3 {
+            color: #856404;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+
+        .warning-box ul {
+            margin-left: 20px;
+            color: #856404;
+            font-size: 14px;
+        }
+
+        .warning-box li {
+            margin-bottom: 8px;
+        }
+
+        .danger-box {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            border-radius: 5px;
+            padding: 20px;
+            margin-bottom: 25px;
+        }
+
+        .danger-box h4 {
+            color: #721c24;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+
+        .danger-box p {
+            color: #721c24;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .confirmation-section {
+            background: #f0f0f0;
+            border-radius: 5px;
+            padding: 20px;
+            margin-bottom: 25px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        input[type="email"],
+        input[type="text"],
+        input[type="password"] {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        input[type="email"]:focus,
+        input[type="text"]:focus,
+        input[type="password"]:focus {
+            outline: none;
+            border-color: #e74c3c;
+            box-shadow: 0 0 0 3px rgba(231, 76, 60, 0.1);
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+
+        .checkbox-group label {
+            margin: 0;
+            cursor: pointer;
+            font-weight: normal;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+        }
+
+        button {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        button.delete {
+            background: #e74c3c;
+            color: white;
+        }
+
+        button.delete:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(231, 76, 60, 0.3);
+        }
+
+        button.delete:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        button.cancel {
+            background: #95a5a6;
+            color: white;
+        }
+
+        button.cancel:hover {
+            background: #7f8c8d;
+        }
+
+        .alert {
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .alert.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+            display: block;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .loading.active {
+            display: block;
+            color: #e74c3c;
+        }
+
+        .info-text {
+            background: #e3f2fd;
+            border-left: 4px solid #2196f3;
+            padding: 15px;
+            border-radius: 3px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            color: #1565c0;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 25px;
+            }
+
+            h1 {
+                font-size: 22px;
+            }
+
+            .button-group {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="breadcrumb">
+            <a href="{% url 'dashboard' %}">← Retour au Dashboard</a>
+        </div>
+
+        <div class="header-section">
+            <div class="warning-icon">⚠️</div>
+            <h1>Supprimer le Compte</h1>
+            <p class="subtitle">Action irréversible</p>
+        </div>
+
+        <div class="alert error" id="errorAlert" style="display: none;"></div>
+
+        <div class="warning-box">
+            <h3>⚡ Attention - Opération Dangereuse</h3>
+            <ul>
+                <li><strong>Toutes vos données</strong> seront supprimées définitivement</li>
+                <li>Tous les agents liés à votre compte seront <strong>supprimés</strong></li>
+                <li>Tous les produits, clients et factures seront <strong>perdus</strong></li>
+                <li>Cette action <strong>ne peut pas être annulée</strong></li>
+            </ul>
+        </div>
+
+        <div class="info-text">
+            💡 Si vous avez des questions, veuillez <strong>contacter notre support</strong> avant de supprimer votre compte.
+        </div>
+
+        <div class="danger-box">
+            <h4>🚨 Êtes-vous sûr?</h4>
+            <p>La suppression de votre compte entreprise supprimera également tous les enregistrements associés. Cette action est <strong>permanente et irréversible</strong>.</p>
+        </div>
+
+        <form id="deleteAccountForm">
+            {% csrf_token %}
+
+            <div class="confirmation-section">
+                <div class="form-group">
+                    <label for="email">Confirmez votre email <span style="color: #e74c3c;">*</span></label>
+                    <input type="email" id="email" name="email" required placeholder="Entrez votre adresse email" value="{{ user.email }}">
+                    <small>Pour confirmer votre identité</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="password">Mot de passe <span style="color: #e74c3c;">*</span></label>
+                    <input type="password" id="password" name="password" required placeholder="Entrez votre mot de passe">
+                    <small>Pour des raisons de sécurité</small>
+                </div>
+
+                <div class="checkbox-group">
+                    <input type="checkbox" id="understand" name="understand" required>
+                    <label for="understand">Je comprends que cette action est <strong>irréversible</strong></label>
+                </div>
+
+                <div class="checkbox-group">
+                    <input type="checkbox" id="confirm_deletion" name="confirm_deletion" required>
+                    <label for="confirm_deletion">Je confirme la suppression de mon compte et <strong>toutes ses données</strong></label>
+                </div>
+            </div>
+
+            <div class="button-group">
+                <button type="submit" class="delete" id="deleteBtn" disabled>Supprimer Définitivement</button>
+                <a href="{% url 'dashboard' %}" style="display: flex; align-items: center; justify-content: center; flex: 1; background: #95a5a6; color: white; text-decoration: none; border-radius: 5px; font-weight: bold; transition: all 0.3s;">Annuler</a>
+            </div>
+
+            <div class="loading" id="loading">
+                <p>⏳ Suppression du compte...</p>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        const emailInput = document.getElementById('email');
+        const confirmCheckbox = document.getElementById('confirm_deletion');
+        const understandCheckbox = document.getElementById('understand');
+        const deleteBtn = document.getElementById('deleteBtn');
+
+        // Activer/désactiver le bouton de suppression
+        function updateButtonState() {
+            const emailValid = emailInput.value === '{{ user.email }}';
+            const confirmedDeletion = confirmCheckbox.checked;
+            const understands = understandCheckbox.checked;
+            deleteBtn.disabled = !(emailValid && confirmedDeletion && understands);
+        }
+
+        emailInput.addEventListener('change', updateButtonState);
+        confirmCheckbox.addEventListener('change', updateButtonState);
+        understandCheckbox.addEventListener('change', updateButtonState);
+
+        document.getElementById('deleteAccountForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            if (emailInput.value !== '{{ user.email }}') {
+                showError('Email incorrect');
+                return;
+            }
+
+            if (!confirmCheckbox.checked || !understandCheckbox.checked) {
+                showError('Vous devez cocher toutes les confirmations');
+                return;
+            }
+
+            const password = document.getElementById('password').value;
+            if (!password) {
+                showError('Mot de passe obligatoire');
+                return;
+            }
+
+            showLoading(true);
+
+            try {
+                const response = await fetch('{% url "delete_account" %}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                    },
+                    body: new URLSearchParams({
+                        password: password
+                    })
+                });
+
+                const data = await response.json();
+                showLoading(false);
+
+                if (data.success) {
+                    alert('Compte supprimé avec succès. Redirection...');
+                    window.location.href = '{% url "landing" %}';
+                } else {
+                    showError(data.error || 'Erreur lors de la suppression');
+                }
+            } catch (error) {
+                showLoading(false);
+                showError('Erreur réseau: ' + error.message);
+            }
+        });
+
+        function showError(message) {
+            const alert = document.getElementById('errorAlert');
+            alert.textContent = message;
+            alert.style.display = 'block';
+        }
+
+        function showLoading(show) {
+            document.getElementById('loading').classList.toggle('active', show);
+            deleteBtn.disabled = show;
+        }
+    </script>
+</body>
+</html>
