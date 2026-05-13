@@ -1,4 +1,4 @@
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from django.contrib.auth import authenticate, login, logout, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_http_methods
@@ -18,6 +18,10 @@ from .models import (
     Sale,
     Invoice,
 )
+
+def landing(request):
+    """Landing page - visible to all visitors"""
+    return render(request, 'landing.html')
 
 @require_http_methods(["GET", "POST"])
 def register_company(request):
@@ -89,9 +93,12 @@ def dashboard(request):
     }
     return render(request, 'dashboard.html', context)
 
-@require_http_methods(["POST"])
+@require_http_methods(["GET", "POST"])
 @login_required
 def change_password(request):
+    if request.method == "GET":
+        return render(request, 'change_password.html')
+    
     old_password = request.POST.get("old_password")
     new_password = request.POST.get("new_password")
     confirm_password = request.POST.get("confirm_password")
@@ -109,12 +116,24 @@ def change_password(request):
     update_session_auth_hash(request, user)
     return JsonResponse({"success": True, "message": "Mot de passe modifié"})
 
-@require_http_methods(["POST"])
+@require_http_methods(["GET", "POST"])
 @login_required
 def delete_account(request):
+    if request.method == "GET":
+        return render(request, 'delete_account.html')
+    
+    password = request.POST.get("password")
+    if not password or not request.user.check_password(password):
+        return JsonResponse({"success": False, "error": "Mot de passe incorrect"}, status=400)
+    
     request.user.delete()
     logout(request)
     return JsonResponse({"success": True, "message": "Compte supprimé"})
+
+@require_http_methods(["GET", "POST"])
+def logout_view(request):
+    logout(request)
+    return redirect('login')
 
 # Ajout et suppression des éléments des modèles
 
@@ -137,9 +156,14 @@ def delete_agent_role(request):
     AgentRole.objects.filter(id=role_id, company=request.user).delete()
     return JsonResponse({"success": True, "message": "Rôle supprimé"})
 
-@require_http_methods(["POST"])
+@require_http_methods(["GET", "POST"])
 @login_required
 def add_agent(request):
+    if request.method == "GET":
+        roles = AgentRole.objects.filter(company=request.user)
+        context = {'roles': roles}
+        return render(request, 'add_agent.html', context)
+    
     name = request.POST.get("name")
     email = request.POST.get("email", "")
     phone = request.POST.get("phone", "")
