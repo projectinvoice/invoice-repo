@@ -133,6 +133,76 @@
         .logout-link:hover {
             background: rgba(255,255,255,0.2);
         }
+
+        .quick-actions {
+            background: white;
+            border-radius: 18px;
+            padding: 25px;
+            box-shadow: 0 15px 35px rgba(24, 32, 56, 0.08);
+            border: 1px solid #edf1f7;
+            margin-bottom: 30px;
+        }
+
+        .quick-actions h3 {
+            font-size: 18px;
+            color: #212b36;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .actions-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .action-btn {
+            padding: 15px 20px;
+            border: none;
+            border-radius: 10px;
+            text-decoration: none;
+            font-weight: 600;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-size: 14px;
+        }
+
+        .action-btn.primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .action-btn.primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .action-btn.secondary {
+            background: #f0f0f0;
+            color: #333;
+        }
+
+        .action-btn.secondary:hover {
+            background: #e0e0e0;
+            transform: translateY(-2px);
+        }
+
+        .action-btn.danger {
+            background: #ffe5e5;
+            color: #e74c3c;
+        }
+
+        .action-btn.danger:hover {
+            background: #ffd0d0;
+            transform: translateY(-2px);
+        }
     </style>
 </head>
 <body>
@@ -147,7 +217,7 @@
                     <div class="header-info">Entreprise : {{ company_name }}</div>
                 </div>
             </div>
-            <a class="logout-link" href="/admin/logout/">Déconnexion</a>
+            <a class="logout-link" href="{% url 'logout' %}">Déconnexion</a>
         </div>
     </header>
     <br>
@@ -155,6 +225,15 @@
     <main class="dashboard-container">
         <div class="hero">
             <p>Bienvenue sur votre tableau de bord. Ici vous pouvez voir l'état général de votre entreprise, les données de vos agents, produits, ventes, factures et plus encore.</p>
+        </div>
+
+        <div class="quick-actions">
+            <h3>⚡ Actions Rapides</h3>
+            <div class="actions-grid">
+                <a href="{% url 'add_agent' %}" class="action-btn primary">👥 Ajouter un Agent</a>
+                <a href="{% url 'change_password' %}" class="action-btn secondary">🔐 Modifier le Mot de Passe</a>
+                <a href="{% url 'delete_account' %}" class="action-btn danger">🗑️ Supprimer le Compte</a>
+            </div>
         </div>
 
         <div class="card-grid">
