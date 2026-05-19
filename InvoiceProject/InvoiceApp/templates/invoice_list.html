@@ -1,0 +1,20 @@
+<div class="page" id="page-invoices">
+  <div class="page-header"><h1>Factures (Invoice)</h1><p>Suivi des factures et de leur statut</p></div>
+  <div class="stats-row">
+    <div class="stat-card"><span class="stat-label">Total</span><span class="stat-value" id="i-total">0</span><span class="stat-sub">factures</span></div>
+    <div class="stat-card"><span class="stat-label">Filtrés</span><span class="stat-value" id="i-filtered">0</span><span class="stat-sub">résultats</span></div>
+  </div>
+  <div class="toolbar">
+    <div class="search-wrap"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg><input id="i-search" placeholder="N° facture, client..." oninput="renderTable('invoices')"></div>
+    <select id="i-status" onchange="renderTable('invoices')"><option value="">Tous les statuts</option><option value="pending">En attente</option><option value="paid">Payée</option><option value="overdue">En retard</option></select>
+    <button class="btn btn-primary" onclick="alert('Nouvelle facture')"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> Ajouter</button>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th><input type="checkbox" onchange="toggleAll('invoices',this)"></th><th>N° Facture</th><th>Client</th><th>Émise le</th><th>Échéance</th><th>Statut</th><th>Actions</th></tr></thead>
+      <tbody id="i-body"></tbody>
+    </table>
+    <div id="i-empty" class="empty" style="display:none"><p>Aucune facture trouvée</p></div>
+    <div class="pagination-wrap"><span class="pag-info" id="i-info"></span><div class="pag-btns" id="i-pag"></div></div>
+  </div>
+</div>
