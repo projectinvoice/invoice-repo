@@ -1,0 +1,19 @@
+<div class="page" id="page-clients">
+  <div class="page-header"><h1>Clients</h1><p>Base clients liée aux ventes</p></div>
+  <div class="stats-row">
+    <div class="stat-card"><span class="stat-label">Total</span><span class="stat-value" id="cl-total">0</span><span class="stat-sub">clients</span></div>
+    <div class="stat-card"><span class="stat-label">Filtrés</span><span class="stat-value" id="cl-filtered">0</span><span class="stat-sub">résultats</span></div>
+  </div>
+  <div class="toolbar">
+    <div class="search-wrap"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg><input id="cl-search" placeholder="Rechercher..." oninput="renderTable('clients')"></div>
+    <button class="btn btn-primary" onclick="alert('Ajouter un client')"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> Ajouter</button>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th><input type="checkbox" onchange="toggleAll('clients',this)"></th><th>Client</th><th>Email</th><th>Téléphone</th><th>Adresse</th><th>Entreprise</th><th>Actions</th></tr></thead>
+      <tbody id="cl-body"></tbody>
+    </table>
+    <div id="cl-empty" class="empty" style="display:none"><p>Aucun client trouvé</p></div>
+    <div class="pagination-wrap"><span class="pag-info" id="cl-info"></span><div class="pag-btns" id="cl-pag"></div></div>
+  </div>
+</div>
