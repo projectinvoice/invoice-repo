@@ -62,6 +62,17 @@
             padding: 25px;
             box-shadow: 0 15px 35px rgba(24, 32, 56, 0.08);
             border: 1px solid #edf1f7;
+            text-decoration: none;
+            color: inherit;
+            display: block;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 20px 45px rgba(102, 126, 234, 0.15);
+            border-color: #667eea;
         }
 
         .card h2 {
@@ -237,61 +248,61 @@
         </div>
 
         <div class="card-grid">
-            <div class="card">
+            <a href="{% url 'list_agents' %}" class="card">
                 <h2>Agents</h2>
                 <p>{{ agents_count }}</p>
                 <small>Agents ajoutés</small>
-            </div>
-            <div class="card">
+            </a>
+            <a href="{% url 'manage_agent_roles' %}" class="card">
                 <h2>Rôles d'agent</h2>
                 <p>{{ agent_roles_count }}</p>
                 <small>Types de rôle</small>
-            </div>
-            <div class="card">
+            </a>
+            <a href="{% url 'list_engines' %}" class="card">
                 <h2>Engins</h2>
                 <p>{{ engines_count }}</p>
                 <small>Équipements enregistrés</small>
-            </div>
-            <div class="card">
+            </a>
+            <a href="{% url 'list_products' %}" class="card">
                 <h2>Produits</h2>
                 <p>{{ products_count }}</p>
                 <small>Produits en stock</small>
-            </div>
-            <div class="card">
+            </a>
+            <a href="{% url 'list_clients' %}" class="card">
                 <h2>Clients</h2>
                 <p>{{ clients_count }}</p>
                 <small>Clients enregistrés</small>
-            </div>
-            <div class="card">
+            </a>
+            <a href="{% url 'list_suppliers' %}" class="card">
                 <h2>Fournisseurs</h2>
                 <p>{{ suppliers_count }}</p>
                 <small>Fournisseurs</small>
-            </div>
-            <div class="card">
+            </a>
+            <a href="{% url 'list_payment_methods' %}" class="card">
                 <h2>Modes de paiement</h2>
                 <p>{{ payment_methods_count }}</p>
                 <small>Modes actifs</small>
-            </div>
-            <div class="card">
+            </a>
+            <a href="{% url 'list_payment_types' %}" class="card">
                 <h2>Types de paiement</h2>
                 <p>{{ payment_types_count }}</p>
                 <small>Catégories</small>
-            </div>
-            <div class="card">
+            </a>
+            <a href="{% url 'list_sales' %}" class="card">
                 <h2>Ventes</h2>
                 <p>{{ sales_count }}</p>
                 <small>Transactions</small>
-            </div>
-            <div class="card">
+            </a>
+            <a href="{% url 'list_supplies' %}" class="card">
                 <h2>Approvisionnements</h2>
                 <p>{{ supplies_count }}</p>
                 <small>Achats stock</small>
-            </div>
-            <div class="card">
+            </a>
+            <a href="{% url 'list_invoices' %}" class="card">
                 <h2>Factures</h2>
                 <p>{{ invoices_count }}</p>
                 <small>Documents émis</small>
-            </div>
+            </a>
         </div>
     </main>
 </body>

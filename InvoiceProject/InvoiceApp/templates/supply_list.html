@@ -1,8 +1,9 @@
+{% load custom_filters %}
 <!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>Fournisseurs - {{ company_name }}</title>
+    <title>Approvisionnements - {{ company_name }}</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         body {
@@ -73,57 +74,66 @@
         }
     </style>
 </head>
-
 <body>
 
 <div class="container mt-5">
     <div class="header-section">
         <div>
-            <h2>🏢 Liste des Fournisseurs</h2>
+            <h2>📥 Approvisionnements</h2>
             <p class="mb-0">Entreprise: {{ company_name }}</p>
         </div>
         <div>
-            <a href="#" onclick="openSupplierModal(null)" class="btn btn-light">+ Ajouter</a>
+            <a href="#" onclick="openSupplyModal(null)" class="btn btn-light">+ Ajouter</a>
             <a href="{% url 'dashboard' %}" class="btn btn-light">← Tableau de bord</a>
         </div>
     </div>
 
     <div class="card shadow p-3">
-        <input type="text" class="form-control mb-3" id="searchInput" placeholder="🔍 Rechercher un fournisseur...">
+        <input type="text" class="form-control mb-3" id="searchInput" placeholder="🔍 Rechercher un approvisionnement...">
 
         <table class="table table-hover">
             <thead>
                 <tr>
                     <th>#</th>
-                    <th>Nom</th>
-                    <th>Email</th>
-                    <th>Téléphone</th>
-                    <th>Adresse</th>
+                    <th>Fournisseur</th>
+                    <th>Produit</th>
+                    <th>Quantité</th>
+                    <th>Prix Unitaire</th>
+                    <th>Total</th>
+                    <th>Date</th>
                     <th>Actions</th>
                 </tr>
             </thead>
             <tbody>
-                {% for supplier in suppliers %}
-                <tr class="supplier-row">
+                {% for supply in supplies %}
+                <tr class="supply-row">
                     <td>{{ forloop.counter }}</td>
-                    <td class="supplier-name">{{ supplier.name }}</td>
-                    <td>
-                        {% if supplier.email %}
-                            {{ supplier.email }}
+                    <td class="supply-supplier">
+                        {% if supply.supplier %}
+                            {{ supply.supplier.name }}
                         {% else %}
                             <span class="badge bg-secondary">-</span>
                         {% endif %}
                     </td>
-                    <td>{{ supplier.phone }}</td>
-                    <td>{{ supplier.address }}</td>
                     <td>
-                        <button onclick="openSupplierModal({{ supplier.id }}, '{{ supplier.name }}', '{{ supplier.email }}', '{{ supplier.phone }}', '{{ supplier.address|escapejs }}')" class="btn btn-sm btn-warning">Modifier</button>
+                        {% if supply.product %}
+                            {{ supply.product.name }}
+                        {% else %}
+                            <span class="badge bg-secondary">-</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ supply.quantity }}</td>
+                    <td>{{ supply.unit_price }} €</td>
+                    <td><strong>{{ supply.total_price|floatformat:2 }} €</strong></td>
+                    <td>{{ supply.date|date:"d/m/Y" }}</td>
+                    <td>
+                        <button onclick="openSupplyModal({{ supply.id }}, {{ supply.supplier.id }}, {{ supply.product.id }}, {{ supply.quantity }}, '{{ supply.unit_price }}')" class="btn btn-sm btn-warning">Modifier</button>
                         <a href="#" class="btn btn-sm btn-danger">Supprimer</a>
                     </td>
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="6" class="text-center">Aucun fournisseur enregistré</td>
+                    <td colspan="8" class="text-center">Aucun approvisionnement enregistré</td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -132,38 +142,53 @@
 </div>
 
 <!-- MODAL -->
-<div class="modal-overlay" id="supplierModal">
+<div class="modal-overlay" id="supplyModal">
     <div class="modal-content">
-        <span class="close-btn" onclick="closeSupplierModal()">&times;</span>
-        <h3 id="modalTitle">Ajouter un Fournisseur</h3>
+        <span class="close-btn" onclick="closeSupplyModal()">&times;</span>
+        <h3 id="modalTitle">Ajouter un Approvisionnement</h3>
         
-        <form id="supplierForm" style="margin-top: 20px;">
+        <form id="supplyForm" style="margin-top: 20px;">
             {% csrf_token %}
-            <input type="hidden" id="supplierId" name="supplier_id" value="">
+            <input type="hidden" id="supplyId" name="supply_id" value="">
             
             <div class="mb-3">
-                <label for="name" class="form-label">Nom du Fournisseur *</label>
-                <input type="text" class="form-control" id="name" name="name" required>
+                <label for="supplier" class="form-label">Fournisseur *</label>
+                <select class="form-select" id="supplier" name="supplier" required>
+                    <option value="">Sélectionner un fournisseur...</option>
+                    {% for supplier in suppliers %}
+                        <option value="{{ supplier.id }}">{{ supplier.name }}</option>
+                    {% endfor %}
+                </select>
             </div>
 
             <div class="mb-3">
-                <label for="email" class="form-label">Email</label>
-                <input type="email" class="form-control" id="email" name="email">
+                <label for="product" class="form-label">Produit *</label>
+                <select class="form-select" id="product" name="product" required>
+                    <option value="">Sélectionner un produit...</option>
+                    {% for product in products %}
+                        <option value="{{ product.id }}">{{ product.name }}</option>
+                    {% endfor %}
+                </select>
             </div>
 
-            <div class="mb-3">
-                <label for="phone" class="form-label">Téléphone</label>
-                <input type="tel" class="form-control" id="phone" name="phone">
-            </div>
-
-            <div class="mb-3">
-                <label for="address" class="form-label">Adresse</label>
-                <textarea class="form-control" id="address" name="address" rows="3"></textarea>
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label for="quantity" class="form-label">Quantité *</label>
+                        <input type="number" class="form-control" id="quantity" name="quantity" min="1" required>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label for="unitPrice" class="form-label">Prix Unitaire (€) *</label>
+                        <input type="number" class="form-control" id="unitPrice" name="unit_price" step="0.01" required>
+                    </div>
+                </div>
             </div>
 
             <div class="d-flex gap-2">
                 <button type="submit" class="btn btn-primary">💾 Enregistrer</button>
-                <button type="button" class="btn btn-secondary" onclick="closeSupplierModal()">Annuler</button>
+                <button type="button" class="btn btn-secondary" onclick="closeSupplyModal()">Annuler</button>
             </div>
         </form>
 
@@ -172,43 +197,43 @@
 </div>
 
 <script>
-    function openSupplierModal(supplierId, name = '', email = '', phone = '', address = '') {
-        const modal = document.getElementById('supplierModal');
+    function openSupplyModal(supplyId, supplierId = '', productId = '', quantity = '', unitPrice = '') {
+        const modal = document.getElementById('supplyModal');
         const modalTitle = document.getElementById('modalTitle');
         
-        if (supplierId) {
-            modalTitle.textContent = 'Modifier un Fournisseur';
-            document.getElementById('supplierId').value = supplierId;
-            document.getElementById('name').value = name;
-            document.getElementById('email').value = email;
-            document.getElementById('phone').value = phone;
-            document.getElementById('address').value = address;
+        if (supplyId) {
+            modalTitle.textContent = 'Modifier un Approvisionnement';
+            document.getElementById('supplyId').value = supplyId;
+            document.getElementById('supplier').value = supplierId;
+            document.getElementById('product').value = productId;
+            document.getElementById('quantity').value = quantity;
+            document.getElementById('unitPrice').value = unitPrice;
         } else {
-            modalTitle.textContent = 'Ajouter un Fournisseur';
-            document.getElementById('supplierId').value = '';
-            document.getElementById('supplierForm').reset();
+            modalTitle.textContent = 'Ajouter un Approvisionnement';
+            document.getElementById('supplyId').value = '';
+            document.getElementById('supplyForm').reset();
         }
         
         modal.classList.add('show');
     }
 
-    function closeSupplierModal() {
-        const modal = document.getElementById('supplierModal');
+    function closeSupplyModal() {
+        const modal = document.getElementById('supplyModal');
         modal.classList.remove('show');
         document.getElementById('message').innerHTML = '';
     }
 
-    document.getElementById('supplierModal').addEventListener('click', function(event) {
-        if (event.target === this) closeSupplierModal();
+    document.getElementById('supplyModal').addEventListener('click', function(event) {
+        if (event.target === this) closeSupplyModal();
     });
 
-    document.getElementById('supplierForm').addEventListener('submit', async function(e) {
+    document.getElementById('supplyForm').addEventListener('submit', async function(e) {
         e.preventDefault();
         
         const formData = new FormData(this);
         
         try {
-            const response = await fetch('{% url "add_supplier" %}', {
+            const response = await fetch('{% url "add_supply" %}', {
                 method: 'POST',
                 body: formData
             });
@@ -229,7 +254,7 @@
 
     document.getElementById('searchInput').addEventListener('keyup', function() {
         const filter = this.value.toLowerCase();
-        const rows = document.querySelectorAll('.supplier-row');
+        const rows = document.querySelectorAll('.supply-row');
         rows.forEach(row => {
             const text = row.textContent.toLowerCase();
             row.style.display = text.includes(filter) ? '' : 'none';
