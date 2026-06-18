@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>Fournisseurs - {{ company_name }}</title>
+    <title>Clients - {{ company_name }}</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         body {
@@ -73,23 +73,22 @@
         }
     </style>
 </head>
-
 <body>
 
 <div class="container mt-5">
     <div class="header-section">
         <div>
-            <h2>🏢 Liste des Fournisseurs</h2>
+            <h2>🤝 Liste des Clients</h2>
             <p class="mb-0">Entreprise: {{ company_name }}</p>
         </div>
         <div>
-            <a href="#" onclick="openSupplierModal(null)" class="btn btn-light">+ Ajouter</a>
+            <a href="#" onclick="openClientModal(null)" class="btn btn-light">+ Ajouter</a>
             <a href="{% url 'dashboard' %}" class="btn btn-light">← Tableau de bord</a>
         </div>
     </div>
 
     <div class="card shadow p-3">
-        <input type="text" class="form-control mb-3" id="searchInput" placeholder="🔍 Rechercher un fournisseur...">
+        <input type="text" class="form-control mb-3" id="searchInput" placeholder="🔍 Rechercher un client...">
 
         <table class="table table-hover">
             <thead>
@@ -103,27 +102,27 @@
                 </tr>
             </thead>
             <tbody>
-                {% for supplier in suppliers %}
-                <tr class="supplier-row">
+                {% for client in clients %}
+                <tr class="client-row">
                     <td>{{ forloop.counter }}</td>
-                    <td class="supplier-name">{{ supplier.name }}</td>
+                    <td class="client-name">{{ client.name }}</td>
                     <td>
-                        {% if supplier.email %}
-                            {{ supplier.email }}
+                        {% if client.email %}
+                            {{ client.email }}
                         {% else %}
                             <span class="badge bg-secondary">-</span>
                         {% endif %}
                     </td>
-                    <td>{{ supplier.phone }}</td>
-                    <td>{{ supplier.address }}</td>
+                    <td>{{ client.phone }}</td>
+                    <td>{{ client.address }}</td>
                     <td>
-                        <button onclick="openSupplierModal({{ supplier.id }}, '{{ supplier.name }}', '{{ supplier.email }}', '{{ supplier.phone }}', '{{ supplier.address|escapejs }}')" class="btn btn-sm btn-warning">Modifier</button>
+                        <button onclick="openClientModal({{ client.id }}, '{{ client.name }}', '{{ client.email }}', '{{ client.phone }}', '{{ client.address|escapejs }}')" class="btn btn-sm btn-warning">Modifier</button>
                         <a href="#" class="btn btn-sm btn-danger">Supprimer</a>
                     </td>
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="6" class="text-center">Aucun fournisseur enregistré</td>
+                    <td colspan="6" class="text-center">Aucun client enregistré</td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -132,17 +131,17 @@
 </div>
 
 <!-- MODAL -->
-<div class="modal-overlay" id="supplierModal">
+<div class="modal-overlay" id="clientModal">
     <div class="modal-content">
-        <span class="close-btn" onclick="closeSupplierModal()">&times;</span>
-        <h3 id="modalTitle">Ajouter un Fournisseur</h3>
+        <span class="close-btn" onclick="closeClientModal()">&times;</span>
+        <h3 id="modalTitle">Ajouter un Client</h3>
         
-        <form id="supplierForm" style="margin-top: 20px;">
+        <form id="clientForm" style="margin-top: 20px;">
             {% csrf_token %}
-            <input type="hidden" id="supplierId" name="supplier_id" value="">
+            <input type="hidden" id="clientId" name="client_id" value="">
             
             <div class="mb-3">
-                <label for="name" class="form-label">Nom du Fournisseur *</label>
+                <label for="name" class="form-label">Nom du Client *</label>
                 <input type="text" class="form-control" id="name" name="name" required>
             </div>
 
@@ -163,7 +162,7 @@
 
             <div class="d-flex gap-2">
                 <button type="submit" class="btn btn-primary">💾 Enregistrer</button>
-                <button type="button" class="btn btn-secondary" onclick="closeSupplierModal()">Annuler</button>
+                <button type="button" class="btn btn-secondary" onclick="closeClientModal()">Annuler</button>
             </div>
         </form>
 
@@ -172,43 +171,43 @@
 </div>
 
 <script>
-    function openSupplierModal(supplierId, name = '', email = '', phone = '', address = '') {
-        const modal = document.getElementById('supplierModal');
+    function openClientModal(clientId, name = '', email = '', phone = '', address = '') {
+        const modal = document.getElementById('clientModal');
         const modalTitle = document.getElementById('modalTitle');
         
-        if (supplierId) {
-            modalTitle.textContent = 'Modifier un Fournisseur';
-            document.getElementById('supplierId').value = supplierId;
+        if (clientId) {
+            modalTitle.textContent = 'Modifier un Client';
+            document.getElementById('clientId').value = clientId;
             document.getElementById('name').value = name;
             document.getElementById('email').value = email;
             document.getElementById('phone').value = phone;
             document.getElementById('address').value = address;
         } else {
-            modalTitle.textContent = 'Ajouter un Fournisseur';
-            document.getElementById('supplierId').value = '';
-            document.getElementById('supplierForm').reset();
+            modalTitle.textContent = 'Ajouter un Client';
+            document.getElementById('clientId').value = '';
+            document.getElementById('clientForm').reset();
         }
         
         modal.classList.add('show');
     }
 
-    function closeSupplierModal() {
-        const modal = document.getElementById('supplierModal');
+    function closeClientModal() {
+        const modal = document.getElementById('clientModal');
         modal.classList.remove('show');
         document.getElementById('message').innerHTML = '';
     }
 
-    document.getElementById('supplierModal').addEventListener('click', function(event) {
-        if (event.target === this) closeSupplierModal();
+    document.getElementById('clientModal').addEventListener('click', function(event) {
+        if (event.target === this) closeClientModal();
     });
 
-    document.getElementById('supplierForm').addEventListener('submit', async function(e) {
+    document.getElementById('clientForm').addEventListener('submit', async function(e) {
         e.preventDefault();
         
         const formData = new FormData(this);
         
         try {
-            const response = await fetch('{% url "add_supplier" %}', {
+            const response = await fetch('{% url "add_client" %}', {
                 method: 'POST',
                 body: formData
             });
@@ -229,13 +228,18 @@
 
     document.getElementById('searchInput').addEventListener('keyup', function() {
         const filter = this.value.toLowerCase();
-        const rows = document.querySelectorAll('.supplier-row');
+        const rows = document.querySelectorAll('.client-row');
         rows.forEach(row => {
             const text = row.textContent.toLowerCase();
             row.style.display = text.includes(filter) ? '' : 'none';
         });
     });
 </script>
+
+</body>
+</html>
+    </div>
+</div>
 
 </body>
 </html>
