@@ -27,6 +27,20 @@ urlpatterns = [
     path('login/', invoice_views.login_view, name='login'),
     path('logout/', invoice_views.logout_view, name='logout'),
     path('dashboard/', invoice_views.dashboard, name='dashboard'),
+    path('manage-agent-roles/', invoice_views.manage_agent_roles, name='manage_agent_roles'),
+    
+    # List views for all entities
+    path('list-agents/', invoice_views.list_agents, name='list_agents'),
+    path('list-engines/', invoice_views.list_engines, name='list_engines'),
+    path('list-products/', invoice_views.list_products, name='list_products'),
+    path('list-clients/', invoice_views.list_clients, name='list_clients'),
+    path('list-suppliers/', invoice_views.list_suppliers, name='list_suppliers'),
+    path('list-payment-types/', invoice_views.list_payment_types, name='list_payment_types'),
+    path('list-payment-methods/', invoice_views.list_payment_methods, name='list_payment_methods'),
+    path('list-supplies/', invoice_views.list_supplies, name='list_supplies'),
+    path('list-sales/', invoice_views.list_sales, name='list_sales'),
+    path('list-invoices/', invoice_views.list_invoices, name='list_invoices'),
+    
     path('change-password/', invoice_views.change_password, name='change_password'),
     path('delete-account/', invoice_views.delete_account, name='delete_account'),
     path('stock/', invoice_views.stock, name='stock'),

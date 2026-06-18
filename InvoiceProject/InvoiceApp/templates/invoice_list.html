@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>Fournisseurs - {{ company_name }}</title>
+    <title>Factures - {{ company_name }}</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         body {
@@ -73,57 +73,66 @@
         }
     </style>
 </head>
-
 <body>
 
 <div class="container mt-5">
     <div class="header-section">
         <div>
-            <h2>🏢 Liste des Fournisseurs</h2>
+            <h2>📄 Factures</h2>
             <p class="mb-0">Entreprise: {{ company_name }}</p>
         </div>
         <div>
-            <a href="#" onclick="openSupplierModal(null)" class="btn btn-light">+ Ajouter</a>
+            <a href="#" onclick="openInvoiceModal(null)" class="btn btn-light">+ Ajouter</a>
             <a href="{% url 'dashboard' %}" class="btn btn-light">← Tableau de bord</a>
         </div>
     </div>
 
     <div class="card shadow p-3">
-        <input type="text" class="form-control mb-3" id="searchInput" placeholder="🔍 Rechercher un fournisseur...">
+        <input type="text" class="form-control mb-3" id="searchInput" placeholder="🔍 Rechercher une facture...">
 
         <table class="table table-hover">
             <thead>
                 <tr>
                     <th>#</th>
-                    <th>Nom</th>
-                    <th>Email</th>
-                    <th>Téléphone</th>
-                    <th>Adresse</th>
+                    <th>Numéro de Facture</th>
+                    <th>Vente</th>
+                    <th>Date d'Émission</th>
+                    <th>Date d'Échéance</th>
+                    <th>Statut</th>
                     <th>Actions</th>
                 </tr>
             </thead>
             <tbody>
-                {% for supplier in suppliers %}
-                <tr class="supplier-row">
+                {% for invoice in invoices %}
+                <tr class="invoice-row">
                     <td>{{ forloop.counter }}</td>
-                    <td class="supplier-name">{{ supplier.name }}</td>
+                    <td class="invoice-number"><strong>{{ invoice.invoice_number }}</strong></td>
                     <td>
-                        {% if supplier.email %}
-                            {{ supplier.email }}
+                        {% if invoice.sale %}
+                            {{ invoice.sale.client.name }} - {{ invoice.sale.product.name }}
                         {% else %}
                             <span class="badge bg-secondary">-</span>
                         {% endif %}
                     </td>
-                    <td>{{ supplier.phone }}</td>
-                    <td>{{ supplier.address }}</td>
+                    <td>{{ invoice.issued_date|date:"d/m/Y" }}</td>
+                    <td>{{ invoice.due_date|date:"d/m/Y" }}</td>
                     <td>
-                        <button onclick="openSupplierModal({{ supplier.id }}, '{{ supplier.name }}', '{{ supplier.email }}', '{{ supplier.phone }}', '{{ supplier.address|escapejs }}')" class="btn btn-sm btn-warning">Modifier</button>
+                        {% if invoice.status == "pending" %}
+                            <span class="badge bg-warning">En attente</span>
+                        {% elif invoice.status == "paid" %}
+                            <span class="badge bg-success">Payée</span>
+                        {% else %}
+                            <span class="badge bg-danger">En retard</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <button onclick="openInvoiceModal({{ invoice.id }}, '{{ invoice.invoice_number }}', {{ invoice.sale.id|default:'null' }}, '{{ invoice.due_date|date:"Y-m-d" }}', '{{ invoice.status }}')" class="btn btn-sm btn-warning">Modifier</button>
                         <a href="#" class="btn btn-sm btn-danger">Supprimer</a>
                     </td>
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="6" class="text-center">Aucun fournisseur enregistré</td>
+                    <td colspan="7" class="text-center">Aucune facture enregistrée</td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -132,38 +141,47 @@
 </div>
 
 <!-- MODAL -->
-<div class="modal-overlay" id="supplierModal">
+<div class="modal-overlay" id="invoiceModal">
     <div class="modal-content">
-        <span class="close-btn" onclick="closeSupplierModal()">&times;</span>
-        <h3 id="modalTitle">Ajouter un Fournisseur</h3>
+        <span class="close-btn" onclick="closeInvoiceModal()">&times;</span>
+        <h3 id="modalTitle">Ajouter une Facture</h3>
         
-        <form id="supplierForm" style="margin-top: 20px;">
+        <form id="invoiceForm" style="margin-top: 20px;">
             {% csrf_token %}
-            <input type="hidden" id="supplierId" name="supplier_id" value="">
+            <input type="hidden" id="invoiceId" name="invoice_id" value="">
             
             <div class="mb-3">
-                <label for="name" class="form-label">Nom du Fournisseur *</label>
-                <input type="text" class="form-control" id="name" name="name" required>
+                <label for="invoiceNumber" class="form-label">Numéro de Facture *</label>
+                <input type="text" class="form-control" id="invoiceNumber" name="invoice_number" required>
             </div>
 
             <div class="mb-3">
-                <label for="email" class="form-label">Email</label>
-                <input type="email" class="form-control" id="email" name="email">
+                <label for="sale" class="form-label">Vente associée *</label>
+                <select class="form-select" id="sale" name="sale" required>
+                    <option value="">Sélectionner une vente...</option>
+                    {% for sale in sales %}
+                        <option value="{{ sale.id }}">{{ sale.client.name }} - {{ sale.product.name }} ({{ sale.total_price }} €)</option>
+                    {% endfor %}
+                </select>
             </div>
 
             <div class="mb-3">
-                <label for="phone" class="form-label">Téléphone</label>
-                <input type="tel" class="form-control" id="phone" name="phone">
+                <label for="dueDate" class="form-label">Date d'Échéance *</label>
+                <input type="date" class="form-control" id="dueDate" name="due_date" required>
             </div>
 
             <div class="mb-3">
-                <label for="address" class="form-label">Adresse</label>
-                <textarea class="form-control" id="address" name="address" rows="3"></textarea>
+                <label for="status" class="form-label">Statut</label>
+                <select class="form-select" id="status" name="status">
+                    <option value="pending">En attente</option>
+                    <option value="paid">Payée</option>
+                    <option value="overdue">En retard</option>
+                </select>
             </div>
 
             <div class="d-flex gap-2">
                 <button type="submit" class="btn btn-primary">💾 Enregistrer</button>
-                <button type="button" class="btn btn-secondary" onclick="closeSupplierModal()">Annuler</button>
+                <button type="button" class="btn btn-secondary" onclick="closeInvoiceModal()">Annuler</button>
             </div>
         </form>
 
@@ -172,43 +190,43 @@
 </div>
 
 <script>
-    function openSupplierModal(supplierId, name = '', email = '', phone = '', address = '') {
-        const modal = document.getElementById('supplierModal');
+    function openInvoiceModal(invoiceId, invoiceNumber = '', saleId = '', dueDate = '', status = 'pending') {
+        const modal = document.getElementById('invoiceModal');
         const modalTitle = document.getElementById('modalTitle');
         
-        if (supplierId) {
-            modalTitle.textContent = 'Modifier un Fournisseur';
-            document.getElementById('supplierId').value = supplierId;
-            document.getElementById('name').value = name;
-            document.getElementById('email').value = email;
-            document.getElementById('phone').value = phone;
-            document.getElementById('address').value = address;
+        if (invoiceId) {
+            modalTitle.textContent = 'Modifier une Facture';
+            document.getElementById('invoiceId').value = invoiceId;
+            document.getElementById('invoiceNumber').value = invoiceNumber;
+            document.getElementById('sale').value = saleId || '';
+            document.getElementById('dueDate').value = dueDate;
+            document.getElementById('status').value = status;
         } else {
-            modalTitle.textContent = 'Ajouter un Fournisseur';
-            document.getElementById('supplierId').value = '';
-            document.getElementById('supplierForm').reset();
+            modalTitle.textContent = 'Ajouter une Facture';
+            document.getElementById('invoiceId').value = '';
+            document.getElementById('invoiceForm').reset();
         }
         
         modal.classList.add('show');
     }
 
-    function closeSupplierModal() {
-        const modal = document.getElementById('supplierModal');
+    function closeInvoiceModal() {
+        const modal = document.getElementById('invoiceModal');
         modal.classList.remove('show');
         document.getElementById('message').innerHTML = '';
     }
 
-    document.getElementById('supplierModal').addEventListener('click', function(event) {
-        if (event.target === this) closeSupplierModal();
+    document.getElementById('invoiceModal').addEventListener('click', function(event) {
+        if (event.target === this) closeInvoiceModal();
     });
 
-    document.getElementById('supplierForm').addEventListener('submit', async function(e) {
+    document.getElementById('invoiceForm').addEventListener('submit', async function(e) {
         e.preventDefault();
         
         const formData = new FormData(this);
         
         try {
-            const response = await fetch('{% url "add_supplier" %}', {
+            const response = await fetch('{% url "add_invoice" %}', {
                 method: 'POST',
                 body: formData
             });
@@ -229,7 +247,7 @@
 
     document.getElementById('searchInput').addEventListener('keyup', function() {
         const filter = this.value.toLowerCase();
-        const rows = document.querySelectorAll('.supplier-row');
+        const rows = document.querySelectorAll('.invoice-row');
         rows.forEach(row => {
             const text = row.textContent.toLowerCase();
             row.style.display = text.includes(filter) ? '' : 'none';

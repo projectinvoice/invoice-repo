@@ -93,6 +93,138 @@ def dashboard(request):
     }
     return render(request, 'dashboard.html', context)
 
+@require_http_methods(["GET"])
+@login_required
+def manage_agent_roles(request):
+    user = request.user
+    agent_roles = user.agent_roles.all()
+    context = {
+        'company_name': user.company_name,
+        'company_logo_url': user.logo.url if user.logo else None,
+        'agent_roles': agent_roles,
+    }
+    return render(request, 'agent_roles_manage.html', context)
+
+@require_http_methods(["GET"])
+@login_required
+def list_agents(request):
+    user = request.user
+    agents = user.agents.all()
+    context = {
+        'company_name': user.company_name,
+        'company_logo_url': user.logo.url if user.logo else None,
+        'agents': agents,
+    }
+    return render(request, 'agent_list.html', context)
+
+@require_http_methods(["GET"])
+@login_required
+def list_engines(request):
+    user = request.user
+    engines = user.engines.all()
+    context = {
+        'company_name': user.company_name,
+        'company_logo_url': user.logo.url if user.logo else None,
+        'engines': engines,
+    }
+    return render(request, 'engine_list.html', context)
+
+@require_http_methods(["GET"])
+@login_required
+def list_products(request):
+    user = request.user
+    products = user.products.all()
+    context = {
+        'company_name': user.company_name,
+        'company_logo_url': user.logo.url if user.logo else None,
+        'products': products,
+    }
+    return render(request, 'product_list.html', context)
+
+@require_http_methods(["GET"])
+@login_required
+def list_clients(request):
+    user = request.user
+    clients = user.clients.all()
+    context = {
+        'company_name': user.company_name,
+        'company_logo_url': user.logo.url if user.logo else None,
+        'clients': clients,
+    }
+    return render(request, 'client_list.html', context)
+
+@require_http_methods(["GET"])
+@login_required
+def list_suppliers(request):
+    user = request.user
+    suppliers = user.suppliers.all()
+    context = {
+        'company_name': user.company_name,
+        'company_logo_url': user.logo.url if user.logo else None,
+        'suppliers': suppliers,
+    }
+    return render(request, 'supplier_list.html', context)
+
+@require_http_methods(["GET"])
+@login_required
+def list_payment_types(request):
+    user = request.user
+    payment_types = user.payment_types.all()
+    context = {
+        'company_name': user.company_name,
+        'company_logo_url': user.logo.url if user.logo else None,
+        'payment_types': payment_types,
+    }
+    return render(request, 'payment_type_list.html', context)
+
+@require_http_methods(["GET"])
+@login_required
+def list_payment_methods(request):
+    user = request.user
+    payment_methods = user.payment_methods.all()
+    context = {
+        'company_name': user.company_name,
+        'company_logo_url': user.logo.url if user.logo else None,
+        'payment_methods': payment_methods,
+    }
+    return render(request, 'payment_method_list.html', context)
+
+@require_http_methods(["GET"])
+@login_required
+def list_supplies(request):
+    user = request.user
+    supplies = user.supplies.all()
+    context = {
+        'company_name': user.company_name,
+        'company_logo_url': user.logo.url if user.logo else None,
+        'supplies': supplies,
+    }
+    return render(request, 'supply_list.html', context)
+
+@require_http_methods(["GET"])
+@login_required
+def list_sales(request):
+    user = request.user
+    sales = user.sales.all()
+    context = {
+        'company_name': user.company_name,
+        'company_logo_url': user.logo.url if user.logo else None,
+        'sales': sales,
+    }
+    return render(request, 'sale_list.html', context)
+
+@require_http_methods(["GET"])
+@login_required
+def list_invoices(request):
+    user = request.user
+    invoices = user.invoices.all()
+    context = {
+        'company_name': user.company_name,
+        'company_logo_url': user.logo.url if user.logo else None,
+        'invoices': invoices,
+    }
+    return render(request, 'invoice_list.html', context)
+
 @require_http_methods(["GET", "POST"])
 @login_required
 def change_password(request):
@@ -158,21 +290,38 @@ def delete_agent_role(request):
 
 @require_http_methods(["GET", "POST"])
 @login_required
+@require_http_methods(["POST"])
+@login_required
 def add_agent(request):
-    if request.method == "GET":
-        roles = AgentRole.objects.filter(company=request.user)
-        context = {'roles': roles}
-        return render(request, 'add_agent.html', context)
-    
-    name = request.POST.get("name")
+    agent_id = request.POST.get("agent_id")
+    name = request.POST.get("name") or request.POST.get("first_name", "") + " " + request.POST.get("last_name", "")
+    name = name.strip()
     email = request.POST.get("email", "")
     phone = request.POST.get("phone", "")
     role_id = request.POST.get("role_id")
+    
     if not name:
         return JsonResponse({"success": False, "error": "name requis"}, status=400)
-    role = AgentRole.objects.filter(id=role_id).first() if role_id else None
-    agent = Agent.objects.create(company=request.user, name=name, email=email, phone=phone, role=role)
-    return JsonResponse({"success": True, "agent_id": agent.id})
+    
+    role = AgentRole.objects.filter(id=role_id, company=request.user).first() if role_id else None
+    
+    if agent_id:
+        # Édition
+        try:
+            agent = Agent.objects.get(id=agent_id, company=request.user)
+            agent.name = name
+            agent.email = email
+            agent.phone = phone
+            agent.role = role
+            agent.save()
+            return JsonResponse({"success": True, "message": "Agent modifié", "agent_id": agent.id})
+        except Agent.DoesNotExist:
+            return JsonResponse({"success": False, "error": "Agent non trouvé"}, status=404)
+    else:
+        # Création
+        agent = Agent.objects.create(company=request.user, name=name, email=email, phone=phone, role=role)
+        return JsonResponse({"success": True, "message": "Agent créé", "agent_id": agent.id})
+
 
 @require_http_methods(["POST"])
 @login_required
@@ -213,22 +362,41 @@ def delete_engine(request):
 @require_http_methods(["POST"])
 @login_required
 def add_product(request):
+    product_id = request.POST.get("product_id")
     name = request.POST.get("name")
     description = request.POST.get("description", "")
     price = request.POST.get("price")
-    stock_quantity = request.POST.get("stock_quantity", 0)
+    stock = request.POST.get("stock") or request.POST.get("stock_quantity", 0)
     image = request.FILES.get("image") if hasattr(request, 'FILES') else None
+    
     if not name or price is None:
         return JsonResponse({"success": False, "error": "name et price requis"}, status=400)
-    product = Product.objects.create(
-        company=request.user,
-        name=name,
-        description=description,
-        price=price,
-        stock_quantity=stock_quantity,
-        image=image,
-    )
-    return JsonResponse({"success": True, "product_id": product.id})
+    
+    if product_id:
+        # Édition
+        try:
+            product = Product.objects.get(id=product_id, company=request.user)
+            product.name = name
+            product.description = description
+            product.price = price
+            product.stock = int(stock) if stock else 0
+            if image:
+                product.image = image
+            product.save()
+            return JsonResponse({"success": True, "message": "Produit modifié", "product_id": product.id})
+        except Product.DoesNotExist:
+            return JsonResponse({"success": False, "error": "Produit non trouvé"}, status=404)
+    else:
+        # Création
+        product = Product.objects.create(
+            company=request.user,
+            name=name,
+            description=description,
+            price=price,
+            stock=int(stock) if stock else 0,
+            image=image,
+        )
+        return JsonResponse({"success": True, "message": "Produit créé", "product_id": product.id})
 
 @require_http_methods(["POST"])
 @login_required
@@ -242,20 +410,37 @@ def delete_product(request):
 @require_http_methods(["POST"])
 @login_required
 def add_client(request):
+    client_id = request.POST.get("client_id")
     name = request.POST.get("name")
     email = request.POST.get("email", "")
     phone = request.POST.get("phone", "")
     address = request.POST.get("address", "")
+    
     if not name:
         return JsonResponse({"success": False, "error": "name requis"}, status=400)
-    client = Client.objects.create(
-        company=request.user,
-        name=name,
-        email=email,
-        phone=phone,
-        address=address,
-    )
-    return JsonResponse({"success": True, "client_id": client.id})
+    
+    if client_id:
+        # Édition
+        try:
+            client = Client.objects.get(id=client_id, company=request.user)
+            client.name = name
+            client.email = email
+            client.phone = phone
+            client.address = address
+            client.save()
+            return JsonResponse({"success": True, "message": "Client modifié", "client_id": client.id})
+        except Client.DoesNotExist:
+            return JsonResponse({"success": False, "error": "Client non trouvé"}, status=404)
+    else:
+        # Création
+        client = Client.objects.create(
+            company=request.user,
+            name=name,
+            email=email,
+            phone=phone,
+            address=address,
+        )
+        return JsonResponse({"success": True, "message": "Client créé", "client_id": client.id})
 
 @require_http_methods(["POST"])
 @login_required
@@ -316,20 +501,37 @@ def delete_payment_method(request):
 @require_http_methods(["POST"])
 @login_required
 def add_supplier(request):
+    supplier_id = request.POST.get("supplier_id")
     name = request.POST.get("name")
     email = request.POST.get("email", "")
     phone = request.POST.get("phone", "")
     address = request.POST.get("address", "")
+    
     if not name:
         return JsonResponse({"success": False, "error": "name requis"}, status=400)
-    supplier = Supplier.objects.create(
-        company=request.user,
-        name=name,
-        email=email,
-        phone=phone,
-        address=address,
-    )
-    return JsonResponse({"success": True, "supplier_id": supplier.id})
+    
+    if supplier_id:
+        # Édition
+        try:
+            supplier = Supplier.objects.get(id=supplier_id, company=request.user)
+            supplier.name = name
+            supplier.email = email
+            supplier.phone = phone
+            supplier.address = address
+            supplier.save()
+            return JsonResponse({"success": True, "message": "Fournisseur modifié", "supplier_id": supplier.id})
+        except Supplier.DoesNotExist:
+            return JsonResponse({"success": False, "error": "Fournisseur non trouvé"}, status=404)
+    else:
+        # Création
+        supplier = Supplier.objects.create(
+            company=request.user,
+            name=name,
+            email=email,
+            phone=phone,
+            address=address,
+        )
+        return JsonResponse({"success": True, "message": "Fournisseur créé", "supplier_id": supplier.id})
 
 @require_http_methods(["POST"])
 @login_required
