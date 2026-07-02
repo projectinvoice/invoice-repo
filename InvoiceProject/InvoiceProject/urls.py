@@ -69,11 +69,9 @@ urlpatterns = [
     path('delete-sale/', invoice_views.delete_sale, name='delete_sale'),
     path('add-invoice/', invoice_views.add_invoice, name='add_invoice'),
     path('delete-invoice/', invoice_views.delete_invoice, name='delete_invoice'),
-<<<<<<< HEAD
 
 
     path('agents/<int:id>/delete/', invoice_views.delete_agent, name='delete_agent'),
-=======
     path('supplie-list/', invoice_views.supplie_list, name='supplie_list'),
     path('sale-list/', invoice_views.sale_list, name='sale_list'),
     path('product-list/', invoice_views.product_list, name='product_list'),
@@ -84,8 +82,6 @@ urlpatterns = [
     path('client-list/', invoice_views.client_list, name='client_list'),
     path('engine-list/', invoice_views.engine_list, name='engine_list'),
     
-    
->>>>>>> origin/branche-coulibaly
 ]
 
 if settings.DEBUG:
