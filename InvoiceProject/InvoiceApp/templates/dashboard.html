@@ -3,307 +3,879 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tableau de bord - {{ company_name }}</title>
+    <title>Tableau de bord — {{ company_name }}</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+        :root {
+            --bg-base: #0F1629;
+            --bg-card: #1A2238;
+            --bg-card-hover: #1F2A44;
+            --border: rgba(99, 102, 241, 0.15);
+            --border-hover: rgba(99, 102, 241, 0.45);
+            --indigo: #6366F1;
+            --indigo-light: #818CF8;
+            --emerald: #10B981;
+            --amber: #F59E0B;
+            --rose: #F43F5E;
+            --sky: #38BDF8;
+            --text-primary: #E2E8F0;
+            --text-secondary: #94A3B8;
+            --text-muted: #64748B;
+            --radius: 16px;
+            --radius-sm: 10px;
+            --shadow: 0 4px 24px rgba(0,0,0,0.4);
         }
+
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: #f4f6fb;
-            color: #333;
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-base);
+            color: var(--text-primary);
             min-height: 100vh;
-        }
-
-        header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 30px 20px;
-        }
-
-        .header-inner {
-            max-width: 1200px;
-            margin: 0 auto;
-            display: flex;
-            justify-content: space-between;
-            gap: 20px;
-            align-items: center;
-        }
-
-        h1 {
-            font-size: 28px;
-            margin-bottom: 10px;
-        }
-
-        .header-info {
-            color: #dde3ff;
-            font-size: 16px;
-        }
-
-        .dashboard-container {
-            max-width: 1200px;
-            margin: -40px auto 40px;
-            padding: 0 20px;
-        }
-
-        .card-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-            gap: 20px;
-            margin-bottom: 30px;
-        }
-
-        .card {
-            background: white;
-            border-radius: 18px;
-            padding: 25px;
-            box-shadow: 0 15px 35px rgba(24, 32, 56, 0.08);
-            border: 1px solid #edf1f7;
-            text-decoration: none;
-            color: inherit;
-            display: block;
-            transition: all 0.3s ease;
-            cursor: pointer;
-        }
-
-        .card:hover {
-            transform: translateY(-8px);
-            box-shadow: 0 20px 45px rgba(102, 126, 234, 0.15);
-            border-color: #667eea;
-        }
-
-        .card h2 {
             font-size: 14px;
-            color: #7b8ba5;
-            margin-bottom: 12px;
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
+            line-height: 1.6;
         }
 
-        .card p {
-            font-size: 36px;
-            font-weight: 700;
-            margin-bottom: 10px;
-            color: #1f2d3d;
-        }
-
-        .card small {
-            color: #718096;
-            font-size: 13px;
-        }
-
-        .section {
-            margin-bottom: 30px;
-        }
-
-        .section header {
-            margin-bottom: 16px;
+        /* ── SIDEBAR ── */
+        .sidebar {
+            position: fixed;
+            left: 0; top: 0; bottom: 0;
+            width: 240px;
+            background: var(--bg-card);
+            border-right: 1px solid var(--border);
             display: flex;
-            justify-content: space-between;
+            flex-direction: column;
+            z-index: 100;
+            transition: transform 0.3s ease;
+        }
+
+        .sidebar-logo {
+            padding: 24px 20px 20px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
             align-items: center;
+            gap: 12px;
         }
 
-        .section header h2 {
-            font-size: 20px;
-            color: #212b36;
-        }
-
-        .section header a {
-            text-decoration: none;
-            color: #667eea;
-            font-weight: 600;
-        }
-
-        .hero {
-            padding: 5px;
-            background: linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0.6) 100%);
-            border-radius: 20px;
-            border: 1px solid rgba(255,255,255,0.7);
-        }
-
-        .hero p {
-            font-size: 16px;
-            line-height: 1.7;
-            color: #4b5563;
-        }
-
-        .logout-link {
-            display: inline-block;
-            margin-top: 12px;
-            color: #fff;
-            background: rgba(255,255,255,0.1);
-            padding: 8px 16px;
+        .logo-mark {
+            width: 36px; height: 36px;
+            background: linear-gradient(135deg, var(--indigo), #9333EA);
             border-radius: 10px;
-            text-decoration: none;
-            transition: background 0.3s;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 18px; font-weight: 800; color: white;
+            flex-shrink: 0;
         }
 
-        .logout-link:hover {
-            background: rgba(255,255,255,0.2);
+        .logo-text {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--text-primary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
-        .quick-actions {
-            background: white;
-            border-radius: 18px;
-            padding: 25px;
-            box-shadow: 0 15px 35px rgba(24, 32, 56, 0.08);
-            border: 1px solid #edf1f7;
-            margin-bottom: 30px;
+        .sidebar-nav {
+            flex: 1;
+            padding: 16px 12px;
+            overflow-y: auto;
         }
 
-        .quick-actions h3 {
-            font-size: 18px;
-            color: #212b36;
-            margin-bottom: 20px;
+        .nav-section-label {
+            font-size: 10px;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            padding: 12px 8px 6px;
+        }
+
+        .nav-item {
             display: flex;
             align-items: center;
             gap: 10px;
-        }
-
-        .actions-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-        }
-
-        .action-btn {
-            padding: 15px 20px;
-            border: none;
-            border-radius: 10px;
+            padding: 9px 12px;
+            border-radius: var(--radius-sm);
+            color: var(--text-secondary);
             text-decoration: none;
+            font-weight: 500;
+            font-size: 13.5px;
+            transition: all 0.18s;
+            margin-bottom: 2px;
+        }
+
+        .nav-item:hover, .nav-item.active {
+            background: rgba(99, 102, 241, 0.12);
+            color: var(--indigo-light);
+        }
+
+        .nav-item.active { font-weight: 600; }
+
+        .nav-item .nav-icon { font-size: 16px; width: 20px; text-align: center; }
+
+        .nav-badge {
+            margin-left: auto;
+            background: rgba(99, 102, 241, 0.2);
+            color: var(--indigo-light);
+            font-size: 11px;
             font-weight: 600;
+            padding: 2px 7px;
+            border-radius: 20px;
+        }
+
+        .sidebar-footer {
+            padding: 16px 12px;
+            border-top: 1px solid var(--border);
+        }
+
+        .user-block {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px;
+            border-radius: var(--radius-sm);
+            background: rgba(255,255,255,0.04);
+        }
+
+        .user-avatar {
+            width: 32px; height: 32px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--emerald), #059669);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 13px; font-weight: 700; color: white; flex-shrink: 0;
+        }
+
+        .user-name { font-weight: 600; font-size: 13px; }
+        .user-role { font-size: 11px; color: var(--text-muted); }
+
+        .logout-btn {
+            margin-top: 10px;
+            display: block;
             text-align: center;
-            cursor: pointer;
-            transition: all 0.3s;
+            padding: 8px;
+            background: rgba(244, 63, 94, 0.1);
+            color: var(--rose);
+            border-radius: var(--radius-sm);
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 500;
+            transition: background 0.2s;
+        }
+        .logout-btn:hover { background: rgba(244, 63, 94, 0.2); }
+
+        /* ── MAIN LAYOUT ── */
+        .main {
+            margin-left: 240px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .topbar {
+            background: var(--bg-card);
+            border-bottom: 1px solid var(--border);
+            padding: 14px 32px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 50;
+        }
+
+        .topbar-title { font-size: 17px; font-weight: 700; }
+        .topbar-sub { font-size: 12px; color: var(--text-muted); margin-top: 1px; }
+
+        .topbar-actions { display: flex; gap: 10px; align-items: center; }
+
+        .btn {
             display: inline-flex;
             align-items: center;
-            justify-content: center;
-            gap: 8px;
-            font-size: 14px;
+            gap: 6px;
+            padding: 8px 16px;
+            border-radius: var(--radius-sm);
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            border: none;
+            transition: all 0.2s;
         }
-
-        .action-btn.primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        .btn-primary {
+            background: var(--indigo);
             color: white;
         }
+        .btn-primary:hover { background: #5254CC; transform: translateY(-1px); }
+        .btn-ghost {
+            background: rgba(255,255,255,0.06);
+            color: var(--text-secondary);
+            border: 1px solid var(--border);
+        }
+        .btn-ghost:hover { background: rgba(255,255,255,0.1); color: var(--text-primary); }
 
-        .action-btn.primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        .content { padding: 28px 32px; flex: 1; }
+
+        /* ── KPI CARDS ── */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 28px;
         }
 
-        .action-btn.secondary {
-            background: #f0f0f0;
-            color: #333;
+        .kpi-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 20px;
+            text-decoration: none;
+            color: inherit;
+            display: block;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.25s;
         }
 
-        .action-btn.secondary:hover {
-            background: #e0e0e0;
-            transform: translateY(-2px);
+        .kpi-card::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            opacity: 0;
+            background: linear-gradient(135deg, rgba(99,102,241,0.06), transparent);
+            transition: opacity 0.25s;
         }
 
-        .action-btn.danger {
-            background: #ffe5e5;
-            color: #e74c3c;
+        .kpi-card:hover {
+            border-color: var(--border-hover);
+            transform: translateY(-3px);
+            box-shadow: var(--shadow);
+        }
+        .kpi-card:hover::before { opacity: 1; }
+
+        .kpi-icon {
+            width: 38px; height: 38px;
+            border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 18px;
+            margin-bottom: 14px;
         }
 
-        .action-btn.danger:hover {
-            background: #ffd0d0;
-            transform: translateY(-2px);
+        .kpi-label {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: 6px;
+        }
+
+        .kpi-value {
+            font-size: 30px;
+            font-weight: 800;
+            color: var(--text-primary);
+            font-variant-numeric: tabular-nums;
+            line-height: 1;
+            margin-bottom: 6px;
+        }
+
+        .kpi-sub { font-size: 12px; color: var(--text-muted); }
+
+        .kpi-trend {
+            position: absolute;
+            top: 16px; right: 16px;
+            font-size: 11px;
+            font-weight: 600;
+            padding: 3px 8px;
+            border-radius: 20px;
+        }
+        .trend-up { background: rgba(16,185,129,0.12); color: var(--emerald); }
+        .trend-down { background: rgba(244,63,94,0.12); color: var(--rose); }
+
+        /* ── CHARTS GRID ── */
+        .charts-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 16px;
+            margin-bottom: 28px;
+        }
+
+        .chart-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 24px;
+        }
+
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 20px;
+        }
+
+        .chart-title {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .chart-subtitle {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
+        .chart-period-select {
+            background: rgba(255,255,255,0.06);
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+            font-size: 12px;
+            padding: 5px 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .chart-canvas-wrap { position: relative; }
+
+        /* ── AGENTS PERFORMANCE ── */
+        .agents-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 28px;
+        }
+
+        .agent-perf-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 24px;
+        }
+
+        .agent-list { margin-top: 4px; }
+
+        .agent-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.04);
+        }
+        .agent-row:last-child { border-bottom: none; }
+
+        .agent-avatar {
+            width: 34px; height: 34px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 13px; font-weight: 700; color: white; flex-shrink: 0;
+        }
+
+        .agent-info { flex: 1; min-width: 0; }
+        .agent-name { font-weight: 600; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .agent-role { font-size: 11px; color: var(--text-muted); }
+
+        .agent-bar-wrap { width: 100px; flex-shrink: 0; }
+        .agent-bar-bg {
+            height: 6px; background: rgba(255,255,255,0.07);
+            border-radius: 3px; overflow: hidden;
+        }
+        .agent-bar-fill {
+            height: 100%;
+            border-radius: 3px;
+            width: 0;
+            transition: width 1s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        .agent-value {
+            font-size: 13px;
+            font-weight: 700;
+            font-variant-numeric: tabular-nums;
+            color: var(--text-primary);
+            width: 52px;
+            text-align: right;
+            flex-shrink: 0;
+        }
+
+        /* ── QUICK ACTIONS ── */
+        .quick-row {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 28px;
+        }
+
+        .btn-danger {
+            background: rgba(244,63,94,0.1);
+            color: var(--rose);
+            border: 1px solid rgba(244,63,94,0.2);
+        }
+        .btn-danger:hover { background: rgba(244,63,94,0.2); }
+
+        /* ── RESPONSIVE ── */
+        @media (max-width: 1100px) {
+            .charts-grid { grid-template-columns: 1fr; }
+            .agents-section { grid-template-columns: 1fr; }
+        }
+
+        @media (max-width: 768px) {
+            .sidebar { transform: translateX(-100%); }
+            .main { margin-left: 0; }
+            .content { padding: 20px 16px; }
+            .topbar { padding: 12px 16px; }
+            .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+
+        /* ── LOADER ── */
+        .chart-loader {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 200px;
+            color: var(--text-muted);
+            font-size: 13px;
+        }
+
+        /* ── TOOLTIP custom ── */
+        .status-dot {
+            width: 8px; height: 8px; border-radius: 50%; display: inline-block;
         }
     </style>
 </head>
 <body>
-    <header>
-        <div class="header-inner">
-            <div style="display:flex; align-items:center; gap:16px;">
-                {% if company_logo_url %}
-                <img src="{{ company_logo_url }}" alt="Logo de l'entreprise" style="width:72px; height:72px; object-fit:contain; border-radius:14px; background:#fff; padding:10px; border:1px solid rgba(255,255,255,0.18);">
-                {% endif %}
-                <div>
-                    <h1>Tableau de bord</h1>
-                    <div class="header-info">Entreprise : {{ company_name }}</div>
-                </div>
+
+<!-- ══════════════════════════════════ SIDEBAR ══════════════════════════════════ -->
+<aside class="sidebar">
+    <div class="sidebar-logo">
+        {% if company_logo_url %}
+        <img src="{{ company_logo_url }}" alt="Logo" style="width:36px;height:36px;object-fit:contain;border-radius:10px;background:#fff;padding:4px;">
+        {% else %}
+        <div class="logo-mark">{{ company_name|first|upper }}</div>
+        {% endif %}
+        <span class="logo-text">{{ company_name }}</span>
+    </div>
+
+    <nav class="sidebar-nav">
+        <div class="nav-section-label">Général</div>
+        <a href="#" class="nav-item active">
+            <span class="nav-icon">📊</span> Tableau de bord
+        </a>
+
+        <div class="nav-section-label">Gestion</div>
+        <a href="{% url 'list_agents' %}" class="nav-item">
+            <span class="nav-icon">👥</span> Agents
+            <span class="nav-badge">{{ agents_count }}</span>
+        </a>
+        <a href="{% url 'manage_agent_roles' %}" class="nav-item">
+            <span class="nav-icon">🎭</span> Rôles
+        </a>
+        <a href="{% url 'list_engines' %}" class="nav-item">
+            <span class="nav-icon">⚙️</span> Engins
+        </a>
+        <a href="{% url 'list_products' %}" class="nav-item">
+            <span class="nav-icon">📦</span> Produits
+            <span class="nav-badge">{{ products_count }}</span>
+        </a>
+
+        <div class="nav-section-label">Commerce</div>
+        <a href="{% url 'list_clients' %}" class="nav-item">
+            <span class="nav-icon">🤝</span> Clients
+        </a>
+        <a href="{% url 'list_suppliers' %}" class="nav-item">
+            <span class="nav-icon">🏭</span> Fournisseurs
+        </a>
+        <a href="{% url 'list_sales' %}" class="nav-item">
+            <span class="nav-icon">💹</span> Ventes
+        </a>
+        <a href="{% url 'list_supplies' %}" class="nav-item">
+            <span class="nav-icon">🛒</span> Appros
+        </a>
+        <a href="{% url 'list_invoices' %}" class="nav-item">
+            <span class="nav-icon">🧾</span> Factures
+        </a>
+
+        <div class="nav-section-label">Finance</div>
+        <a href="{% url 'list_payment_methods' %}" class="nav-item">
+            <span class="nav-icon">💳</span> Modes de paiement
+        </a>
+        <a href="{% url 'list_payment_types' %}" class="nav-item">
+            <span class="nav-icon">🏷️</span> Types de paiement
+        </a>
+    </nav>
+
+    <div class="sidebar-footer">
+        <div class="user-block">
+            <div class="user-avatar">A</div>
+            <div>
+                <div class="user-name">Admin</div>
+                <div class="user-role">Administrateur</div>
             </div>
-            <a class="logout-link" href="{% url 'logout' %}">Déconnexion</a>
+        </div>
+        <a href="{% url 'logout' %}" class="logout-btn">🚪 Se déconnecter</a>
+    </div>
+</aside>
+
+<!-- ══════════════════════════════════ MAIN ══════════════════════════════════ -->
+<div class="main">
+
+    <!-- TOPBAR -->
+    <header class="topbar">
+        <div>
+            <div class="topbar-title">Tableau de bord</div>
+            <div class="topbar-sub">Vue d'ensemble — <span id="current-date"></span></div>
+        </div>
+        <div class="topbar-actions">
+            <a href="{% url 'add_agent' %}" class="btn btn-primary">+ Ajouter un agent</a>
+            <a href="{% url 'change_password' %}" class="btn btn-ghost">🔐 Mot de passe</a>
+            <a href="{% url 'delete_account' %}" class="btn btn-ghost btn-danger">🗑️</a>
         </div>
     </header>
-    <br>
-    <br>
-    <main class="dashboard-container">
-        <div class="hero">
-            <p>Bienvenue sur votre tableau de bord. Ici vous pouvez voir l'état général de votre entreprise, les données de vos agents, produits, ventes, factures et plus encore.</p>
+
+    <!-- CONTENT -->
+    <main class="content">
+
+        <!-- KPI CARDS -->
+        <div class="kpi-grid">
+            <a href="{% url 'list_agents' %}" class="kpi-card">
+                <div class="kpi-icon" style="background:rgba(99,102,241,0.12);">👥</div>
+                <div class="kpi-label">Agents</div>
+                <div class="kpi-value">{{ agents_count }}</div>
+                <div class="kpi-sub">Agents actifs</div>
+            </a>
+            <a href="{% url 'list_products' %}" class="kpi-card">
+                <div class="kpi-icon" style="background:rgba(16,185,129,0.12);">📦</div>
+                <div class="kpi-label">Produits</div>
+                <div class="kpi-value">{{ products_count }}</div>
+                <div class="kpi-sub">En stock</div>
+            </a>
+            <a href="{% url 'list_clients' %}" class="kpi-card">
+                <div class="kpi-icon" style="background:rgba(56,189,248,0.12);">🤝</div>
+                <div class="kpi-label">Clients</div>
+                <div class="kpi-value">{{ clients_count }}</div>
+                <div class="kpi-sub">Enregistrés</div>
+            </a>
+            <a href="{% url 'list_sales' %}" class="kpi-card">
+                <div class="kpi-icon" style="background:rgba(245,158,11,0.12);">💹</div>
+                <div class="kpi-label">Ventes</div>
+                <div class="kpi-value">{{ sales_count }}</div>
+                <div class="kpi-sub">Transactions</div>
+            </a>
+            <a href="{% url 'list_invoices' %}" class="kpi-card">
+                <div class="kpi-icon" style="background:rgba(244,63,94,0.12);">🧾</div>
+                <div class="kpi-label">Factures</div>
+                <div class="kpi-value">{{ invoices_count }}</div>
+                <div class="kpi-sub">Émises</div>
+            </a>
+            <a href="{% url 'list_suppliers' %}" class="kpi-card">
+                <div class="kpi-icon" style="background:rgba(168,85,247,0.12);">🏭</div>
+                <div class="kpi-label">Fournisseurs</div>
+                <div class="kpi-value">{{ suppliers_count }}</div>
+                <div class="kpi-sub">Partenaires</div>
+            </a>
+            <a href="{% url 'list_supplies' %}" class="kpi-card">
+                <div class="kpi-icon" style="background:rgba(20,184,166,0.12);">🛒</div>
+                <div class="kpi-label">Appros</div>
+                <div class="kpi-value">{{ supplies_count }}</div>
+                <div class="kpi-sub">Achats stock</div>
+            </a>
+            <a href="{% url 'list_engines' %}" class="kpi-card">
+                <div class="kpi-icon" style="background:rgba(251,191,36,0.12);">⚙️</div>
+                <div class="kpi-label">Engins</div>
+                <div class="kpi-value">{{ engines_count }}</div>
+                <div class="kpi-sub">Équipements</div>
+            </a>
         </div>
 
-        <div class="quick-actions">
-            <h3>⚡ Actions Rapides</h3>
-            <div class="actions-grid">
-                <a href="{% url 'add_agent' %}" class="action-btn primary">👥 Ajouter un Agent</a>
-                <a href="{% url 'change_password' %}" class="action-btn secondary">🔐 Modifier le Mot de Passe</a>
-                <a href="{% url 'delete_account' %}" class="action-btn danger">🗑️ Supprimer le Compte</a>
+        <!-- CHARTS ROW 1 -->
+        <div class="charts-grid">
+            <!-- CA MENSUEL -->
+            <div class="chart-card">
+                <div class="chart-header">
+                    <div>
+                        <div class="chart-title">Chiffre d'affaires mensuel</div>
+                        <div class="chart-subtitle">Évolution des ventes sur l'année</div>
+                    </div>
+                    <select class="chart-period-select" id="ca-period" onchange="updateCAChart(this.value)">
+                        <option value="year">Cette année</option>
+                        <option value="last_year">Année précédente</option>
+                    </select>
+                </div>
+                <div class="chart-canvas-wrap">
+                    <canvas id="caChart" height="220"></canvas>
+                </div>
+            </div>
+
+            <!-- RÉPARTITION VENTES -->
+            <div class="chart-card">
+                <div class="chart-header">
+                    <div>
+                        <div class="chart-title">Répartition des ventes</div>
+                        <div class="chart-subtitle">Par catégorie de produit</div>
+                    </div>
+                </div>
+                <div class="chart-canvas-wrap">
+                    <canvas id="donutChart" height="220"></canvas>
+                </div>
             </div>
         </div>
 
-        <div class="card-grid">
-            <a href="{% url 'list_agents' %}" class="card">
-                <h2>Agents</h2>
-                <p>{{ agents_count }}</p>
-                <small>Agents ajoutés</small>
-            </a>
-            <a href="{% url 'manage_agent_roles' %}" class="card">
-                <h2>Rôles d'agent</h2>
-                <p>{{ agent_roles_count }}</p>
-                <small>Types de rôle</small>
-            </a>
-            <a href="{% url 'list_engines' %}" class="card">
-                <h2>Engins</h2>
-                <p>{{ engines_count }}</p>
-                <small>Équipements enregistrés</small>
-            </a>
-            <a href="{% url 'list_products' %}" class="card">
-                <h2>Produits</h2>
-                <p>{{ products_count }}</p>
-                <small>Produits en stock</small>
-            </a>
-            <a href="{% url 'list_clients' %}" class="card">
-                <h2>Clients</h2>
-                <p>{{ clients_count }}</p>
-                <small>Clients enregistrés</small>
-            </a>
-            <a href="{% url 'list_suppliers' %}" class="card">
-                <h2>Fournisseurs</h2>
-                <p>{{ suppliers_count }}</p>
-                <small>Fournisseurs</small>
-            </a>
-            <a href="{% url 'list_payment_methods' %}" class="card">
-                <h2>Modes de paiement</h2>
-                <p>{{ payment_methods_count }}</p>
-                <small>Modes actifs</small>
-            </a>
-            <a href="{% url 'list_payment_types' %}" class="card">
-                <h2>Types de paiement</h2>
-                <p>{{ payment_types_count }}</p>
-                <small>Catégories</small>
-            </a>
-            <a href="{% url 'list_sales' %}" class="card">
-                <h2>Ventes</h2>
-                <p>{{ sales_count }}</p>
-                <small>Transactions</small>
-            </a>
-            <a href="{% url 'list_supplies' %}" class="card">
-                <h2>Approvisionnements</h2>
-                <p>{{ supplies_count }}</p>
-                <small>Achats stock</small>
-            </a>
-            <a href="{% url 'list_invoices' %}" class="card">
-                <h2>Factures</h2>
-                <p>{{ invoices_count }}</p>
-                <small>Documents émis</small>
-            </a>
+        <!-- AGENTS PERFORMANCE -->
+        <div class="agents-section">
+            <!-- BARRES PERFORMANCE -->
+            <div class="agent-perf-card">
+                <div class="chart-header">
+                    <div>
+                        <div class="chart-title">Performance des agents</div>
+                        <div class="chart-subtitle">Ventes réalisées ce mois</div>
+                    </div>
+                </div>
+                <canvas id="agentsBarChart" height="240"></canvas>
+            </div>
+
+            <!-- LISTE AGENTS AVEC BARRES -->
+            <div class="agent-perf-card">
+                <div class="chart-header">
+                    <div>
+                        <div class="chart-title">Top agents</div>
+                        <div class="chart-subtitle">Classement par CA généré</div>
+                    </div>
+                </div>
+                <div class="agent-list" id="agent-list-render">
+                    <!-- Rempli par JS depuis Django context ou API -->
+                </div>
+            </div>
         </div>
+
     </main>
+</div>
+
+<!-- ══════════════════════════════════ SCRIPTS ══════════════════════════════════ -->
+<script>
+// ─────────────────────────────────────────────────────────────────────────────
+// DONNÉES DEPUIS DJANGO (à renseigner dans la vue Django correspondante)
+// Dans views.py, passer ces variables dans le contexte :
+//
+//   context['ca_monthly_labels']   = json.dumps(['Jan','Fév','Mar',...])
+//   context['ca_monthly_data']     = json.dumps([12000, 18000, ...])
+//   context['sales_categories']    = json.dumps(['Prod A', 'Prod B', ...])
+//   context['sales_cat_values']    = json.dumps([40, 25, 20, 15])
+//   context['agents_names']        = json.dumps(['Alice', 'Bob', ...])
+//   context['agents_sales']        = json.dumps([45, 30, ...])
+//   context['agents_ca']           = json.dumps([850000, 600000, ...])
+//   context['agents_roles']        = json.dumps(['Commercial', 'Technicien', ...])
+// ─────────────────────────────────────────────────────────────────────────────
+
+// Injection Django (fallback sur données démo si vide)
+const CA_LABELS  = {{ ca_monthly_labels|default:'["Jan","Fév","Mar","Avr","Mai","Jun","Jul","Aoû","Sep","Oct","Nov","Déc"]'|safe }};
+const CA_DATA    = {{ ca_monthly_data|default:'[820000,950000,1100000,870000,1350000,1200000,980000,1050000,1400000,1250000,1600000,1800000]'|safe }};
+const CAT_LABELS = {{ sales_categories|default:'["Produit A","Produit B","Produit C","Autres"]'|safe }};
+const CAT_DATA   = {{ sales_cat_values|default:'[38,27,22,13]'|safe }};
+const AG_NAMES   = {{ agents_names|default:'["Alice M.","Bob K.","Clara D.","David P.","Emma S."]'|safe }};
+const AG_SALES   = {{ agents_sales|default:'[52,41,38,29,24]'|safe }};
+const AG_CA      = {{ agents_ca|default:'[1200000,980000,870000,640000,510000]'|safe }};
+const AG_ROLES   = {{ agents_roles|default:'["Commercial","Technicien","Commercial","Livreur","Commercial"]'|safe }};
+
+// ─── Palette ───
+const COLORS = ['#6366F1','#10B981','#F59E0B','#38BDF8','#F43F5E','#A855F7','#14B8A6'];
+
+// ─── Date courante ───
+document.getElementById('current-date').textContent = new Date().toLocaleDateString('fr-FR', {weekday:'long', day:'numeric', month:'long', year:'numeric'});
+
+// ─── Defaults Chart.js ───
+Chart.defaults.color = '#94A3B8';
+Chart.defaults.font.family = 'Inter, sans-serif';
+Chart.defaults.font.size = 12;
+
+// ════════════ GRAPHIQUE CA MENSUEL ════════════
+const caCtx = document.getElementById('caChart').getContext('2d');
+const caGrad = caCtx.createLinearGradient(0, 0, 0, 300);
+caGrad.addColorStop(0, 'rgba(99,102,241,0.35)');
+caGrad.addColorStop(1, 'rgba(99,102,241,0.02)');
+
+const caChart = new Chart(caCtx, {
+    type: 'line',
+    data: {
+        labels: CA_LABELS,
+        datasets: [{
+            label: 'CA (FCFA)',
+            data: CA_DATA,
+            borderColor: '#6366F1',
+            backgroundColor: caGrad,
+            fill: true,
+            tension: 0.42,
+            borderWidth: 2.5,
+            pointRadius: 4,
+            pointBackgroundColor: '#6366F1',
+            pointBorderColor: '#1A2238',
+            pointBorderWidth: 2,
+            pointHoverRadius: 6,
+        }]
+    },
+    options: {
+        responsive: true,
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+            legend: { display: false },
+            tooltip: {
+                backgroundColor: '#0F1629',
+                borderColor: 'rgba(99,102,241,0.4)',
+                borderWidth: 1,
+                padding: 12,
+                callbacks: {
+                    label: ctx => ' ' + ctx.parsed.y.toLocaleString('fr-FR') + ' FCFA'
+                }
+            }
+        },
+        scales: {
+            x: { grid: { color: 'rgba(255,255,255,0.04)' }, border: { display: false } },
+            y: {
+                grid: { color: 'rgba(255,255,255,0.04)' },
+                border: { display: false },
+                ticks: { callback: v => (v/1000) + 'k' }
+            }
+        }
+    }
+});
+
+// ════════════ DONUT RÉPARTITION ════════════
+const donutCtx = document.getElementById('donutChart').getContext('2d');
+new Chart(donutCtx, {
+    type: 'doughnut',
+    data: {
+        labels: CAT_LABELS,
+        datasets: [{
+            data: CAT_DATA,
+            backgroundColor: COLORS,
+            borderColor: '#1A2238',
+            borderWidth: 3,
+            hoverOffset: 6,
+        }]
+    },
+    options: {
+        responsive: true,
+        cutout: '68%',
+        plugins: {
+            legend: {
+                position: 'bottom',
+                labels: { padding: 16, usePointStyle: true, pointStyleWidth: 8 }
+            },
+            tooltip: {
+                backgroundColor: '#0F1629',
+                borderColor: 'rgba(99,102,241,0.4)',
+                borderWidth: 1,
+                callbacks: { label: ctx => ' ' + ctx.label + ' : ' + ctx.parsed + '%' }
+            }
+        }
+    }
+});
+
+// ════════════ BARRES AGENTS ════════════
+const agCtx = document.getElementById('agentsBarChart').getContext('2d');
+new Chart(agCtx, {
+    type: 'bar',
+    data: {
+        labels: AG_NAMES,
+        datasets: [{
+            label: 'Nb ventes',
+            data: AG_SALES,
+            backgroundColor: COLORS.map(c => c + 'CC'),
+            borderColor: COLORS,
+            borderWidth: 1.5,
+            borderRadius: 6,
+            borderSkipped: false,
+        }]
+    },
+    options: {
+        responsive: true,
+        indexAxis: 'y',
+        plugins: {
+            legend: { display: false },
+            tooltip: {
+                backgroundColor: '#0F1629',
+                borderColor: 'rgba(99,102,241,0.4)',
+                borderWidth: 1,
+                callbacks: { label: ctx => ' ' + ctx.parsed.x + ' vente(s)' }
+            }
+        },
+        scales: {
+            x: { grid: { color: 'rgba(255,255,255,0.04)' }, border: { display: false } },
+            y: { grid: { display: false }, border: { display: false } }
+        }
+    }
+});
+
+// ════════════ LISTE TOP AGENTS ════════════
+(function renderAgentList() {
+    const el = document.getElementById('agent-list-render');
+    if (!AG_NAMES.length) { el.innerHTML = '<p style="color:#64748B;font-size:13px;padding:16px 0">Aucun agent disponible</p>'; return; }
+
+    const maxCA = Math.max(...AG_CA);
+    const sortedIdx = AG_CA.map((v,i) => i).sort((a,b) => AG_CA[b]-AG_CA[a]);
+
+    el.innerHTML = sortedIdx.map((i, rank) => {
+        const pct = Math.round((AG_CA[i] / maxCA) * 100);
+        const color = COLORS[rank % COLORS.length];
+        const caStr = AG_CA[i].toLocaleString('fr-FR');
+        const initials = AG_NAMES[i].split(/[\s.]+/).filter(Boolean).map(w=>w[0]).join('').slice(0,2).toUpperCase();
+        return `
+        <div class="agent-row">
+            <div class="agent-avatar" style="background:${color}22;color:${color};">${initials}</div>
+            <div class="agent-info">
+                <div class="agent-name">${AG_NAMES[i]}</div>
+                <div class="agent-role">${AG_ROLES[i] || ''}</div>
+            </div>
+            <div class="agent-bar-wrap">
+                <div class="agent-bar-bg">
+                    <div class="agent-bar-fill" data-pct="${pct}" style="background:${color};"></div>
+                </div>
+            </div>
+            <div class="agent-value" style="color:${color};">${(AG_CA[i]/1000).toFixed(0)}k</div>
+        </div>`;
+    }).join('');
+
+    // Animer les barres au chargement
+    requestAnimationFrame(() => {
+        document.querySelectorAll('.agent-bar-fill').forEach(bar => {
+            bar.style.width = bar.dataset.pct + '%';
+        });
+    });
+})();
+
+// ════════════ SWITCH PÉRIODE CA ════════════
+// Connecter ici à une API Django pour charger les données dynamiquement
+function updateCAChart(period) {
+    // Exemple : fetch('/api/dashboard/ca/?period=' + period)
+    //   .then(r => r.json())
+    //   .then(data => {
+    //     caChart.data.labels = data.labels;
+    //     caChart.data.datasets[0].data = data.values;
+    //     caChart.update();
+    //   });
+    console.log('Période sélectionnée :', period);
+    // Remplacer par un appel API réel — voir commentaire ci-dessus
+}
+
+// ════════════ API ENDPOINT (optionnel) ════════════
+// Pour connecter les graphiques à votre base de données en temps réel,
+// créer dans views.py :
+//
+//   from django.http import JsonResponse
+//
+//   def api_dashboard_ca(request):
+//       period = request.GET.get('period', 'year')
+//       # ... votre logique de requête
+//       return JsonResponse({'labels': [...], 'values': [...]})
+//
+//   def api_dashboard_agents(request):
+//       agents = Agent.objects.annotate(total_sales=Sum('sales__amount'))...
+//       return JsonResponse({'names': [...], 'sales': [...], 'ca': [...]})
+//
+// Puis dans urls.py :
+//   path('api/dashboard/ca/', views.api_dashboard_ca),
+//   path('api/dashboard/agents/', views.api_dashboard_agents),
+</script>
+
 </body>
 </html>
