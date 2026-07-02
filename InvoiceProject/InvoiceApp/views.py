@@ -4,6 +4,9 @@ from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_http_methods
 from django.http import JsonResponse, HttpResponse
 
+from django import forms
+from .models import Agent
+
 from .models import (
     User,
     AgentRole,
@@ -17,6 +20,7 @@ from .models import (
     Supply,
     Sale,
     Invoice,
+    
 )
 
 def landing(request):
@@ -645,3 +649,48 @@ def seller(request):
 def supplier_list(request):
     suppliers = Supplier.objects.all()
     return render(request, 'supplier_list.html', {'suppliers': suppliers})
+
+def supplie_list(request):
+    supplies = Supply.objects.all()
+    return render(request, 'supplie_list.html', {'supplies': supplies})
+
+def sale_list(request):
+    sales = Sale.objects.all()
+    return render(request, 'sale_list.html', {'sales': sales})
+
+def product_list(request):
+    products = Product.objects.all()
+    return render(request, 'product_list.html', {'products': products})
+
+def payment_type_list(request):
+    payment_types = PaymentType.objects.all()
+    return render(request, 'payment_type_list.html', {'payment_types': payment_types})
+
+def payment_method_list(request):
+    payment_methods = PaymentMethod.objects.all()
+    return render(request, 'payment_method_list.html', {'payment_methods': payment_methods})
+
+def agent_list(request):
+    agents = Agent.objects.all()
+    return render(request, 'agent_list.html', {'agents': agents})
+
+def agent_role_list(request):
+    agent_roles = AgentRole.objects.all()
+    return render(request, 'agent_role_list.html', {'agent_roles': agent_roles})
+
+def invoice_list(request):
+    invoices = Invoice.objects.all()
+    return render(request, 'invoice_list.html', {'invoices': invoices})
+
+def supplier_list(request):
+    suppliers = Supplier.objects.all()
+    return render(request, 'supplier_list.html', {'suppliers': suppliers})
+
+def client_list(request):
+    clients = Client.objects.all()
+    return render(request, 'client_list.html', {'clients': clients})
+
+def engine_list(request):
+    engines = Engine.objects.all()
+    return render(request, 'engine_list.html', {'engines': engines})
+
