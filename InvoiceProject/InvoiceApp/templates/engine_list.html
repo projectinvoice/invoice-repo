@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -270,3 +271,25 @@
 
 </body>
 </html>
+=======
+<div class="page" id="page-engines">
+  <div class="page-header"><h1>Engins (Engine)</h1><p>Équipements et matériels de l'entreprise</p></div>
+  <div class="stats-row">
+    <div class="stat-card"><span class="stat-label">Total</span><span class="stat-value" id="e-total">0</span><span class="stat-sub">engins</span></div>
+    <div class="stat-card"><span class="stat-label">Filtrés</span><span class="stat-value" id="e-filtered">0</span><span class="stat-sub">résultats</span></div>
+  </div>
+  <div class="toolbar">
+    <div class="search-wrap"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg><input id="e-search" placeholder="Rechercher..." oninput="renderTable('engines')"></div>
+    <select id="e-status" onchange="renderTable('engines')"><option value="">Tous les statuts</option><option value="active">Actif</option><option value="inactive">Inactif</option><option value="maintenance">Maintenance</option></select>
+    <button class="btn btn-primary" onclick="alert('Ajouter un engin')"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> Ajouter</button>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th><input type="checkbox" onchange="toggleAll('engines',this)"></th><th>Nom</th><th>N° Série</th><th>Statut</th><th>Description</th><th>Entreprise</th><th>Actions</th></tr></thead>
+      <tbody id="e-body"></tbody>
+    </table>
+    <div id="e-empty" class="empty" style="display:none"><p>Aucun engin trouvé</p></div>
+    <div class="pagination-wrap"><span class="pag-info" id="e-info"></span><div class="pag-btns" id="e-pag"></div></div>
+  </div>
+</div>
+>>>>>>> origin/branche-coulibaly
