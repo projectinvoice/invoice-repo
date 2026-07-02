@@ -650,26 +650,6 @@ def supplier_list(request):
     suppliers = Supplier.objects.all()
     return render(request, 'supplier_list.html', {'suppliers': suppliers})
 
-<<<<<<< HEAD
-
-
-
-def delete_agent(request, id):
-    agent = get_object_or_404(Agent, id=id)
-    if request.method == 'POST':
-        agent.delete()
-    return redirect('list_agents')
-
-def edit_agent(request, id):
-    agent = get_object_or_404(Agent, id=id)
-    if request.method == 'POST':
-        agent.name = request.POST.get('name')
-        agent.email = request.POST.get('email')
-        agent.phone = request.POST.get('phone')
-        agent.save()
-        return redirect('list_agents')
-    return render(request, 'edit_agent.html', {'agent': agent})
-=======
 def supplie_list(request):
     supplies = Supply.objects.all()
     return render(request, 'supplie_list.html', {'supplies': supplies})
@@ -714,4 +694,3 @@ def engine_list(request):
     engines = Engine.objects.all()
     return render(request, 'engine_list.html', {'engines': engines})
 
->>>>>>> origin/branche-coulibaly
