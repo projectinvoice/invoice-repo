@@ -69,6 +69,9 @@ urlpatterns = [
     path('delete-sale/', invoice_views.delete_sale, name='delete_sale'),
     path('add-invoice/', invoice_views.add_invoice, name='add_invoice'),
     path('delete-invoice/', invoice_views.delete_invoice, name='delete_invoice'),
+
+
+    path('agents/<int:id>/delete/', invoice_views.delete_agent, name='delete_agent'),
 ]
 
 if settings.DEBUG:

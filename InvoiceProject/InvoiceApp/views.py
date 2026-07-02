@@ -4,6 +4,9 @@ from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_http_methods
 from django.http import JsonResponse, HttpResponse
 
+from django import forms
+from .models import Agent
+
 from .models import (
     User,
     AgentRole,
@@ -645,3 +648,22 @@ def seller(request):
 def supplier_list(request):
     suppliers = Supplier.objects.all()
     return render(request, 'supplier_list.html', {'suppliers': suppliers})
+
+
+
+
+def delete_agent(request, id):
+    agent = get_object_or_404(Agent, id=id)
+    if request.method == 'POST':
+        agent.delete()
+    return redirect('list_agents')
+
+def edit_agent(request, id):
+    agent = get_object_or_404(Agent, id=id)
+    if request.method == 'POST':
+        agent.name = request.POST.get('name')
+        agent.email = request.POST.get('email')
+        agent.phone = request.POST.get('phone')
+        agent.save()
+        return redirect('list_agents')
+    return render(request, 'edit_agent.html', {'agent': agent})
