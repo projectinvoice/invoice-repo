@@ -126,8 +126,8 @@
                         {% endif %}
                     </td>
                     <td>
-                        <button onclick="openInvoiceModal({{ invoice.id }}, '{{ invoice.invoice_number }}', {{ invoice.sale.id|default:'null' }}, '{{ invoice.due_date|date:"Y-m-d" }}', '{{ invoice.status }}')" class="btn btn-sm btn-warning">Modifier</button>
-                        <a href="#" class="btn btn-sm btn-danger">Supprimer</a>
+                        <button type="button" class="btn btn-sm btn-warning edit-invoice-btn" data-invoice-id="{{ invoice.id }}" data-invoice-number="{{ invoice.invoice_number|escapejs }}" data-sale-id="{{ invoice.sale.id|default:'' }}" data-due-date="{{ invoice.due_date|date:'Y-m-d' }}" data-status="{{ invoice.status }}">Modifier</button>
+                        <button type="button" class="btn btn-sm btn-danger delete-invoice-btn" data-invoice-id="{{ invoice.id }}">Supprimer</button>
                     </td>
                 </tr>
                 {% empty %}
@@ -157,7 +157,7 @@
 
             <div class="mb-3">
                 <label for="sale" class="form-label">Vente associée *</label>
-                <select class="form-select" id="sale" name="sale" required>
+                <select class="form-select" id="sale" name="sale_id" required>
                     <option value="">Sélectionner une vente...</option>
                     {% for sale in sales %}
                         <option value="{{ sale.id }}">{{ sale.client.name }} - {{ sale.product.name }} ({{ sale.total_price }} €)</option>
@@ -220,6 +220,40 @@
         if (event.target === this) closeInvoiceModal();
     });
 
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    const csrfToken = getCookie('csrftoken');
+
+    document.querySelectorAll('.edit-invoice-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const invoiceId = this.dataset.invoiceId;
+            const invoiceNumber = this.dataset.invoiceNumber;
+            const saleId = this.dataset.saleId;
+            const dueDate = this.dataset.dueDate;
+            const status = this.dataset.status;
+            openInvoiceModal(invoiceId, invoiceNumber, saleId, dueDate, status);
+        });
+    });
+
+    document.querySelectorAll('.delete-invoice-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            deleteInvoice(this.dataset.invoiceId);
+        });
+    });
+
     document.getElementById('invoiceForm').addEventListener('submit', async function(e) {
         e.preventDefault();
         
@@ -228,11 +262,22 @@
         try {
             const response = await fetch('{% url "add_invoice" %}', {
                 method: 'POST',
-                body: formData
+                body: formData,
+                headers: {
+                    'X-CSRFToken': csrfToken
+                },
+                credentials: 'same-origin'
             });
-            const data = await response.json();
-            
+
             const msgDiv = document.getElementById('message');
+            if (!response.ok) {
+                const text = await response.text();
+                console.error('Server error:', response.status, text);
+                msgDiv.innerHTML = '<div class="alert alert-danger">Erreur serveur: ' + response.status + '</div>';
+                return;
+            }
+
+            const data = await response.json();
             if (data.success) {
                 msgDiv.innerHTML = '<div class="alert alert-success alert-dismissible fade show" role="alert">' + data.message + '<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>';
                 setTimeout(() => location.reload(), 1500);
@@ -244,6 +289,35 @@
             document.getElementById('message').innerHTML = '<div class="alert alert-danger">Erreur serveur</div>';
         }
     });
+
+    async function deleteInvoice(invoiceId) {
+        if (!confirm('Supprimer cette facture ?')) return;
+        const formData = new FormData();
+        formData.append('invoice_id', invoiceId);
+
+        const response = await fetch('{% url "delete_invoice" %}', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': csrfToken
+            },
+            credentials: 'same-origin'
+        });
+
+        if (!response.ok) {
+            const text = await response.text();
+            console.error('Server error:', response.status, text);
+            alert('Erreur serveur: ' + response.status);
+            return;
+        }
+
+        const data = await response.json();
+        if (data.success) {
+            location.reload();
+        } else {
+            alert(data.error || 'Erreur lors de la suppression');
+        }
+    }
 
     document.getElementById('searchInput').addEventListener('keyup', function() {
         const filter = this.value.toLowerCase();

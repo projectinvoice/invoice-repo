@@ -127,8 +127,8 @@
                     <td><strong>{{ sale.total_price|floatformat:2 }} €</strong></td>
                     <td>{{ sale.date|date:"d/m/Y" }}</td>
                     <td>
-                        <button onclick="openSaleModal({{ sale.id }}, {{ sale.client.id }}, {{ sale.product.id }}, {{ sale.quantity }}, '{{ sale.unit_price }}')" class="btn btn-sm btn-warning">Modifier</button>
-                        <a href="#" class="btn btn-sm btn-danger">Supprimer</a>
+                        <button type="button" onclick="openSaleModal({{ sale.id }}, {{ sale.client.id }}, {{ sale.product.id }}, {{ sale.quantity }}, '{{ sale.unit_price }}')" class="btn btn-sm btn-warning">Modifier</button>
+                        <button type="button" onclick="deleteSale({{ sale.id }})" class="btn btn-sm btn-danger">Supprimer</button>
                     </td>
                 </tr>
                 {% empty %}
@@ -153,7 +153,7 @@
             
             <div class="mb-3">
                 <label for="client" class="form-label">Client *</label>
-                <select class="form-select" id="client" name="client" required>
+                <select class="form-select" id="client" name="client_id" required>
                     <option value="">Sélectionner un client...</option>
                     {% for client in clients %}
                         <option value="{{ client.id }}">{{ client.name }}</option>
@@ -163,7 +163,7 @@
 
             <div class="mb-3">
                 <label for="product" class="form-label">Produit *</label>
-                <select class="form-select" id="product" name="product" required>
+                <select class="form-select" id="product" name="product_id" required>
                     <option value="">Sélectionner un produit...</option>
                     {% for product in products %}
                         <option value="{{ product.id }}">{{ product.name }}</option>
@@ -227,6 +227,23 @@
         if (event.target === this) closeSaleModal();
     });
 
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    const csrfToken = getCookie('csrftoken');
+
     document.getElementById('saleForm').addEventListener('submit', async function(e) {
         e.preventDefault();
         
@@ -235,11 +252,22 @@
         try {
             const response = await fetch('{% url "add_sale" %}', {
                 method: 'POST',
-                body: formData
+                body: formData,
+                headers: {
+                    'X-CSRFToken': csrfToken
+                },
+                credentials: 'same-origin'
             });
-            const data = await response.json();
-            
+
             const msgDiv = document.getElementById('message');
+            if (!response.ok) {
+                const text = await response.text();
+                console.error('Server error:', response.status, text);
+                msgDiv.innerHTML = '<div class="alert alert-danger">Erreur serveur: ' + response.status + '</div>';
+                return;
+            }
+
+            const data = await response.json();
             if (data.success) {
                 msgDiv.innerHTML = '<div class="alert alert-success alert-dismissible fade show" role="alert">' + data.message + '<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>';
                 setTimeout(() => location.reload(), 1500);
@@ -251,6 +279,35 @@
             document.getElementById('message').innerHTML = '<div class="alert alert-danger">Erreur serveur</div>';
         }
     });
+
+    async function deleteSale(saleId) {
+        if (!confirm('Supprimer cette vente ?')) return;
+        const formData = new FormData();
+        formData.append('sale_id', saleId);
+
+        const response = await fetch('{% url "delete_sale" %}', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': csrfToken
+            },
+            credentials: 'same-origin'
+        });
+
+        if (!response.ok) {
+            const text = await response.text();
+            console.error('Server error:', response.status, text);
+            alert('Erreur serveur: ' + response.status);
+            return;
+        }
+
+        const data = await response.json();
+        if (data.success) {
+            location.reload();
+        } else {
+            alert(data.error || 'Erreur lors de la suppression');
+        }
+    }
 
     document.getElementById('searchInput').addEventListener('keyup', function() {
         const filter = this.value.toLowerCase();
