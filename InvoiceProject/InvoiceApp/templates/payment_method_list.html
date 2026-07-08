@@ -116,8 +116,8 @@
                         {% endif %}
                     </td>
                     <td>
-                        <button onclick="openPaymentMethodModal({{ pm.id }}, '{{ pm.name }}', {{ pm.payment_type.id|default:'null' }}, '{{ pm.description|escapejs }}', {{ pm.is_active|lower }})" class="btn btn-sm btn-warning">Modifier</button>
-                        <a href="#" class="btn btn-sm btn-danger">Supprimer</a>
+                        <button type="button" onclick="openPaymentMethodModal({{ pm.id }}, '{{ pm.name|escapejs }}', {{ pm.payment_type.id|default:'null' }}, '{{ pm.description|escapejs }}', {{ pm.is_active|lower }})" class="btn btn-sm btn-warning">Modifier</button>
+                        <button type="button" onclick="deletePaymentMethod({{ pm.id }})" class="btn btn-sm btn-danger">Supprimer</button>
                     </td>
                 </tr>
                 {% empty %}
@@ -147,7 +147,7 @@
 
             <div class="mb-3">
                 <label for="paymentType" class="form-label">Type de paiement</label>
-                <select class="form-select" id="paymentType" name="payment_type">
+                <select class="form-select" id="paymentType" name="payment_type_id">
                     <option value="">Sélectionner un type...</option>
                     {% for pt in payment_types %}
                         <option value="{{ pt.id }}">{{ pt.name }}</option>
@@ -206,22 +206,50 @@
         if (event.target === this) closePaymentMethodModal();
     });
 
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    const csrfToken = getCookie('csrftoken');
+
     document.getElementById('paymentMethodForm').addEventListener('submit', async function(e) {
         e.preventDefault();
-        
+
         const formData = new FormData(this);
         if (!document.getElementById('isActive').checked) {
             formData.delete('is_active');
         }
-        
+
         try {
             const response = await fetch('{% url "add_payment_method" %}', {
                 method: 'POST',
-                body: formData
+                body: formData,
+                headers: {
+                    'X-CSRFToken': csrfToken
+                },
+                credentials: 'same-origin'
             });
-            const data = await response.json();
-            
+
             const msgDiv = document.getElementById('message');
+            if (!response.ok) {
+                const text = await response.text();
+                console.error('Server error:', response.status, text);
+                msgDiv.innerHTML = '<div class="alert alert-danger">Erreur serveur: ' + response.status + '</div>';
+                return;
+            }
+
+            const data = await response.json();
             if (data.success) {
                 msgDiv.innerHTML = '<div class="alert alert-success alert-dismissible fade show" role="alert">' + data.message + '<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>';
                 setTimeout(() => location.reload(), 1500);
@@ -234,6 +262,35 @@
         }
     });
 
+    async function deletePaymentMethod(paymentMethodId) {
+        if (!confirm('Supprimer ce mode de paiement ?')) return;
+        const formData = new FormData();
+        formData.append('payment_method_id', paymentMethodId);
+
+        const response = await fetch('{% url "delete_payment_method" %}', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': csrfToken
+            },
+            credentials: 'same-origin'
+        });
+
+        if (!response.ok) {
+            const text = await response.text();
+            console.error('Server error:', response.status, text);
+            alert('Erreur serveur: ' + response.status);
+            return;
+        }
+
+        const data = await response.json();
+        if (data.success) {
+            location.reload();
+        } else {
+            alert(data.error || 'Erreur lors de la suppression');
+        }
+    }
+
     document.getElementById('searchInput').addEventListener('keyup', function() {
         const filter = this.value.toLowerCase();
         const rows = document.querySelectorAll('.payment-method-row');
@@ -243,37 +300,6 @@
         });
     });
 </script>
-
-</body>
-</html>
-                </tr>
-            </thead>
-            <tbody>
-                {% for payment_method in payment_methods %}
-                <tr>
-                    <td>{{ forloop.counter }}</td>
-                    <td>{{ payment_method.name }}</td>
-                    <td>
-                        {% if payment_method.type %}
-                            <span class="badge bg-info">{{ payment_method.type.name }}</span>
-                        {% else %}
-                            <span class="badge bg-secondary">-</span>
-                        {% endif %}
-                    </td>
-                    <td>
-                        <a href="#" class="btn btn-sm btn-warning">Modifier</a>
-                        <a href="#" class="btn btn-sm btn-danger">Supprimer</a>
-                    </td>
-                </tr>
-                {% empty %}
-                <tr>
-                    <td colspan="4" class="text-center">Aucun mode de paiement enregistré</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-</div>
 
 </body>
 </html>
