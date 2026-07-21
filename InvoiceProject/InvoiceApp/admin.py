@@ -37,3 +37,4 @@ admin.site.register(Sale)
 admin.site.register(Invoice)
 admin.site.register(PaymentType)
 admin.site.register(PaymentMethod)
+
