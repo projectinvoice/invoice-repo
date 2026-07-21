@@ -1,533 +1,250 @@
+{% load custom_filters %}
 <!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestion des rôles d'agent</title>
+    <title>Rôles d'agent - {{ company_name }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: #f5f7fb;
-            color: #1f2937;
+            background-color: #f4f6f9;
         }
-
-        header {
+        .card {
+            border-radius: 10px;
+        }
+        .table th {
+            background-color: #343a40;
+            color: white;
+        }
+        .header-section {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
-            padding: 30px 20px;
-        }
-
-        header .wrapper {
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-
-        header h1 {
-            font-size: 28px;
-            margin-bottom: 8px;
-        }
-
-        header p {
-            color: #e0d7ff;
-            font-size: 14px;
-        }
-
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 30px 20px;
-        }
-
-        .nav-bar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 30px;
-            gap: 12px;
-        }
-
-        .nav-bar a {
-            text-decoration: none;
-            color: #667eea;
-            background: white;
-            border: 1px solid #e5e7eb;
-            padding: 10px 16px;
-            border-radius: 8px;
-            transition: all 0.2s ease;
-            font-size: 14px;
-        }
-
-        .nav-bar a:hover {
-            background: #f3f4f6;
-            border-color: #667eea;
-        }
-
-        .section {
-            background: white;
-            border-radius: 16px;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
-            margin-bottom: 30px;
-            border: 1px solid #e5e7eb;
-        }
-
-        .section-header {
-            padding: 24px;
-            border-bottom: 1px solid #e5e7eb;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
-
-        .section-header h2 {
-            font-size: 20px;
-            color: #1f2937;
-        }
-
-        .section-body {
-            padding: 24px;
-        }
-
-        .form-group {
-            margin-bottom: 16px;
-        }
-
-        .form-group:last-child {
-            margin-bottom: 0;
-        }
-
-        label {
-            display: block;
-            margin-bottom: 6px;
-            color: #374151;
-            font-size: 14px;
-            font-weight: 600;
-        }
-
-        input[type="text"],
-        textarea {
-            width: 100%;
-            padding: 10px 12px;
-            border: 1px solid #d1d5db;
-            border-radius: 8px;
-            font-size: 14px;
-            font-family: inherit;
-            transition: border-color 0.2s ease;
-        }
-
-        input[type="text"]:focus,
-        textarea:focus {
-            outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-        }
-
-        textarea {
-            resize: vertical;
-            min-height: 80px;
-        }
-
-        .form-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 16px;
-        }
-
-        .btn {
-            padding: 10px 16px;
-            border: none;
-            border-radius: 8px;
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            display: inline-flex;
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            display: none;
             align-items: center;
             justify-content: center;
-            gap: 6px;
-        }
-
-        .btn-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-        }
-
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
-        }
-
-        .btn-add {
-            background: #667eea;
-            color: white;
-        }
-
-        .btn-add:hover {
-            background: #5568d3;
-        }
-
-        .btn-edit {
-            background: #3b82f6;
-            color: white;
-            padding: 8px 12px;
-            font-size: 13px;
-        }
-
-        .btn-edit:hover {
-            background: #2563eb;
-        }
-
-        .btn-delete {
-            background: #ef4444;
-            color: white;
-            padding: 8px 12px;
-            font-size: 13px;
-        }
-
-        .btn-delete:hover {
-            background: #dc2626;
-        }
-
-        .table-wrapper {
-            overflow-x: auto;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        th {
-            background: #f9fafb;
-            padding: 14px 16px;
-            text-align: left;
-            font-size: 12px;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            color: #6b7280;
-            border-bottom: 2px solid #e5e7eb;
-        }
-
-        td {
-            padding: 14px 16px;
-            border-bottom: 1px solid #e5e7eb;
-            font-size: 14px;
-        }
-
-        tr:hover {
-            background: #f9fafb;
-        }
-
-        .actions {
-            display: flex;
-            gap: 8px;
-        }
-
-        .empty-state {
-            text-align: center;
-            padding: 40px 20px;
-            color: #6b7280;
-        }
-
-        .empty-state-icon {
-            font-size: 48px;
-            margin-bottom: 16px;
-        }
-
-        .empty-state-text {
-            font-size: 16px;
-            margin-bottom: 8px;
-        }
-
-        .empty-state-subtext {
-            font-size: 14px;
-            color: #9ca3af;
-        }
-
-        .alert {
-            padding: 12px 16px;
-            border-radius: 8px;
-            margin-bottom: 16px;
-            display: none;
-        }
-
-        .alert-success {
-            background: #d1fae5;
-            color: #065f46;
-            border: 1px solid #a7f3d0;
-        }
-
-        .alert-error {
-            background: #fee2e2;
-            color: #7f1d1d;
-            border: 1px solid #fecaca;
-        }
-
-        .modal {
-            display: none;
-            position: fixed;
             z-index: 1000;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.5);
         }
-
-        .modal-content {
-            background-color: white;
-            margin: 5% auto;
-            padding: 24px;
-            border-radius: 12px;
-            width: 90%;
-            max-width: 500px;
-            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2);
-        }
-
-        .modal-header {
-            font-size: 18px;
-            font-weight: 700;
-            margin-bottom: 16px;
-            color: #1f2937;
-        }
-
-        .modal-body {
-            margin-bottom: 20px;
-        }
-
-        .modal-footer {
+        .modal-overlay.show {
             display: flex;
-            gap: 12px;
-            justify-content: flex-end;
         }
-
-        .btn-cancel {
-            background: #e5e7eb;
-            color: #374151;
+        .modal-content {
+            background: white;
+            border-radius: 15px;
+            padding: 40px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            animation: slideIn 0.3s ease;
         }
-
-        .btn-cancel:hover {
-            background: #d1d5db;
+        @keyframes slideIn {
+            from {
+                transform: translateY(-50px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
         }
-
-        @media (max-width: 768px) {
-            .form-row {
-                grid-template-columns: 1fr;
-            }
-
-            .actions {
-                flex-direction: column;
-            }
-
-            .nav-bar {
-                flex-wrap: wrap;
-            }
+        .close-btn {
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            color: #999;
+            cursor: pointer;
+        }
+        .close-btn:hover {
+            color: #000;
         }
     </style>
 </head>
 <body>
-    <header>
-        <div class="wrapper">
-            <h1>Gestion des rôles d'agent</h1>
-            <p>Ajoutez, modifiez ou supprimez les rôles d'agent de votre entreprise</p>
-        </div>
-    </header>
 
-    <div class="container">
-        <div class="nav-bar">
-            <div>
-                <a href="{% url 'dashboard' %}">← Retour au tableau de bord</a>
-            </div>
-            <div>
-                <a href="{% url 'logout' %}">Déconnexion</a>
-            </div>
+<div class="container mt-5">
+    <div class="header-section">
+        <div>
+            <h2>👥 Liste des rôles d'agent</h2>
+            <p class="mb-0">Entreprise: {{ company_name }}</p>
         </div>
-
-        <!-- Section Ajouter un rôle -->
-        <div class="section">
-            <div class="section-header">
-                <h2>➕ Ajouter un nouveau rôle</h2>
-            </div>
-            <div class="section-body">
-                <div id="add-alert" class="alert"></div>
-                <form id="add-role-form">
-                    {% csrf_token %}
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="role-name">Nom du rôle *</label>
-                            <input type="text" id="role-name" name="name" placeholder="ex: Responsable de stock" required>
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label for="role-description">Description</label>
-                        <textarea id="role-description" name="description" placeholder="Décrivez les responsabilités de ce rôle..."></textarea>
-                    </div>
-                    <button type="submit" class="btn btn-primary">
-                        ✓ Ajouter le rôle
-                    </button>
-                </form>
-            </div>
-        </div>
-
-        <!-- Section Liste des rôles -->
-        <div class="section">
-            <div class="section-header">
-                <h2>📋 Liste des rôles d'agent</h2>
-                <span style="color: #6b7280; font-size: 14px;">{{ agent_roles.count }} rôle(s)</span>
-            </div>
-            <div class="section-body">
-                {% if agent_roles %}
-                    <div class="table-wrapper">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Nom du rôle</th>
-                                    <th>Description</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for role in agent_roles %}
-                                    <tr>
-                                        <td>
-                                            <strong>{{ role.name }}</strong>
-                                        </td>
-                                        <td>{{ role.description|default:"Aucune description" }}</td>
-                                        <td>
-                                            <div class="actions">
-                                                <button class="btn btn-edit" data-role-id="{{ role.id }}" data-role-name="{{ role.name|escapejs }}" data-role-desc="{{ role.description|default:""|escapejs }}" onclick="editRole(this)">✏️ Modifier</button>
-                                                <form method="post" action="{% url 'delete_agent_role' %}" style="display: inline;">
-                                                    {% csrf_token %}
-                                                    <input type="hidden" name="role_id" value="{{ role.id }}">
-                                                    <button type="submit" class="btn btn-delete" onclick="return confirm('Êtes-vous sûr de vouloir supprimer ce rôle ?')">🗑️ Supprimer</button>
-                                                </form>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                {% else %}
-                    <div class="empty-state">
-                        <div class="empty-state-icon">📭</div>
-                        <div class="empty-state-text">Aucun rôle trouvé</div>
-                        <div class="empty-state-subtext">Créez votre premier rôle d'agent en utilisant le formulaire ci-dessus</div>
-                    </div>
-                {% endif %}
-            </div>
+        <div>
+            <button onclick="openRoleModal(null)" class="btn btn-light">+ Ajouter</button>
+            <a href="{% url 'dashboard' %}" class="btn btn-light">← Tableau de bord</a>
         </div>
     </div>
 
-    <!-- Modal Modification -->
-    <div id="editModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">Modifier le rôle</div>
-            <div class="modal-body">
-                <form id="edit-role-form">
-                    {% csrf_token %}
-                    <input type="hidden" id="edit-role-id" name="role_id">
-                    <div class="form-group">
-                        <label for="edit-role-name">Nom du rôle</label>
-                        <input type="text" id="edit-role-name" name="name" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="edit-role-description">Description</label>
-                        <textarea id="edit-role-description" name="description"></textarea>
-                    </div>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button class="btn btn-cancel" onclick="closeEditModal()">Annuler</button>
-                <button class="btn btn-primary" onclick="submitEditRole()">Enregistrer</button>
-            </div>
-        </div>
-    </div>
+    <div class="card shadow p-3">
+        <input type="text" id="searchInput" class="form-control mb-3" placeholder="🔍 Rechercher un rôle...">
 
-    <script>
-        // Ajouter un rôle
-        document.getElementById('add-role-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const formData = new FormData(this);
-            
-            try {
-                const response = await fetch('{% url "add_agent_role" %}', {
-                    method: 'POST',
-                    body: formData
-                });
-                const data = await response.json();
-                
-                if (data.success) {
-                    showAlert('add-alert', 'Rôle ajouté avec succès !', 'success');
-                    document.getElementById('add-role-form').reset();
-                    setTimeout(() => location.reload(), 1500);
-                } else {
-                    showAlert('add-alert', data.error || 'Erreur lors de l\'ajout', 'error');
+        <table class="table table-hover">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Nom du rôle</th>
+                    <th>Description</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for role in agent_roles %}
+                <tr class="role-row">
+                    <td>{{ forloop.counter }}</td>
+                    <td class="role-name">{{ role.name }}</td>
+                    <td>{{ role.description|default:"Aucune description" }}</td>
+                    <td>
+                        <button type="button" class="btn btn-sm btn-warning" onclick="openRoleModal({{ role.id }}, '{{ role.name|escapejs }}', '{{ role.description|default:''|escapejs }}')">Modifier</button>
+                        <button type="button" class="btn btn-sm btn-danger" onclick="deleteRole({{ role.id }})">Supprimer</button>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="4" class="text-center">Aucun rôle enregistré</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="modal-overlay" id="roleModal">
+    <div class="modal-content">
+        <span class="close-btn" onclick="closeRoleModal()">&times;</span>
+        <h3 id="modalTitle">Ajouter un rôle</h3>
+        <form id="roleForm" style="margin-top: 20px;">
+            {% csrf_token %}
+            <input type="hidden" name="role_id" id="roleId" value="">
+            <div class="mb-3">
+                <label for="name" class="form-label">Nom du rôle *</label>
+                <input type="text" class="form-control" id="name" name="name" required>
+            </div>
+            <div class="mb-3">
+                <label for="description" class="form-label">Description</label>
+                <textarea class="form-control" id="description" name="description" rows="3"></textarea>
+            </div>
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-primary">💾 Enregistrer</button>
+                <button type="button" class="btn btn-secondary" onclick="closeRoleModal()">Annuler</button>
+            </div>
+        </form>
+        <div id="message" style="margin-top: 15px;"></div>
+    </div>
+</div>
+
+<script>
+    function openRoleModal(roleId = '', name = '', description = '') {
+        const modal = document.getElementById('roleModal');
+        document.getElementById('modalTitle').textContent = roleId ? 'Modifier un rôle' : 'Ajouter un rôle';
+        document.getElementById('roleId').value = roleId || '';
+        document.getElementById('name').value = name || '';
+        document.getElementById('description').value = description || '';
+        document.getElementById('message').innerHTML = '';
+        modal.classList.add('show');
+    }
+
+    function closeRoleModal() {
+        document.getElementById('roleModal').classList.remove('show');
+    }
+
+    document.getElementById('roleModal').addEventListener('click', function(event) {
+        if (event.target === this) closeRoleModal();
+    });
+
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
                 }
-            } catch (error) {
-                showAlert('add-alert', 'Erreur lors de l\'ajout du rôle', 'error');
             }
+        }
+        return cookieValue;
+    }
+
+    const csrfToken = getCookie('csrftoken');
+
+    document.getElementById('roleForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const formData = new FormData(this);
+        const response = await fetch('{% url "add_agent_role" %}', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': csrfToken
+            },
+            credentials: 'same-origin'
         });
+        const message = document.getElementById('message');
 
-        // Modifier un rôle
-        function editRole(button) {
-            const roleId = button.dataset.roleId;
-            const roleName = button.dataset.roleName;
-            const roleDesc = button.dataset.roleDesc;
-            
-            document.getElementById('edit-role-id').value = roleId;
-            document.getElementById('edit-role-name').value = roleName;
-            document.getElementById('edit-role-description').value = roleDesc;
-            document.getElementById('editModal').style.display = 'block';
+        if (!response.ok) {
+            const text = await response.text();
+            message.innerHTML = '<div class="alert alert-danger">Erreur serveur: ' + response.status + '</div>';
+            console.error('Server error:', response.status, text);
+            return;
         }
 
-        function closeEditModal() {
-            document.getElementById('editModal').style.display = 'none';
-        }
+        const data = await response.json();
 
-        async function submitEditRole() {
-            const formData = new FormData(document.getElementById('edit-role-form'));
-            
-            try {
-                const response = await fetch('{% url "add_agent_role" %}', {
-                    method: 'POST',
-                    body: formData
-                });
-                const data = await response.json();
-                
-                if (data.success) {
-                    alert('Rôle modifié avec succès !');
-                    location.reload();
-                } else {
-                    alert(data.error || 'Erreur lors de la modification');
-                }
-            } catch (error) {
-                alert('Erreur lors de la modification');
-            }
+        if (data.success) {
+            message.innerHTML = '<div class="alert alert-success">' + (data.message || 'Enregistré') + '</div>';
+            setTimeout(() => location.reload(), 1200);
+        } else {
+            message.innerHTML = '<div class="alert alert-danger">' + (data.error || 'Erreur') + '</div>';
         }
+    });
 
-        window.onclick = (event) => {
-            const modal = document.getElementById('editModal');
-            if (event.target === modal) {
-                modal.style.display = 'none';
-            }
-        };
-
-        function showAlert(elementId, message, type) {
-            const alert = document.getElementById(elementId);
-            alert.textContent = message;
-            alert.className = `alert alert-${type}`;
-            alert.style.display = 'block';
-            setTimeout(() => {
-                alert.style.display = 'none';
-            }, 5000);
+    async function deleteRole(roleId) {
+        if (!confirm('Supprimer ce rôle ?')) return;
+        const formData = new FormData();
+        formData.append('role_id', roleId);
+        formData.append('csrfmiddlewaretoken', csrfToken);
+        const response = await fetch('{% url "delete_agent_role" %}', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': csrfToken
+            },
+            credentials: 'same-origin'
+        });
+        if (!response.ok) {
+            const text = await response.text();
+            alert('Erreur serveur: ' + response.status);
+            console.error('Server error:', response.status, text);
+            return;
         }
-    </script>
+        const data = await response.json();
+        if (data.success) {
+            location.reload();
+        } else {
+            alert(data.error || 'Erreur lors de la suppression');
+        }
+    }
+
+    document.getElementById('searchInput').addEventListener('keyup', function() {
+        const filter = this.value.toLowerCase();
+        document.querySelectorAll('.role-row').forEach(row => {
+            row.style.display = row.textContent.toLowerCase().includes(filter) ? '' : 'none';
+        });
+    });
+</script>
 </body>
 </html>

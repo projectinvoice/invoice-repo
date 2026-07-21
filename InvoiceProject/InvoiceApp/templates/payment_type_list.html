@@ -106,8 +106,8 @@
                     <td class="payment-type-name">{{ pt.name }}</td>
                     <td>{{ pt.description|truncatewords:5 }}</td>
                     <td>
-                        <button onclick="openPaymentTypeModal({{ pt.id }}, '{{ pt.name }}', '{{ pt.description|escapejs }}')" class="btn btn-sm btn-warning">Modifier</button>
-                        <a href="#" class="btn btn-sm btn-danger">Supprimer</a>
+                        <button type="button" onclick="openPaymentTypeModal({{ pt.id }}, '{{ pt.name|escapejs }}', '{{ pt.description|escapejs }}')" class="btn btn-sm btn-warning">Modifier</button>
+                        <button type="button" onclick="deletePaymentType({{ pt.id }})" class="btn btn-sm btn-danger">Supprimer</button>
                     </td>
                 </tr>
                 {% empty %}
@@ -179,19 +179,47 @@
         if (event.target === this) closePaymentTypeModal();
     });
 
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    const csrfToken = getCookie('csrftoken');
+
     document.getElementById('paymentTypeForm').addEventListener('submit', async function(e) {
         e.preventDefault();
-        
+
         const formData = new FormData(this);
-        
+
         try {
             const response = await fetch('{% url "add_payment_type" %}', {
                 method: 'POST',
-                body: formData
+                body: formData,
+                headers: {
+                    'X-CSRFToken': csrfToken
+                },
+                credentials: 'same-origin'
             });
-            const data = await response.json();
-            
+
             const msgDiv = document.getElementById('message');
+            if (!response.ok) {
+                const text = await response.text();
+                console.error('Server error:', response.status, text);
+                msgDiv.innerHTML = '<div class="alert alert-danger">Erreur serveur: ' + response.status + '</div>';
+                return;
+            }
+
+            const data = await response.json();
             if (data.success) {
                 msgDiv.innerHTML = '<div class="alert alert-success alert-dismissible fade show" role="alert">' + data.message + '<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>';
                 setTimeout(() => location.reload(), 1500);
@@ -204,6 +232,35 @@
         }
     });
 
+    async function deletePaymentType(paymentTypeId) {
+        if (!confirm('Supprimer ce type de paiement ?')) return;
+        const formData = new FormData();
+        formData.append('payment_type_id', paymentTypeId);
+
+        const response = await fetch('{% url "delete_payment_type" %}', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': csrfToken
+            },
+            credentials: 'same-origin'
+        });
+
+        if (!response.ok) {
+            const text = await response.text();
+            console.error('Server error:', response.status, text);
+            alert('Erreur serveur: ' + response.status);
+            return;
+        }
+
+        const data = await response.json();
+        if (data.success) {
+            location.reload();
+        } else {
+            alert(data.error || 'Erreur lors de la suppression');
+        }
+    }
+
     document.getElementById('searchInput').addEventListener('keyup', function() {
         const filter = this.value.toLowerCase();
         const rows = document.querySelectorAll('.payment-type-row');
@@ -213,29 +270,6 @@
         });
     });
 </script>
-
-</body>
-</html>
-            </thead>
-            <tbody>
-                {% for payment_type in payment_types %}
-                <tr>
-                    <td>{{ forloop.counter }}</td>
-                    <td>{{ payment_type.name }}</td>
-                    <td>
-                        <a href="#" class="btn btn-sm btn-warning">Modifier</a>
-                        <a href="#" class="btn btn-sm btn-danger">Supprimer</a>
-                    </td>
-                </tr>
-                {% empty %}
-                <tr>
-                    <td colspan="3" class="text-center">Aucun type de paiement enregistré</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-</div>
 
 </body>
 </html>

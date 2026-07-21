@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -126,8 +127,8 @@
                         {% endif %}
                     </td>
                     <td>
-                        <button onclick="openInvoiceModal({{ invoice.id }}, '{{ invoice.invoice_number }}', {{ invoice.sale.id|default:'null' }}, '{{ invoice.due_date|date:"Y-m-d" }}', '{{ invoice.status }}')" class="btn btn-sm btn-warning">Modifier</button>
-                        <a href="#" class="btn btn-sm btn-danger">Supprimer</a>
+                        <button type="button" class="btn btn-sm btn-warning edit-invoice-btn" data-invoice-id="{{ invoice.id }}" data-invoice-number="{{ invoice.invoice_number|escapejs }}" data-sale-id="{{ invoice.sale.id|default:'' }}" data-due-date="{{ invoice.due_date|date:'Y-m-d' }}" data-status="{{ invoice.status }}">Modifier</button>
+                        <button type="button" class="btn btn-sm btn-danger delete-invoice-btn" data-invoice-id="{{ invoice.id }}">Supprimer</button>
                     </td>
                 </tr>
                 {% empty %}
@@ -157,7 +158,7 @@
 
             <div class="mb-3">
                 <label for="sale" class="form-label">Vente associée *</label>
-                <select class="form-select" id="sale" name="sale" required>
+                <select class="form-select" id="sale" name="sale_id" required>
                     <option value="">Sélectionner une vente...</option>
                     {% for sale in sales %}
                         <option value="{{ sale.id }}">{{ sale.client.name }} - {{ sale.product.name }} ({{ sale.total_price }} €)</option>
@@ -220,6 +221,40 @@
         if (event.target === this) closeInvoiceModal();
     });
 
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    const csrfToken = getCookie('csrftoken');
+
+    document.querySelectorAll('.edit-invoice-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const invoiceId = this.dataset.invoiceId;
+            const invoiceNumber = this.dataset.invoiceNumber;
+            const saleId = this.dataset.saleId;
+            const dueDate = this.dataset.dueDate;
+            const status = this.dataset.status;
+            openInvoiceModal(invoiceId, invoiceNumber, saleId, dueDate, status);
+        });
+    });
+
+    document.querySelectorAll('.delete-invoice-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            deleteInvoice(this.dataset.invoiceId);
+        });
+    });
+
     document.getElementById('invoiceForm').addEventListener('submit', async function(e) {
         e.preventDefault();
         
@@ -228,11 +263,22 @@
         try {
             const response = await fetch('{% url "add_invoice" %}', {
                 method: 'POST',
-                body: formData
+                body: formData,
+                headers: {
+                    'X-CSRFToken': csrfToken
+                },
+                credentials: 'same-origin'
             });
-            const data = await response.json();
-            
+
             const msgDiv = document.getElementById('message');
+            if (!response.ok) {
+                const text = await response.text();
+                console.error('Server error:', response.status, text);
+                msgDiv.innerHTML = '<div class="alert alert-danger">Erreur serveur: ' + response.status + '</div>';
+                return;
+            }
+
+            const data = await response.json();
             if (data.success) {
                 msgDiv.innerHTML = '<div class="alert alert-success alert-dismissible fade show" role="alert">' + data.message + '<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>';
                 setTimeout(() => location.reload(), 1500);
@@ -244,6 +290,35 @@
             document.getElementById('message').innerHTML = '<div class="alert alert-danger">Erreur serveur</div>';
         }
     });
+
+    async function deleteInvoice(invoiceId) {
+        if (!confirm('Supprimer cette facture ?')) return;
+        const formData = new FormData();
+        formData.append('invoice_id', invoiceId);
+
+        const response = await fetch('{% url "delete_invoice" %}', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': csrfToken
+            },
+            credentials: 'same-origin'
+        });
+
+        if (!response.ok) {
+            const text = await response.text();
+            console.error('Server error:', response.status, text);
+            alert('Erreur serveur: ' + response.status);
+            return;
+        }
+
+        const data = await response.json();
+        if (data.success) {
+            location.reload();
+        } else {
+            alert(data.error || 'Erreur lors de la suppression');
+        }
+    }
 
     document.getElementById('searchInput').addEventListener('keyup', function() {
         const filter = this.value.toLowerCase();
@@ -257,3 +332,25 @@
 
 </body>
 </html>
+=======
+<div class="page" id="page-invoices">
+  <div class="page-header"><h1>Factures (Invoice)</h1><p>Suivi des factures et de leur statut</p></div>
+  <div class="stats-row">
+    <div class="stat-card"><span class="stat-label">Total</span><span class="stat-value" id="i-total">0</span><span class="stat-sub">factures</span></div>
+    <div class="stat-card"><span class="stat-label">Filtrés</span><span class="stat-value" id="i-filtered">0</span><span class="stat-sub">résultats</span></div>
+  </div>
+  <div class="toolbar">
+    <div class="search-wrap"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg><input id="i-search" placeholder="N° facture, client..." oninput="renderTable('invoices')"></div>
+    <select id="i-status" onchange="renderTable('invoices')"><option value="">Tous les statuts</option><option value="pending">En attente</option><option value="paid">Payée</option><option value="overdue">En retard</option></select>
+    <button class="btn btn-primary" onclick="alert('Nouvelle facture')"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> Ajouter</button>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th><input type="checkbox" onchange="toggleAll('invoices',this)"></th><th>N° Facture</th><th>Client</th><th>Émise le</th><th>Échéance</th><th>Statut</th><th>Actions</th></tr></thead>
+      <tbody id="i-body"></tbody>
+    </table>
+    <div id="i-empty" class="empty" style="display:none"><p>Aucune facture trouvée</p></div>
+    <div class="pagination-wrap"><span class="pag-info" id="i-info"></span><div class="pag-btns" id="i-pag"></div></div>
+  </div>
+</div>
+>>>>>>> origin/branche-coulibaly

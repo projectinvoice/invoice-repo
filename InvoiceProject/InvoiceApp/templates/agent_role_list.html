@@ -1,0 +1,19 @@
+<div class="page" id="page-roles">
+  <div class="page-header"><h1>Rôles d'agents (AgentRole)</h1><p>Définition des rôles assignables aux agents</p></div>
+  <div class="stats-row">
+    <div class="stat-card"><span class="stat-label">Total</span><span class="stat-value" id="r-total">0</span><span class="stat-sub">rôles</span></div>
+    <div class="stat-card"><span class="stat-label">Filtrés</span><span class="stat-value" id="r-filtered">0</span><span class="stat-sub">résultats</span></div>
+  </div>
+  <div class="toolbar">
+    <div class="search-wrap"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg><input id="r-search" placeholder="Rechercher..." oninput="renderTable('roles')"></div>
+    <button class="btn btn-primary" onclick="alert('Ajouter un rôle')"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> Ajouter</button>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th><input type="checkbox" onchange="toggleAll('roles',this)"></th><th>Nom du rôle</th><th>Entreprise</th><th>Description</th><th>Créé le</th><th>Actions</th></tr></thead>
+      <tbody id="r-body"></tbody>
+    </table>
+    <div id="r-empty" class="empty" style="display:none"><svg width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg><p>Aucun rôle trouvé</p></div>
+    <div class="pagination-wrap"><span class="pag-info" id="r-info"></span><div class="pag-btns" id="r-pag"></div></div>
+  </div>
+</div>
