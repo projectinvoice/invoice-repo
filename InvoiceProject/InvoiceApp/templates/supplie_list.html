@@ -1,0 +1,23 @@
+<div class="page" id="page-supplies">
+  <div class="page-header"><h1>Approvisionnements (Supply)</h1><p>Achats de stock auprès des fournisseurs</p></div>
+  <div class="stats-row">
+    <div class="stat-card"><span class="stat-label">Total</span><span class="stat-value" id="sp-total">0</span><span class="stat-sub">approvisionnements</span></div>
+    <div class="stat-card"><span class="stat-label">Filtrés</span><span class="stat-value" id="sp-filtered">0</span><span class="stat-sub">résultats</span></div>
+    <div class="stat-card"><span class="stat-label">Montant filtré</span><span class="stat-value" id="sp-total-val">0</span><span class="stat-sub">FCFA</span></div>
+  </div>
+  <div class="toolbar">
+    <div class="search-wrap"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg><input id="sp-search" placeholder="Produit, fournisseur..." oninput="renderTable('supplies')"></div>
+    <button class="btn btn-primary" onclick="alert('Nouvel approvisionnement')"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> Ajouter</button>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th><input type="checkbox" onchange="toggleAll('supplies',this)"></th><th>Produit</th><th>Fournisseur</th><th>Qté</th><th>Prix unitaire</th><th>Total</th><th>Date</th><th>Actions</th></tr></thead>
+      <tbody id="sp-body"></tbody>
+    </table>
+    <div id="sp-empty" class="empty" style="display:none"><p>Aucun approvisionnement trouvé</p></div>
+    <div class="pagination-wrap"><span class="pag-info" id="sp-info"></span><div class="pag-btns" id="sp-pag"></div></div>
+  </div>
+</div>
+ 
+</main>
+</div>

@@ -199,7 +199,7 @@ class Invoice(models.Model):
     issued_date = models.DateTimeField(auto_now_add=True, verbose_name="Date d'émission")
     due_date = models.DateField(verbose_name="Date d'échéance")
     status = models.CharField(max_length=20, choices=[
-        ('pending', 'En attente'),
+        ('pending', 'E n attente'),
         ('paid', 'Payée'),
         ('overdue', 'En retard')
     ], default='pending', verbose_name="Statut")
