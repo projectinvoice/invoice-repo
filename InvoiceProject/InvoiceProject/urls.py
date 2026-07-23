@@ -75,7 +75,6 @@ urlpatterns = [
     path('supplie-list/', invoice_views.supplie_list, name='supplie_list'),
     path('sale-list/', invoice_views.sale_list, name='sale_list'),
     path('product-list/', invoice_views.product_list, name='product_list'),
-    path('agent-list/', invoice_views.agent_list, name='agent_list'),
     path('agent-role-list/', invoice_views.agent_role_list, name='agent_role_list'),
     path('invoice-list/', invoice_views.invoice_list, name='invoice_list'),
     path('supplier-list/', invoice_views.supplier_list, name='supplier_list'),
