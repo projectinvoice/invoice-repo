@@ -353,6 +353,7 @@ def add_agent(request):
         return JsonResponse({"success": True, "message": "Agent créé", "agent_id": agent.id})
 
 
+
 @require_http_methods(["POST"])
 @login_required
 def delete_agent(request):
@@ -811,4 +812,5 @@ def client_list(request):
 def engine_list(request):
     engines = Engine.objects.all()
     return render(request, 'engine_list.html', {'engines': engines})
+
 
