@@ -71,16 +71,34 @@ class Engine(models.Model):
 
 # Modèle pour les produits
 class Product(models.Model):
+    CURRENCY_CHOICES = [
+        ('EUR', 'Euro (€)'),
+        ('USD', 'Dollar US ($)'),
+        ('XOF', 'Franc CFA (FCFA)'),
+    ]
+
     company = models.ForeignKey(User, on_delete=models.CASCADE, related_name='products', verbose_name="Entreprise")
     image = models.ImageField(upload_to="product_images/", blank=True, null=True, verbose_name="Image du produit")
     name = models.CharField(max_length=255, verbose_name="Nom du produit")
     description = models.TextField(blank=True, verbose_name="Description")
     price = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Prix")
+    currency = models.CharField(max_length=3, choices=CURRENCY_CHOICES, default='EUR', verbose_name="Devise")
     stock_quantity = models.PositiveIntegerField(default=0, verbose_name="Quantité en stock")
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="Date de création")
 
     def __str__(self):
         return f"{self.name} ({self.company.company_name})"
+
+    @property
+    def formatted_price(self):
+        """Retourne le prix formaté avec le bon symbole selon la devise."""
+        symbols = {'EUR': '€', 'USD': '$', 'XOF': 'FCFA'}
+        symbol = symbols.get(self.currency, self.currency)
+        if self.currency == 'XOF':
+            amount = f"{self.price:,.0f}".replace(',', ' ')
+        else:
+            amount = f"{self.price:,.2f}".replace(',', ' ')
+        return f"{symbol}{amount}" if self.currency == 'USD' else f"{amount} {symbol}"
 
     class Meta:
         verbose_name = "Produit"
@@ -157,6 +175,7 @@ class Supply(models.Model):
     quantity = models.PositiveIntegerField(verbose_name="Quantité")
     unit_price = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Prix unitaire")
     total_price = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Prix total")
+    currency = models.CharField(max_length=3, choices=Product.CURRENCY_CHOICES, default='EUR', verbose_name="Devise")
     date = models.DateTimeField(auto_now_add=True, verbose_name="Date")
 
     def save(self, *args, **kwargs):
@@ -165,6 +184,13 @@ class Supply(models.Model):
 
     def __str__(self):
         return f"Approvisionnement de {self.product.name} ({self.company.company_name})"
+
+    @property
+    def formatted_total_price(self):
+        symbols = {'EUR': '€', 'USD': '$', 'XOF': 'FCFA'}
+        symbol = symbols.get(self.currency, self.currency)
+        amount = f"{self.total_price:,.0f}".replace(',', ' ') if self.currency == 'XOF' else f"{self.total_price:,.2f}".replace(',', ' ')
+        return f"{symbol}{amount}" if self.currency == 'USD' else f"{amount} {symbol}"
 
     class Meta:
         verbose_name = "Approvisionnement"
@@ -178,6 +204,7 @@ class Sale(models.Model):
     quantity = models.PositiveIntegerField(verbose_name="Quantité")
     unit_price = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Prix unitaire")
     total_price = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Prix total")
+    currency = models.CharField(max_length=3, choices=Product.CURRENCY_CHOICES, default='EUR', verbose_name="Devise")
     date = models.DateTimeField(auto_now_add=True, verbose_name="Date")
 
     def save(self, *args, **kwargs):
@@ -186,6 +213,13 @@ class Sale(models.Model):
 
     def __str__(self):
         return f"Vente de {self.product.name} à {self.client.name} ({self.company.company_name})"
+
+    @property
+    def formatted_total_price(self):
+        symbols = {'EUR': '€', 'USD': '$', 'XOF': 'FCFA'}
+        symbol = symbols.get(self.currency, self.currency)
+        amount = f"{self.total_price:,.0f}".replace(',', ' ') if self.currency == 'XOF' else f"{self.total_price:,.2f}".replace(',', ' ')
+        return f"{symbol}{amount}" if self.currency == 'USD' else f"{amount} {symbol}"
 
     class Meta:
         verbose_name = "Vente"

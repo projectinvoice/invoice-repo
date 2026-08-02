@@ -186,9 +186,7 @@
             margin-bottom: 20px; flex-wrap: wrap;
         }
 
-        .search-wrap {
-            position: relative; flex: 1; min-width: 220px;
-        }
+        .search-wrap { position: relative; flex: 1; min-width: 220px; }
         .search-icon {
             position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
             color: var(--text-muted); font-size: 15px; pointer-events: none;
@@ -223,13 +221,8 @@
             border-radius: var(--radius);
             overflow: hidden;
         }
-
         .table-wrap { overflow-x: auto; }
-
-        table {
-            width: 100%; border-collapse: collapse;
-        }
-
+        table { width: 100%; border-collapse: collapse; }
         thead th {
             padding: 13px 20px;
             text-align: left;
@@ -240,34 +233,21 @@
             border-bottom: 1px solid var(--border);
             white-space: nowrap;
         }
-
-        tbody tr {
-            border-bottom: 1px solid rgba(255,255,255,0.04);
-            transition: background 0.15s;
-        }
+        tbody tr { border-bottom: 1px solid rgba(255,255,255,0.04); transition: background 0.15s; }
         tbody tr:last-child { border-bottom: none; }
         tbody tr:hover { background: rgba(99,102,241,0.04); }
+        td { padding: 14px 20px; vertical-align: middle; font-size: 13.5px; color: var(--text-primary); }
 
-        td {
-            padding: 14px 20px;
-            vertical-align: middle;
-            font-size: 13.5px;
-            color: var(--text-primary);
-        }
-
-        /* ── AGENT CELL ── */
         .agent-cell { display: flex; align-items: center; gap: 12px; }
-
         .agent-avatar-tbl {
             width: 36px; height: 36px; border-radius: 50%;
             display: flex; align-items: center; justify-content: center;
             font-size: 14px; font-weight: 700; color: white; flex-shrink: 0;
+            background: linear-gradient(135deg, var(--indigo), #9333EA);
         }
-
         .agent-name-tbl { font-weight: 600; font-size: 13.5px; }
         .agent-email-tbl { font-size: 11.5px; color: var(--text-muted); }
 
-        /* ── ROLE BADGE ── */
         .role-badge {
             display: inline-flex; align-items: center;
             padding: 3px 10px; border-radius: 20px;
@@ -275,28 +255,18 @@
             background: rgba(99,102,241,0.12);
             color: var(--indigo-light);
         }
-        .role-badge.no-role {
-            background: rgba(100,116,139,0.12);
-            color: var(--text-muted);
-        }
+        .role-badge.no-role { background: rgba(100,116,139,0.12); color: var(--text-muted); }
 
-        /* ── ACTIONS COL ── */
         .actions-col { display: flex; gap: 6px; align-items: center; }
 
-        /* ── EMPTY STATE ── */
-        .empty-state {
-            text-align: center; padding: 60px 20px;
-            color: var(--text-muted);
-        }
+        .empty-state { text-align: center; padding: 60px 20px; color: var(--text-muted); }
         .empty-icon { font-size: 40px; margin-bottom: 12px; }
         .empty-title { font-size: 15px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; }
         .empty-sub { font-size: 13px; margin-bottom: 20px; }
 
-        /* ── PAGINATION ── */
         .pagination {
             display: flex; align-items: center; justify-content: space-between;
-            padding: 14px 20px;
-            border-top: 1px solid var(--border);
+            padding: 14px 20px; border-top: 1px solid var(--border);
             flex-wrap: wrap; gap: 10px;
         }
         .pagination-info { font-size: 12px; color: var(--text-muted); }
@@ -318,7 +288,24 @@
         }
         .page-btn.disabled { opacity: 0.35; pointer-events: none; }
 
-        /* ── MODAL CONFIRMATION ── */
+        /* ── FORM (modal ajout/édition) ── */
+        .form-group { margin-bottom: 16px; }
+        .form-label { display: block; font-size: 12.5px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; }
+        .form-control, .form-select {
+            width: 100%;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 9px 12px;
+            color: var(--text-primary);
+            font-size: 13.5px; font-family: 'Inter', sans-serif;
+            outline: none; transition: border-color 0.2s;
+        }
+        .form-control:focus, .form-select:focus { border-color: var(--indigo); }
+        .form-select { cursor: pointer; }
+        .form-error { color: var(--rose); font-size: 12px; margin-top: 4px; display: none; }
+
+        /* ── MODALS ── */
         .modal-overlay {
             display: none;
             position: fixed; inset: 0;
@@ -333,25 +320,28 @@
             border: 1px solid var(--border);
             border-radius: var(--radius);
             padding: 32px;
-            max-width: 400px; width: 90%;
+            max-width: 420px; width: 90%;
             box-shadow: var(--shadow);
             animation: pop-in 0.2s ease;
+            max-height: 90vh;
+            overflow-y: auto;
         }
         @keyframes pop-in {
             from { transform: scale(0.92); opacity: 0; }
             to   { transform: scale(1);    opacity: 1; }
         }
 
+        .modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+        .modal-title { font-size: 17px; font-weight: 700; }
+        .modal-close { background: none; border: none; color: var(--text-muted); font-size: 20px; cursor: pointer; line-height: 1; }
+        .modal-close:hover { color: var(--text-primary); }
+
         .modal-icon { font-size: 36px; margin-bottom: 12px; }
-        .modal-title { font-size: 17px; font-weight: 700; margin-bottom: 8px; }
         .modal-msg { font-size: 13.5px; color: var(--text-secondary); margin-bottom: 24px; line-height: 1.7; }
         .modal-msg strong { color: var(--text-primary); }
-        .modal-actions { display: flex; gap: 10px; justify-content: flex-end; }
+        .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 8px; }
 
-        .btn-danger-solid {
-            background: var(--rose); color: white;
-            border: none;
-        }
+        .btn-danger-solid { background: var(--rose); color: white; border: none; }
         .btn-danger-solid:hover { background: #e0294a; }
 
         /* ── TOAST ── */
@@ -366,12 +356,12 @@
             transform: translateY(80px); opacity: 0;
             transition: all 0.3s cubic-bezier(0.22,1,0.36,1);
             z-index: 999;
+            pointer-events: none;
         }
         .toast.show { transform: translateY(0); opacity: 1; }
         .toast.success { border-color: rgba(16,185,129,0.4); color: var(--emerald); }
         .toast.error { border-color: rgba(244,63,94,0.4); color: var(--rose); }
 
-        /* ── RESPONSIVE ── */
         @media (max-width: 768px) {
             .sidebar { display: none; }
             .main { margin-left: 0; }
@@ -461,17 +451,17 @@
             <div class="topbar-sub">{{ agents_count }} agent{{ agents_count|pluralize }} enregistré{{ agents_count|pluralize }}</div>
         </div>
         <div class="topbar-actions">
-            <a href="{% url 'add_agent' %}" class="btn btn-primary">+ Ajouter un agent</a>
+            <button type="button" class="btn btn-primary" onclick="openAgentModal()">+ Ajouter un agent</button>
             <a href="{% url 'dashboard' %}" class="btn btn-ghost">← Tableau de bord</a>
         </div>
     </header>
 
     <main class="content">
 
-        <!-- Messages Django -->
+        <!-- Messages Django (consommés par le toast au chargement) -->
         {% if messages %}
             {% for message in messages %}
-            <div id="django-msg" data-type="{{ message.tags }}" data-text="{{ message }}"></div>
+            <div class="django-msg" data-type="{{ message.tags }}" data-text="{{ message }}" style="display:none;"></div>
             {% endfor %}
         {% endif %}
 
@@ -491,65 +481,74 @@
             </select>
         </div>
 
-    <div class="card shadow p-3">
-        <input type="text" class="form-control mb-3" id="searchInput" placeholder="🔍 Rechercher un agent...">
-
-        <table class="table table-hover">
-            <thead>
-                <tr>
-                    <th>#</th>
-                    <th>Nom</th>
-                    <th>Email</th>
-                    <th>Téléphone</th>
-                    <th>Rôle</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for agent in agents %}
-                <tr class="agent-row">
-                    <td>{{ forloop.counter }}</td>
-                    <td class="agent-name">{{ agent.name }}</td>
-                    <td>{{ agent.email }}</td>
-                    <td>{{ agent.phone }}</td>
-                    <td>
-                        {% if agent.role %}
-                            <span class="badge bg-info">{{ agent.role.name }}</span>
-                        {% else %}
-                            <span class="badge bg-secondary">Sans rôle</span>
-                        {% endif %}
-                    </td>
-                    <td>
-                        <button onclick="openAgentModal({{ agent.id }}, '{{ agent.name|escapejs }}', '{{ agent.email|escapejs }}', '{{ agent.phone|escapejs }}', {{ agent.role.id|default:'null' }})" class="btn btn-sm btn-warning">Modifier</button>
-                        <button type="button" onclick="deleteAgent({{ agent.id }})" class="btn btn-sm btn-danger">Supprimer</button>
-                    </td>
-                </tr>
-                {% empty %}
-                <tr>
-                    <td colspan="6" class="text-center">Aucun agent enregistré</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-</div>
-
-<!-- MODAL -->
-<div class="modal-overlay" id="agentModal">
-    <div class="modal-content">
-        <span class="close-btn" onclick="closeAgentModal()">&times;</span>
-        <h3 id="modalTitle">Ajouter un Agent</h3>
-        
-        <form id="agentForm" style="margin-top: 20px;">
-            {% csrf_token %}
-            <input type="hidden" id="agentId" name="agent_id" value="">
-            
-            <div class="mb-3">
-                <label for="name" class="form-label">Nom complet *</label>
-                <input type="text" class="form-control" id="name" name="name" required>
+        <!-- TABLE -->
+        <div class="table-card">
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Agent</th>
+                            <th>Téléphone</th>
+                            <th>Rôle</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="agentsTableBody">
+                        {% for agent in agents %}
+                        <tr class="agent-row"
+                            data-id="{{ agent.id }}"
+                            data-name="{{ agent.name }}"
+                            data-email="{{ agent.email }}"
+                            data-phone="{{ agent.phone }}"
+                            data-role-id="{{ agent.role.id|default:'' }}">
+                            <td>{{ forloop.counter }}</td>
+                            <td>
+                                <div class="agent-cell">
+                                    <div class="agent-avatar-tbl">{{ agent.name|first|upper }}</div>
+                                    <div>
+                                        <div class="agent-name-tbl">{{ agent.name }}</div>
+                                        <div class="agent-email-tbl">{{ agent.email }}</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>{{ agent.phone|default:"—" }}</td>
+                            <td>
+                                {% if agent.role %}
+                                <span class="role-badge">{{ agent.role.name }}</span>
+                                {% else %}
+                                <span class="role-badge no-role">Sans rôle</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="actions-col">
+                                    <button class="btn btn-sm btn-edit-soft"
+                                        onclick="openAgentModal('{{ agent.id }}', '{{ agent.name|escapejs }}', '{{ agent.email|escapejs }}', '{{ agent.phone|escapejs }}', '{{ agent.role.id|default:'' }}')">
+                                        ✏️ Modifier
+                                    </button>
+                                    <button class="btn btn-sm btn-danger-soft"
+                                        onclick="openDeleteModal('{{ agent.id }}', '{{ agent.name|escapejs }}')">
+                                        🗑️ Supprimer
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr id="emptyRow">
+                            <td colspan="5">
+                                <div class="empty-state">
+                                    <div class="empty-icon">👥</div>
+                                    <div class="empty-title">Aucun agent enregistré</div>
+                                    <div class="empty-sub">Ajoutez votre premier agent pour commencer</div>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
 
-            {% if agents %}
+            {% if agents.paginator %}
             <div class="pagination">
                 <span class="pagination-info">
                     Affichage de <strong>{{ agents|length }}</strong> agent{{ agents|length|pluralize }}
@@ -562,8 +561,7 @@
                     {% endif %}
 
                     {% for num in agents.paginator.page_range %}
-                    <a href="?page={{ num }}"
-                       class="page-btn {% if agents.number == num %}active{% endif %}">{{ num }}</a>
+                    <a href="?page={{ num }}" class="page-btn {% if agents.number == num %}active{% endif %}">{{ num }}</a>
                     {% endfor %}
 
                     {% if agents.has_next %}
@@ -579,6 +577,53 @@
     </main>
 </div>
 
+<!-- ══════════════ MODAL AJOUT / ÉDITION ══════════════ -->
+<div class="modal-overlay" id="agentModal">
+    <div class="modal-box">
+        <div class="modal-header">
+            <div class="modal-title" id="modalTitle">Ajouter un agent</div>
+            <button type="button" class="modal-close" onclick="closeAgentModal()">&times;</button>
+        </div>
+
+        <form id="agentForm">
+            {% csrf_token %}
+            <input type="hidden" id="agentId" name="agent_id" value="">
+
+            <div class="form-group">
+                <label class="form-label" for="name">Nom complet *</label>
+                <input type="text" class="form-control" id="name" name="name" required>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="email">Email</label>
+                <input type="email" class="form-control" id="email" name="email">
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="phone">Téléphone</label>
+                <input type="text" class="form-control" id="phone" name="phone">
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="roleId">Rôle</label>
+                <select class="form-select" id="roleId" name="role_id">
+                    <option value="">— Sans rôle —</option>
+                    {% for role in roles %}
+                    <option value="{{ role.id }}">{{ role.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-error" id="formError"></div>
+
+            <div class="modal-actions">
+                <button type="button" class="btn btn-ghost" onclick="closeAgentModal()">Annuler</button>
+                <button type="submit" class="btn btn-primary" id="submitBtn">Enregistrer</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <!-- ══════════════ MODAL CONFIRMATION SUPPRESSION ══════════════ -->
 <div class="modal-overlay" id="deleteModal">
     <div class="modal-box">
@@ -589,11 +634,8 @@
             <br>Cette action est <strong>irréversible</strong>.
         </div>
         <div class="modal-actions">
-            <button class="btn btn-ghost" onclick="closeDeleteModal()">Annuler</button>
-            <form id="deleteForm" method="post" action="">
-                {% csrf_token %}
-                <button type="submit" class="btn btn-danger-solid">🗑️ Supprimer</button>
-            </form>
+            <button type="button" class="btn btn-ghost" onclick="closeDeleteModal()">Annuler</button>
+            <button type="button" class="btn btn-danger-solid" id="confirmDeleteBtn">🗑️ Supprimer</button>
         </div>
     </div>
 </div>
@@ -601,131 +643,150 @@
 <!-- ══════════════ TOAST ══════════════ -->
 <div class="toast" id="toast"></div>
 
-<!-- ══════════════ AVATAR COLORS ══════════════ -->
 <script>
-    function openAgentModal(agentId, name = '', email = '', phone = '', roleId = null) {
+    const csrfToken = document.querySelector('#agentForm [name=csrfmiddlewaretoken]').value;
+    let agentToDelete = null;
+
+    /* ── TOAST ── */
+    function showToast(message, type = 'success') {
+        const toast = document.getElementById('toast');
+        toast.textContent = (type === 'success' ? '✅ ' : '⚠️ ') + message;
+        toast.className = 'toast show ' + type;
+        setTimeout(() => { toast.classList.remove('show'); }, 3500);
+    }
+
+    // Affiche les messages Django (venant du serveur) au chargement
+    document.querySelectorAll('.django-msg').forEach(el => {
+        const type = el.dataset.type.includes('error') ? 'error' : 'success';
+        showToast(el.dataset.text, type);
+    });
+
+    /* ── MODAL AJOUT / ÉDITION ── */
+    function openAgentModal(agentId = null, name = '', email = '', phone = '', roleId = '') {
         const modal = document.getElementById('agentModal');
         const modalTitle = document.getElementById('modalTitle');
-        
+        document.getElementById('formError').style.display = 'none';
+
         if (agentId) {
-            modalTitle.textContent = 'Modifier un Agent';
+            modalTitle.textContent = 'Modifier un agent';
             document.getElementById('agentId').value = agentId;
             document.getElementById('name').value = name;
             document.getElementById('email').value = email;
             document.getElementById('phone').value = phone;
-            if (roleId) document.getElementById('roleId').value = roleId;
+            document.getElementById('roleId').value = roleId || '';
         } else {
-            modalTitle.textContent = 'Ajouter un Agent';
-            document.getElementById('agentId').value = '';
+            modalTitle.textContent = 'Ajouter un agent';
             document.getElementById('agentForm').reset();
+            document.getElementById('agentId').value = '';
         }
-        
-        modal.classList.add('show');
+
+        modal.classList.add('open');
     }
 
     function closeAgentModal() {
-        const modal = document.getElementById('agentModal');
-        modal.classList.remove('show');
-        document.getElementById('message').innerHTML = '';
+        document.getElementById('agentModal').classList.remove('open');
     }
 
-    document.getElementById('agentModal').addEventListener('click', function(event) {
-        if (event.target === this) closeAgentModal();
+    document.getElementById('agentModal').addEventListener('click', function (e) {
+        if (e.target === this) closeAgentModal();
     });
 
-    function getCookie(name) {
-        let cookieValue = null;
-        if (document.cookie && document.cookie !== '') {
-            const cookies = document.cookie.split(';');
-            for (let i = 0; i < cookies.length; i++) {
-                const cookie = cookies[i].trim();
-                if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                    break;
-                }
-            }
-        }
-        return cookieValue;
-    }
-
-    const csrfToken = getCookie('csrftoken');
-
-    document.getElementById('agentForm').addEventListener('submit', async function(e) {
+    /* ── SOUMISSION DU FORMULAIRE (ajout / édition) ── */
+    document.getElementById('agentForm').addEventListener('submit', async function (e) {
         e.preventDefault();
-        
+        const submitBtn = document.getElementById('submitBtn');
+        const formError = document.getElementById('formError');
+        formError.style.display = 'none';
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Enregistrement…';
+
         const formData = new FormData(this);
-        
+
         try {
-            const response = await fetch('{% url "add_agent" %}', {
+            const response = await fetch("{% url 'add_agent' %}", {
                 method: 'POST',
                 body: formData,
-                headers: {
-                    'X-CSRFToken': csrfToken
-                },
+                headers: { 'X-CSRFToken': csrfToken },
                 credentials: 'same-origin'
             });
 
-            const msgDiv = document.getElementById('message');
-            if (!response.ok) {
-                const text = await response.text();
-                console.error('Server error:', response.status, text);
-                msgDiv.innerHTML = '<div class="alert alert-danger">Erreur serveur: ' + response.status + '</div>';
-                return;
-            }
-
             const data = await response.json();
-            if (data.success) {
-                msgDiv.innerHTML = '<div class="alert alert-success alert-dismissible fade show" role="alert">' + data.message + '<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>';
-                setTimeout(() => location.reload(), 1500);
+
+            if (response.ok && data.success) {
+                showToast(data.message || 'Agent enregistré', 'success');
+                closeAgentModal();
+                setTimeout(() => location.reload(), 800);
             } else {
-                msgDiv.innerHTML = '<div class="alert alert-danger alert-dismissible fade show" role="alert">' + data.error + '<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>';
+                formError.textContent = data.error || 'Une erreur est survenue';
+                formError.style.display = 'block';
             }
-        } catch (error) {
-            console.error(error);
-            document.getElementById('message').innerHTML = '<div class="alert alert-danger">Erreur serveur</div>';
+        } catch (err) {
+            console.error(err);
+            formError.textContent = 'Erreur serveur, veuillez réessayer';
+            formError.style.display = 'block';
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Enregistrer';
         }
     });
 
-    async function deleteAgent(agentId) {
-        if (!confirm('Supprimer cet agent ?')) return;
-        const formData = new FormData();
-        formData.append('agent_id', agentId);
-
-        const response = await fetch('{% url "delete_agent" %}', {
-            method: 'POST',
-            body: formData,
-            headers: {
-                'X-CSRFToken': csrfToken
-            },
-            credentials: 'same-origin'
-        });
-
-        if (!response.ok) {
-            const text = await response.text();
-            console.error('Server error:', response.status, text);
-            alert('Erreur serveur: ' + response.status);
-            return;
-        }
-
-        const data = await response.json();
-        if (data.success) {
-            location.reload();
-        } else {
-            alert(data.error || 'Erreur lors de la suppression');
-        }
+    /* ── SUPPRESSION ── */
+    function openDeleteModal(agentId, name) {
+        agentToDelete = agentId;
+        document.getElementById('modal-agent-name').textContent = name;
+        document.getElementById('deleteModal').classList.add('open');
     }
 
-    document.getElementById('searchInput').addEventListener('keyup', function() {
-        const filter = this.value.toLowerCase();
+    function closeDeleteModal() {
+        agentToDelete = null;
+        document.getElementById('deleteModal').classList.remove('open');
+    }
+
+    document.getElementById('deleteModal').addEventListener('click', function (e) {
+        if (e.target === this) closeDeleteModal();
+    });
+
+    document.getElementById('confirmDeleteBtn').addEventListener('click', async function () {
+        if (!agentToDelete) return;
+        const formData = new FormData();
+        formData.append('agent_id', agentToDelete);
+
+        try {
+            const response = await fetch("{% url 'delete_agent' %}", {
+                method: 'POST',
+                body: formData,
+                headers: { 'X-CSRFToken': csrfToken },
+                credentials: 'same-origin'
+            });
+            const data = await response.json();
+
+            if (response.ok && data.success) {
+                showToast('Agent supprimé', 'success');
+                closeDeleteModal();
+                setTimeout(() => location.reload(), 800);
+            } else {
+                showToast(data.error || 'Erreur lors de la suppression', 'error');
+            }
+        } catch (err) {
+            console.error(err);
+            showToast('Erreur serveur', 'error');
+        }
+    });
+
+    /* ── RECHERCHE + FILTRE PAR RÔLE ── */
+    function filterTable() {
+        const search = document.getElementById('searchInput').value.toLowerCase();
+        const role = document.getElementById('roleFilter').value.toLowerCase();
         const rows = document.querySelectorAll('.agent-row');
+
         rows.forEach(row => {
             const text = row.textContent.toLowerCase();
-            row.style.display = text.includes(filter) ? '' : 'none';
+            const matchesSearch = text.includes(search);
+            const matchesRole = !role || text.includes(role);
+            row.style.display = (matchesSearch && matchesRole) ? '' : 'none';
         });
-    });
+    }
 </script>
 
 </body>
 </html>
- 
-
