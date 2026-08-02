@@ -82,7 +82,7 @@
             <p class="mb-0">Entreprise: {{ company_name }}</p>
         </div>
         <div>
-            <a href="#" onclick="openSaleModal(null)" class="btn btn-light">+ Ajouter</a>
+            <a href="#" onclick="openSaleModal(null); return false;" class="btn btn-light">+ Ajouter</a>
             <a href="{% url 'dashboard' %}" class="btn btn-light">← Tableau de bord</a>
         </div>
     </div>
@@ -122,11 +122,21 @@
                         {% endif %}
                     </td>
                     <td>{{ sale.quantity }}</td>
-                    <td>{{ sale.unit_price }} €</td>
-                    <td><strong>{{ sale.total_price|floatformat:2 }} €</strong></td>
+                    <td>{{ sale.unit_price|floatformat:2 }} {{ sale.get_currency_display }}</td>
+                    <td><strong>{{ sale.formatted_total_price }}</strong></td>
                     <td>{{ sale.date|date:"d/m/Y" }}</td>
                     <td>
-                        <button type="button" onclick="openSaleModal({{ sale.id }}, {{ sale.client.id }}, {{ sale.product.id }}, {{ sale.quantity }}, '{{ sale.unit_price }}')" class="btn btn-sm btn-warning">Modifier</button>
+                        <button type="button"
+                                class="btn btn-sm btn-warning"
+                                data-sale-id="{{ sale.id }}"
+                                data-client-id="{{ sale.client.id|default:'' }}"
+                                data-product-id="{{ sale.product.id|default:'' }}"
+                                data-quantity="{{ sale.quantity }}"
+                                data-unit-price="{{ sale.unit_price }}"
+                                data-currency="{{ sale.currency }}"
+                                onclick="openSaleModalFromButton(this)">
+                            Modifier
+                        </button>
                         <button type="button" onclick="deleteSale({{ sale.id }})" class="btn btn-sm btn-danger">Supprimer</button>
                     </td>
                 </tr>
@@ -145,11 +155,11 @@
     <div class="modal-content">
         <span class="close-btn" onclick="closeSaleModal()">&times;</span>
         <h3 id="modalTitle">Ajouter une Vente</h3>
-        
+
         <form id="saleForm" style="margin-top: 20px;">
             {% csrf_token %}
             <input type="hidden" id="saleId" name="sale_id" value="">
-            
+
             <div class="mb-3">
                 <label for="client" class="form-label">Client *</label>
                 <select class="form-select" id="client" name="client_id" required>
@@ -171,16 +181,26 @@
             </div>
 
             <div class="row">
-                <div class="col-md-6">
+                <div class="col-md-4">
                     <div class="mb-3">
                         <label for="quantity" class="form-label">Quantité *</label>
                         <input type="number" class="form-control" id="quantity" name="quantity" min="1" required>
                     </div>
                 </div>
-                <div class="col-md-6">
+                <div class="col-md-4">
                     <div class="mb-3">
-                        <label for="unitPrice" class="form-label">Prix Unitaire (€) *</label>
+                        <label for="unitPrice" class="form-label">Prix Unitaire *</label>
                         <input type="number" class="form-control" id="unitPrice" name="unit_price" step="0.01" required>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="mb-3">
+                        <label for="currency" class="form-label">Devise *</label>
+                        <select class="form-select" id="currency" name="currency" required>
+                            <option value="EUR">Euro (€)</option>
+                            <option value="USD">Dollar US ($)</option>
+                            <option value="XOF">Franc CFA (FCFA)</option>
+                        </select>
                     </div>
                 </div>
             </div>
@@ -196,10 +216,10 @@
 </div>
 
 <script>
-    function openSaleModal(saleId, clientId = '', productId = '', quantity = '', unitPrice = '') {
+    function openSaleModal(saleId, clientId = '', productId = '', quantity = '', unitPrice = '', currency = 'EUR') {
         const modal = document.getElementById('saleModal');
         const modalTitle = document.getElementById('modalTitle');
-        
+
         if (saleId) {
             modalTitle.textContent = 'Modifier une Vente';
             document.getElementById('saleId').value = saleId;
@@ -207,13 +227,26 @@
             document.getElementById('product').value = productId;
             document.getElementById('quantity').value = quantity;
             document.getElementById('unitPrice').value = unitPrice;
+            document.getElementById('currency').value = currency || 'EUR';
         } else {
             modalTitle.textContent = 'Ajouter une Vente';
             document.getElementById('saleId').value = '';
             document.getElementById('saleForm').reset();
+            document.getElementById('currency').value = 'EUR';
         }
-        
+
         modal.classList.add('show');
+    }
+
+    function openSaleModalFromButton(button) {
+        openSaleModal(
+            button.dataset.saleId,
+            button.dataset.clientId || '',
+            button.dataset.productId || '',
+            button.dataset.quantity || '',
+            button.dataset.unitPrice || '',
+            button.dataset.currency || 'EUR'
+        );
     }
 
     function closeSaleModal() {
@@ -245,9 +278,9 @@
 
     document.getElementById('saleForm').addEventListener('submit', async function(e) {
         e.preventDefault();
-        
+
         const formData = new FormData(this);
-        
+
         try {
             const response = await fetch('{% url "add_sale" %}', {
                 method: 'POST',
@@ -320,4 +353,3 @@
 
 </body>
 </html>
-

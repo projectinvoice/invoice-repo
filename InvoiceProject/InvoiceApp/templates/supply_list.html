@@ -82,7 +82,7 @@
             <p class="mb-0">Entreprise: {{ company_name }}</p>
         </div>
         <div>
-            <a href="#" onclick="openSupplyModal(null)" class="btn btn-light">+ Ajouter</a>
+            <a href="#" onclick="openSupplyModal(null); return false;" class="btn btn-light">+ Ajouter</a>
             <a href="{% url 'dashboard' %}" class="btn btn-light">← Tableau de bord</a>
         </div>
     </div>
@@ -122,11 +122,21 @@
                         {% endif %}
                     </td>
                     <td>{{ supply.quantity }}</td>
-                    <td>{{ supply.unit_price }} €</td>
-                    <td><strong>{{ supply.total_price|floatformat:2 }} €</strong></td>
+                    <td>{{ supply.unit_price|floatformat:2 }} {{ supply.get_currency_display }}</td>
+                    <td><strong>{{ supply.formatted_total_price }}</strong></td>
                     <td>{{ supply.date|date:"d/m/Y" }}</td>
                     <td>
-                        <button type="button" onclick="openSupplyModal({{ supply.id }}, {{ supply.supplier.id }}, {{ supply.product.id }}, {{ supply.quantity }}, '{{ supply.unit_price }}')" class="btn btn-sm btn-warning">Modifier</button>
+                        <button type="button"
+                                class="btn btn-sm btn-warning"
+                                data-supply-id="{{ supply.id }}"
+                                data-supplier-id="{{ supply.supplier.id|default:'' }}"
+                                data-product-id="{{ supply.product.id|default:'' }}"
+                                data-quantity="{{ supply.quantity }}"
+                                data-unit-price="{{ supply.unit_price }}"
+                                data-currency="{{ supply.currency }}"
+                                onclick="openSupplyModalFromButton(this)">
+                            Modifier
+                        </button>
                         <button type="button" onclick="deleteSupply({{ supply.id }})" class="btn btn-sm btn-danger">Supprimer</button>
                     </td>
                 </tr>
@@ -145,11 +155,11 @@
     <div class="modal-content">
         <span class="close-btn" onclick="closeSupplyModal()">&times;</span>
         <h3 id="modalTitle">Ajouter un Approvisionnement</h3>
-        
+
         <form id="supplyForm" style="margin-top: 20px;">
             {% csrf_token %}
             <input type="hidden" id="supplyId" name="supply_id" value="">
-            
+
             <div class="mb-3">
                 <label for="supplier" class="form-label">Fournisseur *</label>
                 <select class="form-select" id="supplier" name="supplier_id" required>
@@ -171,16 +181,26 @@
             </div>
 
             <div class="row">
-                <div class="col-md-6">
+                <div class="col-md-4">
                     <div class="mb-3">
                         <label for="quantity" class="form-label">Quantité *</label>
                         <input type="number" class="form-control" id="quantity" name="quantity" min="1" required>
                     </div>
                 </div>
-                <div class="col-md-6">
+                <div class="col-md-4">
                     <div class="mb-3">
-                        <label for="unitPrice" class="form-label">Prix Unitaire (€) *</label>
+                        <label for="unitPrice" class="form-label">Prix Unitaire *</label>
                         <input type="number" class="form-control" id="unitPrice" name="unit_price" step="0.01" required>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="mb-3">
+                        <label for="currency" class="form-label">Devise *</label>
+                        <select class="form-select" id="currency" name="currency" required>
+                            <option value="EUR">Euro (€)</option>
+                            <option value="USD">Dollar US ($)</option>
+                            <option value="XOF">Franc CFA (FCFA)</option>
+                        </select>
                     </div>
                 </div>
             </div>
@@ -196,10 +216,10 @@
 </div>
 
 <script>
-    function openSupplyModal(supplyId, supplierId = '', productId = '', quantity = '', unitPrice = '') {
+    function openSupplyModal(supplyId, supplierId = '', productId = '', quantity = '', unitPrice = '', currency = 'EUR') {
         const modal = document.getElementById('supplyModal');
         const modalTitle = document.getElementById('modalTitle');
-        
+
         if (supplyId) {
             modalTitle.textContent = 'Modifier un Approvisionnement';
             document.getElementById('supplyId').value = supplyId;
@@ -207,13 +227,26 @@
             document.getElementById('product').value = productId;
             document.getElementById('quantity').value = quantity;
             document.getElementById('unitPrice').value = unitPrice;
+            document.getElementById('currency').value = currency || 'EUR';
         } else {
             modalTitle.textContent = 'Ajouter un Approvisionnement';
             document.getElementById('supplyId').value = '';
             document.getElementById('supplyForm').reset();
+            document.getElementById('currency').value = 'EUR';
         }
-        
+
         modal.classList.add('show');
+    }
+
+    function openSupplyModalFromButton(button) {
+        openSupplyModal(
+            button.dataset.supplyId,
+            button.dataset.supplierId || '',
+            button.dataset.productId || '',
+            button.dataset.quantity || '',
+            button.dataset.unitPrice || '',
+            button.dataset.currency || 'EUR'
+        );
     }
 
     function closeSupplyModal() {
@@ -245,9 +278,9 @@
 
     document.getElementById('supplyForm').addEventListener('submit', async function(e) {
         e.preventDefault();
-        
+
         const formData = new FormData(this);
-        
+
         try {
             const response = await fetch('{% url "add_supply" %}', {
                 method: 'POST',

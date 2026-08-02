@@ -1,4 +1,4 @@
-s<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
@@ -88,7 +88,7 @@ s<!DOCTYPE html>
             <p class="mb-0">Entreprise: {{ company_name }}</p>
         </div>
         <div>
-            <a href="#" onclick="openProductModal(null)" class="btn btn-light">+ Ajouter</a>
+            <a href="#" onclick="openProductModal(null); return false;" class="btn btn-light">+ Ajouter</a>
             <a href="{% url 'dashboard' %}" class="btn btn-light">← Tableau de bord</a>
         </div>
     </div>
@@ -121,7 +121,7 @@ s<!DOCTYPE html>
                     </td>
                     <td class="product-name">{{ product.name }}</td>
                     <td>{{ product.description|truncatewords:5 }}</td>
-                    <td>{{ product.price }} €</td>
+                    <td>{{ product.formatted_price }}</td>
                     <td>
                         {% if product.stock_quantity > 10 %}
                             <span class="badge bg-success">{{ product.stock_quantity }}</span>
@@ -138,6 +138,7 @@ s<!DOCTYPE html>
                                 data-name="{{ product.name|escapejs }}"
                                 data-description="{{ product.description|escapejs }}"
                                 data-price="{{ product.price }}"
+                                data-currency="{{ product.currency }}"
                                 data-stock="{{ product.stock_quantity }}"
                                 onclick="openProductModalFromButton(this)">
                             Modifier
@@ -160,11 +161,11 @@ s<!DOCTYPE html>
     <div class="modal-content">
         <span class="close-btn" onclick="closeProductModal()">&times;</span>
         <h3 id="modalTitle">Ajouter un Produit</h3>
-        
+
         <form id="productForm" enctype="multipart/form-data" style="margin-top: 20px;">
             {% csrf_token %}
             <input type="hidden" id="productId" name="product_id" value="">
-            
+
             <div class="mb-3">
                 <label for="name" class="form-label">Nom du Produit *</label>
                 <input type="text" class="form-control" id="name" name="name" required>
@@ -176,13 +177,23 @@ s<!DOCTYPE html>
             </div>
 
             <div class="row">
-                <div class="col-md-6">
+                <div class="col-md-5">
                     <div class="mb-3">
-                        <label for="price" class="form-label">Prix Unitaire (FCFA) *</label>
+                        <label for="price" class="form-label">Prix Unitaire *</label>
                         <input type="number" class="form-control" id="price" name="price" step="0.01" required>
                     </div>
                 </div>
-                <div class="col-md-6">
+                <div class="col-md-3">
+                    <div class="mb-3">
+                        <label for="currency" class="form-label">Devise *</label>
+                        <select class="form-select" id="currency" name="currency" required>
+                            <option value="EUR">Euro (€)</option>
+                            <option value="USD">Dollar US ($)</option>
+                            <option value="XOF">Franc CFA (FCFA)</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-4">
                     <div class="mb-3">
                         <label for="stock" class="form-label">Stock</label>
                         <input type="number" class="form-control" id="stock" name="stock" min="0">
@@ -206,7 +217,7 @@ s<!DOCTYPE html>
 </div>
 
 <script>
-    function openProductModal(productId, name = '', description = '', price = '', stock = '') {
+    function openProductModal(productId, name = '', description = '', price = '', stock = '', currency = 'EUR') {
         const modal = document.getElementById('productModal');
         const modalTitle = document.getElementById('modalTitle');
 
@@ -217,10 +228,12 @@ s<!DOCTYPE html>
             document.getElementById('description').value = description;
             document.getElementById('price').value = price;
             document.getElementById('stock').value = stock;
+            document.getElementById('currency').value = currency || 'EUR';
         } else {
             modalTitle.textContent = 'Ajouter un Produit';
             document.getElementById('productId').value = '';
             document.getElementById('productForm').reset();
+            document.getElementById('currency').value = 'EUR';
         }
 
         modal.classList.add('show');
@@ -232,7 +245,8 @@ s<!DOCTYPE html>
             button.dataset.name || '',
             button.dataset.description || '',
             button.dataset.price || '',
-            button.dataset.stock || ''
+            button.dataset.stock || '',
+            button.dataset.currency || 'EUR'
         );
     }
 
@@ -277,7 +291,7 @@ s<!DOCTYPE html>
                 },
                 credentials: 'same-origin'
             });
-            
+
             const msgDiv = document.getElementById('message');
             if (!response.ok) {
                 const text = await response.text();
@@ -340,4 +354,3 @@ s<!DOCTYPE html>
 
 </body>
 </html>
-
