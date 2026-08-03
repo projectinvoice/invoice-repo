@@ -2,155 +2,321 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>Approvisionnements - {{ company_name }}</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Approvisionnements — {{ company_name }}</title>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+        :root {
+            --bg-base: #0F1629;
+            --bg-card: #1A2238;
+            --bg-card-hover: #1F2A44;
+            --border: rgba(99, 102, 241, 0.15);
+            --indigo: #6366F1;
+            --indigo-light: #818CF8;
+            --emerald: #10B981;
+            --amber: #F59E0B;
+            --rose: #F43F5E;
+            --sky: #38BDF8;
+            --text-primary: #E2E8F0;
+            --text-secondary: #94A3B8;
+            --text-muted: #64748B;
+            --radius: 16px;
+            --radius-sm: 10px;
+            --shadow: 0 4px 24px rgba(0,0,0,0.4);
+        }
+
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
         body {
-            background-color: #f4f6f9;
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-base);
+            color: var(--text-primary);
+            min-height: 100vh;
+            font-size: 14px;
+            line-height: 1.6;
         }
-        .card {
-            border-radius: 10px;
+
+        .sidebar {
+            position: fixed; left: 0; top: 0; bottom: 0;
+            width: 240px; background: var(--bg-card);
+            border-right: 1px solid var(--border);
+            display: flex; flex-direction: column; z-index: 100;
         }
+
+        .sidebar-logo {
+            padding: 24px 20px 20px; border-bottom: 1px solid var(--border);
+            display: flex; align-items: center; gap: 12px;
+        }
+
+        .logo-mark {
+            width: 36px; height: 36px; background: linear-gradient(135deg, var(--indigo), #9333EA);
+            border-radius: 10px; display: flex; align-items: center; justify-content: center;
+            font-size: 18px; font-weight: 800; color: white; flex-shrink: 0;
+        }
+
+        .logo-text { font-size: 15px; font-weight: 700; color: var(--text-primary); }
+
+        .sidebar-nav { flex: 1; padding: 16px 12px; overflow-y: auto; }
+
+        .nav-section-label {
+            font-size: 10px; font-weight: 600; color: var(--text-muted);
+            text-transform: uppercase; letter-spacing: 0.12em; padding: 12px 8px 6px;
+        }
+
+        .nav-item {
+            display: flex; align-items: center; gap: 10px; padding: 9px 12px;
+            border-radius: var(--radius-sm); color: var(--text-secondary);
+            text-decoration: none; font-weight: 500; font-size: 13.5px;
+            transition: all 0.18s; margin-bottom: 2px;
+        }
+
+        .nav-item:hover, .nav-item.active {
+            background: rgba(99, 102, 241, 0.12); color: var(--indigo-light);
+        }
+        .nav-item.active { font-weight: 600; }
+        .nav-item .nav-icon { font-size: 16px; width: 20px; text-align: center; }
+        .nav-badge { margin-left: auto; background: rgba(99,102,241,0.2); color: var(--indigo-light); font-size: 11px; font-weight: 600; padding: 2px 7px; border-radius: 20px; }
+
+        .sidebar-footer { padding: 16px 12px; border-top: 1px solid var(--border); }
+
+        .user-block {
+            display: flex; align-items: center; gap: 10px; padding: 10px;
+            border-radius: var(--radius-sm); background: rgba(255,255,255,0.04);
+        }
+
+        .user-avatar {
+            width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, var(--emerald), #059669);
+            display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; color: white; flex-shrink: 0;
+        }
+        .user-name { font-weight: 600; font-size: 13px; }
+        .user-role { font-size: 11px; color: var(--text-muted); }
+
+        .logout-btn {
+            margin-top: 10px; display: block; text-align: center; padding: 8px;
+            background: rgba(244, 63, 94, 0.1); color: var(--rose);
+            border-radius: var(--radius-sm); text-decoration: none; font-size: 13px; font-weight: 500;
+        }
+        .logout-btn:hover { background: rgba(244, 63, 94, 0.2); }
+
+        .main { margin-left: 240px; min-height: 100vh; display: flex; flex-direction: column; }
+
+        .topbar {
+            background: var(--bg-card); border-bottom: 1px solid var(--border);
+            padding: 14px 32px; display: flex; align-items: center; justify-content: space-between;
+            position: sticky; top: 0; z-index: 50;
+        }
+
+        .topbar-title { font-size: 17px; font-weight: 700; }
+        .topbar-sub { font-size: 12px; color: var(--text-muted); margin-top: 1px; }
+        .topbar-actions { display: flex; gap: 10px; align-items: center; }
+
+        .btn {
+            display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px;
+            border-radius: var(--radius-sm); font-size: 13px; font-weight: 600;
+            cursor: pointer; text-decoration: none; border: none; transition: all 0.2s;
+            font-family: 'Inter', sans-serif;
+        }
+        .btn-primary { background: var(--indigo); color: white; }
+        .btn-primary:hover { background: #5254CC; transform: translateY(-1px); }
+        .btn-ghost {
+            background: rgba(255,255,255,0.06); color: var(--text-secondary);
+            border: 1px solid var(--border);
+        }
+        .btn-ghost:hover { background: rgba(255,255,255,0.1); color: var(--text-primary); }
+        .btn-sm { padding: 6px 12px; font-size: 12px; }
+        .btn-danger-soft {
+            background: rgba(244,63,94,0.1); color: var(--rose);
+            border: 1px solid rgba(244,63,94,0.2);
+        }
+        .btn-danger-soft:hover { background: rgba(244,63,94,0.22); }
+        .btn-edit-soft {
+            background: rgba(99,102,241,0.1); color: var(--indigo-light);
+            border: 1px solid rgba(99,102,241,0.2);
+        }
+        .btn-edit-soft:hover { background: rgba(99,102,241,0.2); }
+
+        .content { padding: 28px 32px; flex: 1; }
+
+        .toolbar { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
+        .search-wrap { position: relative; flex: 1; min-width: 220px; }
+        .search-icon {
+            position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
+            color: var(--text-muted); font-size: 15px; pointer-events: none;
+        }
+        .search-input {
+            width: 100%; background: var(--bg-card); border: 1px solid var(--border);
+            border-radius: var(--radius-sm); padding: 9px 14px 9px 36px; color: var(--text-primary);
+            font-size: 13px; outline: none; transition: border-color 0.2s;
+        }
+        .search-input::placeholder { color: var(--text-muted); }
+        .search-input:focus { border-color: var(--indigo); }
+
+        .table-card {
+            background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius);
+            box-shadow: var(--shadow); overflow: hidden;
+        }
+
+        .table { width: 100%; border-collapse: collapse; }
         .table th {
-            background-color: #343a40;
-            color: white;
+            background: rgba(255,255,255,0.04); color: var(--text-secondary); text-align: left;
+            padding: 12px 16px; font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
         }
-        .header-section {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 20px;
-            border-radius: 10px;
-            margin-bottom: 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+        .table td {
+            padding: 14px 16px; border-top: 1px solid var(--border); color: var(--text-primary); vertical-align: middle;
         }
+        .supply-row:hover { background: var(--bg-card-hover); }
+        .supply-meta { color: var(--text-secondary); font-size: 12px; }
+        .supply-total { font-weight: 700; color: var(--emerald); }
+        .empty-state { padding: 24px; text-align: center; color: var(--text-secondary); }
+
         .modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.7);
-            display: none;
-            align-items: center;
-            justify-content: center;
-            z-index: 1000;
+            position: fixed; inset: 0; background: rgba(0, 0, 0, 0.7); display: none;
+            align-items: center; justify-content: center; z-index: 1000; padding: 24px;
         }
-        .modal-overlay.show {
-            display: flex;
-        }
+        .modal-overlay.show { display: flex; }
         .modal-content {
-            background: white;
-            border-radius: 15px;
-            padding: 40px;
-            max-width: 600px;
-            width: 90%;
-            max-height: 80vh;
-            overflow-y: auto;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
-            animation: slideIn 0.3s ease;
+            background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius);
+            padding: 28px; max-width: 640px; width: 100%; max-height: 85vh; overflow-y: auto;
+            box-shadow: var(--shadow); animation: slideIn 0.25s ease;
         }
-        @keyframes slideIn {
-            from {
-                transform: translateY(-50px);
-                opacity: 0;
-            }
-            to {
-                transform: translateY(0);
-                opacity: 1;
-            }
-        }
-        .close-btn {
-            float: right;
-            font-size: 28px;
-            font-weight: bold;
-            color: #999;
-            cursor: pointer;
-        }
-        .close-btn:hover {
-            color: #000;
+        @keyframes slideIn { from { transform: translateY(-20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        .close-btn { float: right; font-size: 28px; font-weight: bold; color: var(--text-muted); cursor: pointer; }
+        .close-btn:hover { color: var(--text-primary); }
+
+        .form-label { display: block; margin-bottom: 6px; color: var(--text-secondary); font-size: 13px; font-weight: 600; }
+        .form-control, .form-select { width: 100%; background: rgba(255,255,255,0.04); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; color: var(--text-primary); outline: none; }
+        .form-control:focus, .form-select:focus { border-color: var(--indigo); box-shadow: 0 0 0 3px rgba(99,102,241,0.15); }
+        .mb-3 { margin-bottom: 14px; }
+        .row { display: flex; gap: 12px; flex-wrap: wrap; }
+        .col-md-4 { flex: 1; min-width: 180px; }
+        .d-flex { display: flex; gap: 10px; flex-wrap: wrap; }
+        .alert { padding: 10px 12px; border-radius: 10px; margin-top: 12px; }
+        .alert-success { background: rgba(16,185,129,0.15); color: #A7F3D0; }
+        .alert-danger { background: rgba(244,63,94,0.15); color: #FECACA; }
+
+        @media (max-width: 900px) {
+            .sidebar { display: none; }
+            .main { margin-left: 0; }
+            .topbar { padding: 14px 20px; }
+            .content { padding: 20px; }
         }
     </style>
 </head>
 <body>
 
-<div class="container mt-5">
-    <div class="header-section">
-        <div>
-            <h2>📥 Approvisionnements</h2>
-            <p class="mb-0">Entreprise: {{ company_name }}</p>
-        </div>
-        <div>
-            <a href="#" onclick="openSupplyModal(null); return false;" class="btn btn-light">+ Ajouter</a>
-            <a href="{% url 'dashboard' %}" class="btn btn-light">← Tableau de bord</a>
-        </div>
+<div class="sidebar">
+    <div class="sidebar-logo">
+        <div class="logo-mark">A</div>
+        <div class="logo-text">{{ company_name }}</div>
     </div>
 
-    <div class="card shadow p-3">
-        <input type="text" class="form-control mb-3" id="searchInput" placeholder="🔍 Rechercher un approvisionnement...">
+    <nav class="sidebar-nav">
+        <div class="nav-section-label">Navigation</div>
+        <a href="{% url 'dashboard' %}" class="nav-item"><span class="nav-icon">📊</span> Tableau de bord</a>
+        <a href="{% url 'list_products' %}" class="nav-item"><span class="nav-icon">📦</span> Produits</a>
+        <a href="{% url 'list_clients' %}" class="nav-item"><span class="nav-icon">🤝</span> Clients</a>
+        <a href="{% url 'list_sales' %}" class="nav-item"><span class="nav-icon">💵</span> Ventes</a>
+        <a href="{% url 'list_invoices' %}" class="nav-item"><span class="nav-icon">📄</span> Factures</a>
+        <a href="{% url 'list_suppliers' %}" class="nav-item"><span class="nav-icon">🏢</span> Fournisseurs</a>
+        <a href="{% url 'list_supplies' %}" class="nav-item active"><span class="nav-icon">📥</span> Approvisionnements <span class="nav-badge">{{ supplies|length }}</span></a>
+        <a href="{% url 'list_agents' %}" class="nav-item"><span class="nav-icon">👥</span> Agents</a>
+    </nav>
 
-        <table class="table table-hover">
-            <thead>
-                <tr>
-                    <th>#</th>
-                    <th>Fournisseur</th>
-                    <th>Produit</th>
-                    <th>Quantité</th>
-                    <th>Prix Unitaire</th>
-                    <th>Total</th>
-                    <th>Date</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for supply in supplies %}
-                <tr class="supply-row">
-                    <td>{{ forloop.counter }}</td>
-                    <td class="supply-supplier">
-                        {% if supply.supplier %}
-                            {{ supply.supplier.name }}
-                        {% else %}
-                            <span class="badge bg-secondary">-</span>
-                        {% endif %}
-                    </td>
-                    <td>
-                        {% if supply.product %}
-                            {{ supply.product.name }}
-                        {% else %}
-                            <span class="badge bg-secondary">-</span>
-                        {% endif %}
-                    </td>
-                    <td>{{ supply.quantity }}</td>
-                    <td>{{ supply.unit_price|floatformat:2 }} {{ supply.get_currency_display }}</td>
-                    <td><strong>{{ supply.formatted_total_price }}</strong></td>
-                    <td>{{ supply.date|date:"d/m/Y" }}</td>
-                    <td>
-                        <button type="button"
-                                class="btn btn-sm btn-warning"
-                                data-supply-id="{{ supply.id }}"
-                                data-supplier-id="{{ supply.supplier.id|default:'' }}"
-                                data-product-id="{{ supply.product.id|default:'' }}"
-                                data-quantity="{{ supply.quantity }}"
-                                data-unit-price="{{ supply.unit_price }}"
-                                data-currency="{{ supply.currency }}"
-                                onclick="openSupplyModalFromButton(this)">
-                            Modifier
-                        </button>
-                        <button type="button" onclick="deleteSupply({{ supply.id }})" class="btn btn-sm btn-danger">Supprimer</button>
-                    </td>
-                </tr>
-                {% empty %}
-                <tr>
-                    <td colspan="8" class="text-center">Aucun approvisionnement enregistré</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+    <div class="sidebar-footer">
+        <div class="user-block">
+            <div class="user-avatar">{{ request.user.first_name|default:request.user.username|slice:':1'|upper }}</div>
+            <div>
+                <div class="user-name">{{ request.user.get_full_name|default:request.user.username }}</div>
+                <div class="user-role">Gestionnaire</div>
+            </div>
+        </div>
+        <a href="{% url 'logout' %}" class="logout-btn">Déconnexion</a>
     </div>
 </div>
 
-<!-- MODAL -->
+<div class="main">
+    <div class="topbar">
+        <div>
+            <div class="topbar-title">Liste des approvisionnements</div>
+            <div class="topbar-sub">{{ supplies|length }} approvisionnement{{ supplies|length|pluralize }} enregistré{{ supplies|length|pluralize }}</div>
+        </div>
+        <div class="topbar-actions">
+            <a href="#" onclick="openSupplyModal(null); return false;" class="btn btn-primary">＋ Ajouter</a>
+            <a href="{% url 'dashboard' %}" class="btn btn-ghost">← Tableau de bord</a>
+        </div>
+    </div>
+
+    <div class="content">
+        <div class="toolbar">
+            <div class="search-wrap">
+                <span class="search-icon">🔎</span>
+                <input type="text" class="search-input" id="searchInput" placeholder="Rechercher un approvisionnement...">
+            </div>
+        </div>
+
+        <div class="table-card">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Fournisseur</th>
+                        <th>Produit</th>
+                        <th>Qté</th>
+                        <th>Prix</th>
+                        <th>Total</th>
+                        <th>Date</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for supply in supplies %}
+                    <tr class="supply-row">
+                        <td>{{ forloop.counter }}</td>
+                        <td>
+                            {% if supply.supplier %}
+                                <div class="supply-meta">{{ supply.supplier.name }}</div>
+                            {% else %}
+                                <span class="supply-meta">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if supply.product %}
+                                <div class="supply-meta">{{ supply.product.name }}</div>
+                            {% else %}
+                                <span class="supply-meta">-</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ supply.quantity }}</td>
+                        <td>{{ supply.unit_price|floatformat:2 }} {{ supply.get_currency_display }}</td>
+                        <td><span class="supply-total">{{ supply.formatted_total_price }}</span></td>
+                        <td>{{ supply.date|date:"d/m/Y" }}</td>
+                        <td>
+                            <button type="button"
+                                    class="btn btn-edit-soft btn-sm"
+                                    data-supply-id="{{ supply.id }}"
+                                    data-supplier-id="{{ supply.supplier.id|default:'' }}"
+                                    data-product-id="{{ supply.product.id|default:'' }}"
+                                    data-quantity="{{ supply.quantity }}"
+                                    data-unit-price="{{ supply.unit_price }}"
+                                    data-currency="{{ supply.currency }}"
+                                    onclick="openSupplyModalFromButton(this)">
+                                Modifier
+                            </button>
+                            <button type="button" onclick="deleteSupply({{ supply.id }})" class="btn btn-danger-soft btn-sm">Supprimer</button>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="8"><div class="empty-state">Aucun approvisionnement enregistré</div></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
 <div class="modal-overlay" id="supplyModal">
     <div class="modal-content">
         <span class="close-btn" onclick="closeSupplyModal()">&times;</span>
@@ -205,9 +371,9 @@
                 </div>
             </div>
 
-            <div class="d-flex gap-2">
+            <div class="d-flex">
                 <button type="submit" class="btn btn-primary">💾 Enregistrer</button>
-                <button type="button" class="btn btn-secondary" onclick="closeSupplyModal()">Annuler</button>
+                <button type="button" class="btn btn-ghost" onclick="closeSupplyModal()">Annuler</button>
             </div>
         </form>
 
@@ -285,9 +451,7 @@
             const response = await fetch('{% url "add_supply" %}', {
                 method: 'POST',
                 body: formData,
-                headers: {
-                    'X-CSRFToken': csrfToken
-                },
+                headers: { 'X-CSRFToken': csrfToken },
                 credentials: 'same-origin'
             });
 
@@ -301,10 +465,10 @@
 
             const data = await response.json();
             if (data.success) {
-                msgDiv.innerHTML = '<div class="alert alert-success alert-dismissible fade show" role="alert">' + data.message + '<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>';
+                msgDiv.innerHTML = '<div class="alert alert-success" role="alert">' + data.message + '</div>';
                 setTimeout(() => location.reload(), 1500);
             } else {
-                msgDiv.innerHTML = '<div class="alert alert-danger alert-dismissible fade show" role="alert">' + data.error + '<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>';
+                msgDiv.innerHTML = '<div class="alert alert-danger" role="alert">' + data.error + '</div>';
             }
         } catch (error) {
             console.error(error);
@@ -320,9 +484,7 @@
         const response = await fetch('{% url "delete_supply" %}', {
             method: 'POST',
             body: formData,
-            headers: {
-                'X-CSRFToken': csrfToken
-            },
+            headers: { 'X-CSRFToken': csrfToken },
             credentials: 'same-origin'
         });
 

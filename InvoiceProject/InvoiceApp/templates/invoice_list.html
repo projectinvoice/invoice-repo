@@ -2,154 +2,328 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>Factures - {{ company_name }}</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Factures — {{ company_name }}</title>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+        :root {
+            --bg-base: #0F1629;
+            --bg-card: #1A2238;
+            --bg-card-hover: #1F2A44;
+            --border: rgba(99, 102, 241, 0.15);
+            --indigo: #6366F1;
+            --indigo-light: #818CF8;
+            --emerald: #10B981;
+            --amber: #F59E0B;
+            --rose: #F43F5E;
+            --sky: #38BDF8;
+            --text-primary: #E2E8F0;
+            --text-secondary: #94A3B8;
+            --text-muted: #64748B;
+            --radius: 16px;
+            --radius-sm: 10px;
+            --shadow: 0 4px 24px rgba(0,0,0,0.4);
+        }
+
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
         body {
-            background-color: #f4f6f9;
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-base);
+            color: var(--text-primary);
+            min-height: 100vh;
+            font-size: 14px;
+            line-height: 1.6;
         }
-        .card {
-            border-radius: 10px;
+
+        .sidebar {
+            position: fixed; left: 0; top: 0; bottom: 0;
+            width: 240px; background: var(--bg-card);
+            border-right: 1px solid var(--border);
+            display: flex; flex-direction: column; z-index: 100;
         }
+
+        .sidebar-logo {
+            padding: 24px 20px 20px; border-bottom: 1px solid var(--border);
+            display: flex; align-items: center; gap: 12px;
+        }
+
+        .logo-mark {
+            width: 36px; height: 36px; background: linear-gradient(135deg, var(--indigo), #9333EA);
+            border-radius: 10px; display: flex; align-items: center; justify-content: center;
+            font-size: 18px; font-weight: 800; color: white; flex-shrink: 0;
+        }
+
+        .logo-text { font-size: 15px; font-weight: 700; color: var(--text-primary); }
+
+        .sidebar-nav { flex: 1; padding: 16px 12px; overflow-y: auto; }
+
+        .nav-section-label {
+            font-size: 10px; font-weight: 600; color: var(--text-muted);
+            text-transform: uppercase; letter-spacing: 0.12em; padding: 12px 8px 6px;
+        }
+
+        .nav-item {
+            display: flex; align-items: center; gap: 10px; padding: 9px 12px;
+            border-radius: var(--radius-sm); color: var(--text-secondary);
+            text-decoration: none; font-weight: 500; font-size: 13.5px;
+            transition: all 0.18s; margin-bottom: 2px;
+        }
+
+        .nav-item:hover, .nav-item.active {
+            background: rgba(99, 102, 241, 0.12); color: var(--indigo-light);
+        }
+        .nav-item.active { font-weight: 600; }
+        .nav-item .nav-icon { font-size: 16px; width: 20px; text-align: center; }
+
+        .sidebar-footer { padding: 16px 12px; border-top: 1px solid var(--border); }
+
+        .user-block {
+            display: flex; align-items: center; gap: 10px; padding: 10px;
+            border-radius: var(--radius-sm); background: rgba(255,255,255,0.04);
+        }
+
+        .user-avatar {
+            width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, var(--emerald), #059669);
+            display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; color: white; flex-shrink: 0;
+        }
+        .user-name { font-weight: 600; font-size: 13px; }
+        .user-role { font-size: 11px; color: var(--text-muted); }
+
+        .logout-btn {
+            margin-top: 10px; display: block; text-align: center; padding: 8px;
+            background: rgba(244, 63, 94, 0.1); color: var(--rose);
+            border-radius: var(--radius-sm); text-decoration: none; font-size: 13px; font-weight: 500;
+        }
+        .logout-btn:hover { background: rgba(244, 63, 94, 0.2); }
+
+        .main { margin-left: 240px; min-height: 100vh; display: flex; flex-direction: column; }
+
+        .topbar {
+            background: var(--bg-card); border-bottom: 1px solid var(--border);
+            padding: 14px 32px; display: flex; align-items: center; justify-content: space-between;
+            position: sticky; top: 0; z-index: 50;
+        }
+
+        .topbar-title { font-size: 17px; font-weight: 700; }
+        .topbar-sub { font-size: 12px; color: var(--text-muted); margin-top: 1px; }
+        .topbar-actions { display: flex; gap: 10px; align-items: center; }
+
+        .btn {
+            display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px;
+            border-radius: var(--radius-sm); font-size: 13px; font-weight: 600;
+            cursor: pointer; text-decoration: none; border: none; transition: all 0.2s;
+            font-family: 'Inter', sans-serif;
+        }
+        .btn-primary { background: var(--indigo); color: white; }
+        .btn-primary:hover { background: #5254CC; transform: translateY(-1px); }
+        .btn-ghost {
+            background: rgba(255,255,255,0.06); color: var(--text-secondary);
+            border: 1px solid var(--border);
+        }
+        .btn-ghost:hover { background: rgba(255,255,255,0.1); color: var(--text-primary); }
+        .btn-sm { padding: 6px 12px; font-size: 12px; }
+        .btn-danger-soft {
+            background: rgba(244,63,94,0.1); color: var(--rose);
+            border: 1px solid rgba(244,63,94,0.2);
+        }
+        .btn-danger-soft:hover { background: rgba(244,63,94,0.22); }
+        .btn-edit-soft {
+            background: rgba(99,102,241,0.1); color: var(--indigo-light);
+            border: 1px solid rgba(99,102,241,0.2);
+        }
+        .btn-edit-soft:hover { background: rgba(99,102,241,0.2); }
+
+        .content { padding: 28px 32px; flex: 1; }
+
+        .toolbar { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
+        .search-wrap { position: relative; flex: 1; min-width: 220px; }
+        .search-icon {
+            position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
+            color: var(--text-muted); font-size: 15px; pointer-events: none;
+        }
+        .search-input {
+            width: 100%; background: var(--bg-card); border: 1px solid var(--border);
+            border-radius: var(--radius-sm); padding: 9px 14px 9px 36px; color: var(--text-primary);
+            font-size: 13px; outline: none; transition: border-color 0.2s;
+        }
+        .search-input::placeholder { color: var(--text-muted); }
+        .search-input:focus { border-color: var(--indigo); }
+
+        .table-card {
+            background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius);
+            box-shadow: var(--shadow); overflow: hidden;
+        }
+
+        .table { width: 100%; border-collapse: collapse; }
         .table th {
-            background-color: #343a40;
-            color: white;
+            background: rgba(255,255,255,0.04); color: var(--text-secondary); text-align: left;
+            padding: 12px 16px; font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
         }
-        .header-section {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 20px;
-            border-radius: 10px;
-            margin-bottom: 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+        .table td {
+            padding: 14px 16px; border-top: 1px solid var(--border); color: var(--text-primary); vertical-align: middle;
         }
+        .invoice-row:hover { background: var(--bg-card-hover); }
+        .invoice-number { font-weight: 700; color: var(--sky); }
+        .invoice-muted { color: var(--text-secondary); font-size: 12px; }
+        .status-pill {
+            display: inline-block; padding: 4px 8px; border-radius: 999px; font-size: 11px; font-weight: 700;
+            text-transform: uppercase; letter-spacing: 0.05em;
+        }
+        .status-pending { background: rgba(245, 158, 11, 0.16); color: #FCD34D; }
+        .status-paid { background: rgba(16, 185, 129, 0.16); color: #A7F3D0; }
+        .status-overdue { background: rgba(244, 63, 94, 0.16); color: #FECACA; }
+        .empty-state { padding: 24px; text-align: center; color: var(--text-secondary); }
+
         .modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.7);
-            display: none;
-            align-items: center;
-            justify-content: center;
-            z-index: 1000;
+            position: fixed; inset: 0; background: rgba(0, 0, 0, 0.7); display: none;
+            align-items: center; justify-content: center; z-index: 1000; padding: 24px;
         }
-        .modal-overlay.show {
-            display: flex;
-        }
+        .modal-overlay.show { display: flex; }
         .modal-content {
-            background: white;
-            border-radius: 15px;
-            padding: 40px;
-            max-width: 600px;
-            width: 90%;
-            max-height: 80vh;
-            overflow-y: auto;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
-            animation: slideIn 0.3s ease;
+            background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius);
+            padding: 28px; max-width: 640px; width: 100%; max-height: 85vh; overflow-y: auto;
+            box-shadow: var(--shadow); animation: slideIn 0.25s ease;
         }
-        @keyframes slideIn {
-            from {
-                transform: translateY(-50px);
-                opacity: 0;
-            }
-            to {
-                transform: translateY(0);
-                opacity: 1;
-            }
-        }
-        .close-btn {
-            float: right;
-            font-size: 28px;
-            font-weight: bold;
-            color: #999;
-            cursor: pointer;
-        }
-        .close-btn:hover {
-            color: #000;
+        @keyframes slideIn { from { transform: translateY(-20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        .close-btn { float: right; font-size: 28px; font-weight: bold; color: var(--text-muted); cursor: pointer; }
+        .close-btn:hover { color: var(--text-primary); }
+
+        .form-label { display: block; margin-bottom: 6px; color: var(--text-secondary); font-size: 13px; font-weight: 600; }
+        .form-control, .form-select { width: 100%; background: rgba(255,255,255,0.04); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; color: var(--text-primary); outline: none; }
+        .form-control:focus, .form-select:focus { border-color: var(--indigo); box-shadow: 0 0 0 3px rgba(99,102,241,0.15); }
+        .mb-3 { margin-bottom: 14px; }
+        .d-flex { display: flex; gap: 10px; flex-wrap: wrap; }
+        .alert { padding: 10px 12px; border-radius: 10px; margin-top: 12px; }
+        .alert-success { background: rgba(16,185,129,0.15); color: #A7F3D0; }
+        .alert-danger { background: rgba(244,63,94,0.15); color: #FECACA; }
+
+        @media (max-width: 900px) {
+            .sidebar { display: none; }
+            .main { margin-left: 0; }
+            .topbar { padding: 14px 20px; }
+            .content { padding: 20px; }
         }
     </style>
 </head>
 <body>
 
-<div class="container mt-5">
-    <div class="header-section">
-        <div>
-            <h2>📄 Factures</h2>
-            <p class="mb-0">Entreprise: {{ company_name }}</p>
-        </div>
-        <div>
-            <a href="#" onclick="openInvoiceModal(null)" class="btn btn-light">+ Ajouter</a>
-            <a href="{% url 'dashboard' %}" class="btn btn-light">← Tableau de bord</a>
-        </div>
+<div class="sidebar">
+    <div class="sidebar-logo">
+        <div class="logo-mark">F</div>
+        <div class="logo-text">{{ company_name }}</div>
     </div>
 
-    <div class="card shadow p-3">
-        <input type="text" class="form-control mb-3" id="searchInput" placeholder="🔍 Rechercher une facture...">
+    <nav class="sidebar-nav">
+        <div class="nav-section-label">Navigation</div>
+        <a href="{% url 'dashboard' %}" class="nav-item"><span class="nav-icon">📊</span> Tableau de bord</a>
+        <a href="{% url 'list_products' %}" class="nav-item"><span class="nav-icon">📦</span> Produits</a>
+        <a href="{% url 'list_clients' %}" class="nav-item"><span class="nav-icon">🤝</span> Clients</a>
+        <a href="{% url 'list_sales' %}" class="nav-item"><span class="nav-icon">💵</span> Ventes</a>
+        <a href="{% url 'list_invoices' %}" class="nav-item active"><span class="nav-icon">📄</span> Factures <span class="nav-badge">{{ invoices|length }}</span></a>
+        <a href="{% url 'list_agents' %}" class="nav-item"><span class="nav-icon">👥</span> Agents</a>
+    </nav>
 
-        <table class="table table-hover">
-            <thead>
-                <tr>
-                    <th>#</th>
-                    <th>Numéro de Facture</th>
-                    <th>Vente</th>
-                    <th>Date d'Émission</th>
-                    <th>Date d'Échéance</th>
-                    <th>Statut</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for invoice in invoices %}
-                <tr class="invoice-row">
-                    <td>{{ forloop.counter }}</td>
-                    <td class="invoice-number"><strong>{{ invoice.invoice_number }}</strong></td>
-                    <td>
-                        {% if invoice.sale %}
-                            {{ invoice.sale.client.name }} - {{ invoice.sale.product.name }}
-                        {% else %}
-                            <span class="badge bg-secondary">-</span>
-                        {% endif %}
-                    </td>
-                    <td>{{ invoice.issued_date|date:"d/m/Y" }}</td>
-                    <td>{{ invoice.due_date|date:"d/m/Y" }}</td>
-                    <td>
-                        {% if invoice.status == "pending" %}
-                            <span class="badge bg-warning">En attente</span>
-                        {% elif invoice.status == "paid" %}
-                            <span class="badge bg-success">Payée</span>
-                        {% else %}
-                            <span class="badge bg-danger">En retard</span>
-                        {% endif %}
-                    </td>
-                    <td>
-                        <button type="button" class="btn btn-sm btn-warning edit-invoice-btn" data-invoice-id="{{ invoice.id }}" data-invoice-number="{{ invoice.invoice_number|escapejs }}" data-sale-id="{{ invoice.sale.id|default:'' }}" data-due-date="{{ invoice.due_date|date:'Y-m-d' }}" data-status="{{ invoice.status }}">Modifier</button>
-                        <button type="button" class="btn btn-sm btn-danger delete-invoice-btn" data-invoice-id="{{ invoice.id }}">Supprimer</button>
-                    </td>
-                </tr>
-                {% empty %}
-                <tr>
-                    <td colspan="7" class="text-center">Aucune facture enregistrée</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+    <div class="sidebar-footer">
+        <div class="user-block">
+            <div class="user-avatar">{{ request.user.first_name|default:request.user.username|slice:':1'|upper }}</div>
+            <div>
+                <div class="user-name">{{ request.user.get_full_name|default:request.user.username }}</div>
+                <div class="user-role">Gestionnaire</div>
+            </div>
+        </div>
+        <a href="{% url 'logout' %}" class="logout-btn">Déconnexion</a>
     </div>
 </div>
 
-<!-- MODAL -->
+<div class="main">
+    <div class="topbar">
+        <div>
+            <div class="topbar-title">Liste des factures</div>
+            <div class="topbar-sub">{{ invoices|length }} facture{{ invoices|length|pluralize }} enregistrée{{ invoices|length|pluralize }}</div>
+        </div>
+        <div class="topbar-actions">
+            <a href="#" onclick="openInvoiceModal(null); return false;" class="btn btn-primary">＋ Ajouter</a>
+            <a href="{% url 'dashboard' %}" class="btn btn-ghost">← Tableau de bord</a>
+        </div>
+    </div>
+
+    <div class="content">
+        <div class="toolbar">
+            <div class="search-wrap">
+                <span class="search-icon">🔎</span>
+                <input type="text" class="search-input" id="searchInput" placeholder="Rechercher une facture...">
+            </div>
+        </div>
+
+        <div class="table-card">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Numéro</th>
+                        <th>Vente</th>
+                        <th>Émission</th>
+                        <th>Échéance</th>
+                        <th>Statut</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for invoice in invoices %}
+                    <tr class="invoice-row">
+                        <td>{{ forloop.counter }}</td>
+                        <td class="invoice-number">{{ invoice.invoice_number }}</td>
+                        <td>
+                            {% if invoice.sale %}
+                                <div class="invoice-muted">{{ invoice.sale.client.name }} — {{ invoice.sale.product.name }}</div>
+                            {% else %}
+                                <span class="invoice-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ invoice.issued_date|date:"d/m/Y" }}</td>
+                        <td>{{ invoice.due_date|date:"d/m/Y" }}</td>
+                        <td>
+                            {% if invoice.status == "pending" %}
+                                <span class="status-pill status-pending">En attente</span>
+                            {% elif invoice.status == "paid" %}
+                                <span class="status-pill status-paid">Payée</span>
+                            {% else %}
+                                <span class="status-pill status-overdue">En retard</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <button type="button" class="btn btn-edit-soft btn-sm edit-invoice-btn"
+                                    data-invoice-id="{{ invoice.id }}"
+                                    data-invoice-number="{{ invoice.invoice_number|escapejs }}"
+                                    data-sale-id="{{ invoice.sale.id|default:'' }}"
+                                    data-due-date="{{ invoice.due_date|date:'Y-m-d' }}"
+                                    data-status="{{ invoice.status }}">Modifier</button>
+                            <button type="button" class="btn btn-danger-soft btn-sm delete-invoice-btn"
+                                    data-invoice-id="{{ invoice.id }}">Supprimer</button>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7"><div class="empty-state">Aucune facture enregistrée</div></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
 <div class="modal-overlay" id="invoiceModal">
     <div class="modal-content">
         <span class="close-btn" onclick="closeInvoiceModal()">&times;</span>
         <h3 id="modalTitle">Ajouter une Facture</h3>
-        
+
         <form id="invoiceForm" style="margin-top: 20px;">
             {% csrf_token %}
             <input type="hidden" id="invoiceId" name="invoice_id" value="">
-            
+
             <div class="mb-3">
                 <label for="invoiceNumber" class="form-label">Numéro de Facture *</label>
                 <input type="text" class="form-control" id="invoiceNumber" name="invoice_number" required>
@@ -160,7 +334,7 @@
                 <select class="form-select" id="sale" name="sale_id" required>
                     <option value="">Sélectionner une vente...</option>
                     {% for sale in sales %}
-                        <option value="{{ sale.id }}">{{ sale.client.name }} - {{ sale.product.name }} ({{ sale.total_price }} €)</option>
+                        <option value="{{ sale.id }}">{{ sale.client.name }} — {{ sale.product.name }} ({{ sale.total_price }} €)</option>
                     {% endfor %}
                 </select>
             </div>
@@ -179,9 +353,9 @@
                 </select>
             </div>
 
-            <div class="d-flex gap-2">
+            <div class="d-flex">
                 <button type="submit" class="btn btn-primary">💾 Enregistrer</button>
-                <button type="button" class="btn btn-secondary" onclick="closeInvoiceModal()">Annuler</button>
+                <button type="button" class="btn btn-ghost" onclick="closeInvoiceModal()">Annuler</button>
             </div>
         </form>
 
@@ -193,7 +367,7 @@
     function openInvoiceModal(invoiceId, invoiceNumber = '', saleId = '', dueDate = '', status = 'pending') {
         const modal = document.getElementById('invoiceModal');
         const modalTitle = document.getElementById('modalTitle');
-        
+
         if (invoiceId) {
             modalTitle.textContent = 'Modifier une Facture';
             document.getElementById('invoiceId').value = invoiceId;
@@ -206,7 +380,7 @@
             document.getElementById('invoiceId').value = '';
             document.getElementById('invoiceForm').reset();
         }
-        
+
         modal.classList.add('show');
     }
 
@@ -256,16 +430,14 @@
 
     document.getElementById('invoiceForm').addEventListener('submit', async function(e) {
         e.preventDefault();
-        
+
         const formData = new FormData(this);
-        
+
         try {
             const response = await fetch('{% url "add_invoice" %}', {
                 method: 'POST',
                 body: formData,
-                headers: {
-                    'X-CSRFToken': csrfToken
-                },
+                headers: { 'X-CSRFToken': csrfToken },
                 credentials: 'same-origin'
             });
 
@@ -279,10 +451,10 @@
 
             const data = await response.json();
             if (data.success) {
-                msgDiv.innerHTML = '<div class="alert alert-success alert-dismissible fade show" role="alert">' + data.message + '<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>';
+                msgDiv.innerHTML = '<div class="alert alert-success" role="alert">' + data.message + '</div>';
                 setTimeout(() => location.reload(), 1500);
             } else {
-                msgDiv.innerHTML = '<div class="alert alert-danger alert-dismissible fade show" role="alert">' + data.error + '<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>';
+                msgDiv.innerHTML = '<div class="alert alert-danger" role="alert">' + data.error + '</div>';
             }
         } catch (error) {
             console.error(error);
@@ -298,9 +470,7 @@
         const response = await fetch('{% url "delete_invoice" %}', {
             method: 'POST',
             body: formData,
-            headers: {
-                'X-CSRFToken': csrfToken
-            },
+            headers: { 'X-CSRFToken': csrfToken },
             credentials: 'same-origin'
         });
 
