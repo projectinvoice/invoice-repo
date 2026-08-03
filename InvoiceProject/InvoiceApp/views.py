@@ -413,11 +413,16 @@ def add_product(request):
     name = request.POST.get("name")
     description = request.POST.get("description", "")
     price = request.POST.get("price")
+    currency = request.POST.get("currency", "EUR")
     stock = request.POST.get("stock") or request.POST.get("stock_quantity", 0)
     image = request.FILES.get("image") if hasattr(request, 'FILES') else None
 
     if not name or price is None:
         return JsonResponse({"success": False, "error": "name et price requis"}, status=400)
+
+    valid_currencies = dict(Product.CURRENCY_CHOICES).keys()
+    if currency not in valid_currencies:
+        currency = "EUR"
 
     stock_quantity = int(stock) if stock not in (None, "", "0") else 0
 
@@ -427,6 +432,7 @@ def add_product(request):
             product.name = name
             product.description = description
             product.price = price
+            product.currency = currency
             product.stock_quantity = stock_quantity
             if image:
                 product.image = image
@@ -440,6 +446,7 @@ def add_product(request):
             name=name,
             description=description,
             price=price,
+            currency=currency,
             stock_quantity=stock_quantity,
             image=image,
         )
@@ -622,20 +629,26 @@ def add_supply(request):
     product_id = request.POST.get("product_id")
     quantity = request.POST.get("quantity")
     unit_price = request.POST.get("unit_price")
+    currency = request.POST.get("currency", "EUR")
+
     if not supplier_id or not product_id or not quantity or not unit_price:
         return JsonResponse({"success": False, "error": "supplier_id, product_id, quantity et unit_price requis"}, status=400)
-    
+
     try:
         quantity = int(quantity)
         unit_price = float(unit_price)
     except (ValueError, TypeError):
         return JsonResponse({"success": False, "error": "quantity et unit_price doivent être des nombres"}, status=400)
-    
+
+    valid_currencies = dict(Product.CURRENCY_CHOICES).keys()
+    if currency not in valid_currencies:
+        currency = "EUR"
+
     supplier = Supplier.objects.filter(id=supplier_id, company=request.user).first()
     product = Product.objects.filter(id=product_id, company=request.user).first()
     if not supplier or not product:
         return JsonResponse({"success": False, "error": "Supplier ou Product introuvable"}, status=404)
-    
+
     if supply_id:
         supply = Supply.objects.filter(id=supply_id, company=request.user).first()
         if not supply:
@@ -644,6 +657,7 @@ def add_supply(request):
         supply.product = product
         supply.quantity = quantity
         supply.unit_price = unit_price
+        supply.currency = currency
         supply.save()
     else:
         supply = Supply.objects.create(
@@ -652,6 +666,7 @@ def add_supply(request):
             product=product,
             quantity=quantity,
             unit_price=unit_price,
+            currency=currency,
         )
     return JsonResponse({"success": True, "supply_id": supply.id, "message": "Approvisionnement enregistré"})
 
@@ -672,20 +687,26 @@ def add_sale(request):
     product_id = request.POST.get("product_id")
     quantity = request.POST.get("quantity")
     unit_price = request.POST.get("unit_price")
+    currency = request.POST.get("currency", "EUR")
+
     if not client_id or not product_id or not quantity or not unit_price:
         return JsonResponse({"success": False, "error": "client_id, product_id, quantity et unit_price requis"}, status=400)
-    
+
     try:
         quantity = int(quantity)
         unit_price = float(unit_price)
     except (ValueError, TypeError):
         return JsonResponse({"success": False, "error": "quantity et unit_price doivent être des nombres"}, status=400)
-    
+
+    valid_currencies = dict(Product.CURRENCY_CHOICES).keys()
+    if currency not in valid_currencies:
+        currency = "EUR"
+
     client = Client.objects.filter(id=client_id, company=request.user).first()
     product = Product.objects.filter(id=product_id, company=request.user).first()
     if not client or not product:
         return JsonResponse({"success": False, "error": "Client ou Produit introuvable"}, status=404)
-    
+
     if sale_id:
         sale = Sale.objects.filter(id=sale_id, company=request.user).first()
         if not sale:
@@ -694,6 +715,7 @@ def add_sale(request):
         sale.product = product
         sale.quantity = quantity
         sale.unit_price = unit_price
+        sale.currency = currency
         sale.save()
     else:
         sale = Sale.objects.create(
@@ -702,6 +724,7 @@ def add_sale(request):
             product=product,
             quantity=quantity,
             unit_price=unit_price,
+            currency=currency,
         )
     return JsonResponse({"success": True, "sale_id": sale.id, "message": "Vente enregistrée"})
 
