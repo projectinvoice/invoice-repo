@@ -234,6 +234,21 @@
 
         .sale-row:hover { background: var(--bg-card-hover); }
         .sale-muted { color: var(--text-secondary); font-size: 12px; }
+        .sale-item-stack {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .sale-item-line {
+            display: block;
+            padding: 4px 0;
+            line-height: 1.45;
+        }
+        .sale-item-meta {
+            color: var(--text-secondary);
+            font-size: 11px;
+            margin-top: 2px;
+        }
         .sale-total { font-weight: 700; color: var(--emerald); }
         .empty-state {
             padding: 24px; text-align: center;
@@ -389,8 +404,15 @@
                             {% endif %}
                         </td>
                         <td>
-                            {% if sale.product %}
-                                <div class="sale-muted">{{ sale.product.name }}</div>
+                            {% if sale.sale_items.all %}
+                                <div class="sale-item-stack">
+                                    {% for item in sale.sale_items.all %}
+                                    <div class="sale-item-line">
+                                        <div class="sale-muted">{{ item.product.name }}</div>
+                                        <div class="sale-item-meta">Qté {{ item.quantity }} • Prix {{ item.unit_price|floatformat:2 }} • Total {{ item.total_price|floatformat:2 }} {{ sale.get_currency_display }}</div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
                             {% else %}
                                 <span class="image-pill">-</span>
                             {% endif %}
@@ -404,9 +426,7 @@
                                     class="btn btn-edit-soft btn-sm"
                                     data-sale-id="{{ sale.id }}"
                                     data-client-id="{{ sale.client.id|default:'' }}"
-                                    data-product-id="{{ sale.product.id|default:'' }}"
-                                    data-quantity="{{ sale.quantity }}"
-                                    data-unit-price="{{ sale.unit_price }}"
+                                    data-items='{{ sale.serialized_items|escapejs }}'
                                     data-currency="{{ sale.currency }}"
                                     onclick="openSaleModalFromButton(this)">
                                 Modifier
@@ -447,28 +467,14 @@
             </div>
 
             <div class="mb-3">
-                <label for="product" class="form-label">Produit *</label>
-                <select class="form-select" id="product" name="product_id" required>
-                    <option value="">Sélectionner un produit...</option>
-                    {% for product in products %}
-                        <option value="{{ product.id }}">{{ product.name }}</option>
-                    {% endfor %}
-                </select>
+                <label class="form-label">Produits *</label>
+                <div id="saleItemsContainer"></div>
+                <button type="button" class="btn btn-ghost btn-sm" style="margin-top: 10px;" onclick="addSaleItemRow()">＋ Ajouter une ligne</button>
             </div>
 
+            <input type="hidden" id="saleItemsInput" name="sale_items" value="[]">
+
             <div class="row">
-                <div class="col-md-4">
-                    <div class="mb-3">
-                        <label for="quantity" class="form-label">Quantité *</label>
-                        <input type="number" class="form-control" id="quantity" name="quantity" min="1" required>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="mb-3">
-                        <label for="unitPrice" class="form-label">Prix Unitaire *</label>
-                        <input type="number" class="form-control" id="unitPrice" name="unit_price" step="0.01" required>
-                    </div>
-                </div>
                 <div class="col-md-4">
                     <div class="mb-3">
                         <label for="currency" class="form-label">Devise *</label>
@@ -492,7 +498,87 @@
 </div>
 
 <script>
-    function openSaleModal(saleId, clientId = '', productId = '', quantity = '', unitPrice = '', currency = 'EUR') {
+    function createSaleItemRow(productId = '', quantity = '', unitPrice = '') {
+        const container = document.getElementById('saleItemsContainer');
+        const row = document.createElement('div');
+        row.className = 'sale-item-row';
+        row.style.marginBottom = '10px';
+        const productOptions = [{% for product in products %}{ value: '{{ product.id }}', label: '{{ product.name|escapejs }}', price: '{{ product.price|escapejs }}' }{% if not forloop.last %},{% endif %}{% endfor %}];
+        const optionHtml = productOptions.map(option => {
+            const selected = String(productId) === String(option.value) ? ' selected' : '';
+            return `<option value="${option.value}"${selected}>${option.label}</option>`;
+        }).join('');
+
+        const productLookup = Object.fromEntries(productOptions.map(option => [String(option.value), option.price || '']));
+
+        row.innerHTML = `
+            <div class="row">
+                <div class="col-md-4">
+                    <select class="form-select" required>
+                        <option value="">Sélectionner un produit...</option>
+                        ${optionHtml}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <input type="number" class="form-control" min="1" value="${quantity}" placeholder="Qté" required>
+                </div>
+                <div class="col-md-3">
+                    <input type="number" class="form-control" step="0.01" value="${unitPrice || (productId ? productLookup[String(productId)] || '' : '')}" placeholder="Prix auto" readonly>
+                </div>
+                <div class="col-md-2">
+                    <button type="button" class="btn btn-danger-soft btn-sm" onclick="this.closest('.sale-item-row').remove(); syncSaleItemsInput();">✕</button>
+                </div>
+            </div>
+        `;
+        container.appendChild(row);
+
+        const select = row.querySelector('select');
+        const priceInput = row.querySelectorAll('input')[1];
+        if (select) {
+            select.addEventListener('change', function() {
+                const chosenProductId = this.value;
+                const price = productLookup[String(chosenProductId)] || '';
+                if (priceInput) {
+                    priceInput.value = price;
+                }
+                syncSaleItemsInput();
+            });
+        }
+        syncSaleItemsInput();
+    }
+
+    function addSaleItemRow() {
+        createSaleItemRow();
+    }
+
+    function renderSaleItemRows(items = []) {
+        const container = document.getElementById('saleItemsContainer');
+        container.innerHTML = '';
+        if (!items.length) {
+            createSaleItemRow();
+            return;
+        }
+        items.forEach(item => createSaleItemRow(item.product_id || '', item.quantity || '', item.unit_price || ''));
+    }
+
+    function syncSaleItemsInput() {
+        const rows = Array.from(document.querySelectorAll('#saleItemsContainer .sale-item-row'));
+        const items = rows.map(row => {
+            const selects = row.querySelectorAll('select');
+            const inputs = row.querySelectorAll('input');
+            const productId = selects[0] ? selects[0].value : '';
+            const quantity = inputs[0] ? inputs[0].value : '';
+            const unitPrice = inputs[1] ? inputs[1].value : '';
+            return {
+                product_id: productId,
+                quantity: quantity,
+                unit_price: unitPrice || null,
+            };
+        }).filter(item => item.product_id && item.quantity);
+        document.getElementById('saleItemsInput').value = JSON.stringify(items);
+    }
+
+    function openSaleModal(saleId, clientId = '', items = [], currency = 'EUR') {
         const modal = document.getElementById('saleModal');
         const modalTitle = document.getElementById('modalTitle');
 
@@ -500,9 +586,6 @@
             modalTitle.textContent = 'Modifier une Vente';
             document.getElementById('saleId').value = saleId;
             document.getElementById('client').value = clientId;
-            document.getElementById('product').value = productId;
-            document.getElementById('quantity').value = quantity;
-            document.getElementById('unitPrice').value = unitPrice;
             document.getElementById('currency').value = currency || 'EUR';
         } else {
             modalTitle.textContent = 'Ajouter une Vente';
@@ -511,17 +594,27 @@
             document.getElementById('currency').value = 'EUR';
         }
 
+        renderSaleItemRows(items);
         modal.classList.add('show');
     }
 
     function openSaleModalFromButton(button) {
+        let parsedItems = [];
+        const rawItems = button.getAttribute('data-items');
+        if (rawItems) {
+            try {
+                parsedItems = JSON.parse(rawItems);
+            } catch (error) {
+                console.warn('Impossible de parser les lignes de vente', error);
+                parsedItems = [];
+            }
+        }
+
         openSaleModal(
-            button.dataset.saleId,
-            button.dataset.clientId || '',
-            button.dataset.productId || '',
-            button.dataset.quantity || '',
-            button.dataset.unitPrice || '',
-            button.dataset.currency || 'EUR'
+            button.getAttribute('data-sale-id') || '',
+            button.getAttribute('data-client-id') || '',
+            parsedItems,
+            button.getAttribute('data-currency') || 'EUR'
         );
     }
 
@@ -529,6 +622,8 @@
         const modal = document.getElementById('saleModal');
         modal.classList.remove('show');
         document.getElementById('message').innerHTML = '';
+        document.getElementById('saleItemsContainer').innerHTML = '';
+        document.getElementById('saleItemsInput').value = '[]';
     }
 
     document.getElementById('saleModal').addEventListener('click', function(event) {
@@ -554,8 +649,14 @@
 
     document.getElementById('saleForm').addEventListener('submit', async function(e) {
         e.preventDefault();
+        syncSaleItemsInput();
 
         const formData = new FormData(this);
+        const items = JSON.parse(document.getElementById('saleItemsInput').value || '[]');
+        if (!items.length) {
+            document.getElementById('message').innerHTML = '<div class="alert alert-danger">Ajoutez au moins un produit pour enregistrer la vente.</div>';
+            return;
+        }
 
         try {
             const response = await fetch('{% url "add_sale" %}', {

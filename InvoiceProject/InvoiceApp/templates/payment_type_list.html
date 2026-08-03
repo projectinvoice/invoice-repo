@@ -3,133 +3,193 @@
 <head>
     <meta charset="UTF-8">
     <title>Types de Paiement - {{ company_name }}</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+        :root {
+            --bg-base: #0F1629;
+            --bg-card: #1A2238;
+            --bg-card-hover: #1F2A44;
+            --border: rgba(99, 102, 241, 0.15);
+            --indigo: #6366F1;
+            --indigo-light: #818CF8;
+            --emerald: #10B981;
+            --rose: #F43F5E;
+            --text-primary: #E2E8F0;
+            --text-secondary: #94A3B8;
+            --text-muted: #64748B;
+            --radius: 16px;
+            --radius-sm: 10px;
+            --shadow: 0 4px 24px rgba(0,0,0,0.4);
+        }
+
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
         body {
-            background-color: #f4f6f9;
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-base);
+            color: var(--text-primary);
+            min-height: 100vh;
+            font-size: 14px;
+            line-height: 1.6;
         }
-        .card {
-            border-radius: 10px;
-        }
-        .table th {
-            background-color: #343a40;
-            color: white;
-        }
-        .header-section {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 20px;
-            border-radius: 10px;
-            margin-bottom: 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.7);
-            display: none;
-            align-items: center;
-            justify-content: center;
-            z-index: 1000;
-        }
-        .modal-overlay.show {
-            display: flex;
-        }
-        .modal-content {
-            background: white;
-            border-radius: 15px;
-            padding: 40px;
-            max-width: 600px;
-            width: 90%;
-            max-height: 80vh;
-            overflow-y: auto;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
-            animation: slideIn 0.3s ease;
-        }
-        @keyframes slideIn {
-            from {
-                transform: translateY(-50px);
-                opacity: 0;
-            }
-            to {
-                transform: translateY(0);
-                opacity: 1;
-            }
-        }
-        .close-btn {
-            float: right;
-            font-size: 28px;
-            font-weight: bold;
-            color: #999;
-            cursor: pointer;
-        }
-        .close-btn:hover {
-            color: #000;
-        }
+
+        .sidebar { position: fixed; left: 0; top: 0; bottom: 0; width: 240px; background: var(--bg-card); border-right: 1px solid var(--border); display: flex; flex-direction: column; z-index: 100; }
+        .sidebar-logo { padding: 24px 20px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 12px; }
+        .logo-mark { width: 36px; height: 36px; background: linear-gradient(135deg, var(--indigo), #9333EA); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 800; color: white; flex-shrink: 0; }
+        .logo-text { font-size: 15px; font-weight: 700; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .sidebar-nav { flex: 1; padding: 16px 12px; overflow-y: auto; }
+        .nav-section-label { font-size: 10px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.12em; padding: 12px 8px 6px; }
+        .nav-item { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: var(--radius-sm); color: var(--text-secondary); text-decoration: none; font-weight: 500; font-size: 13.5px; transition: all 0.18s; margin-bottom: 2px; }
+        .nav-item:hover, .nav-item.active { background: rgba(99, 102, 241, 0.12); color: var(--indigo-light); }
+        .nav-item.active { font-weight: 600; }
+        .nav-item .nav-icon { font-size: 16px; width: 20px; text-align: center; }
+        .sidebar-footer { padding: 16px 12px; border-top: 1px solid var(--border); }
+        .user-block { display: flex; align-items: center; gap: 10px; padding: 10px; border-radius: var(--radius-sm); background: rgba(255,255,255,0.04); }
+        .user-avatar { width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, var(--emerald), #059669); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; color: white; flex-shrink: 0; }
+        .user-name { font-weight: 600; font-size: 13px; }
+        .user-role { font-size: 11px; color: var(--text-muted); }
+        .logout-btn { margin-top: 10px; display: block; text-align: center; padding: 8px; background: rgba(244, 63, 94, 0.1); color: var(--rose); border-radius: var(--radius-sm); text-decoration: none; font-size: 13px; font-weight: 500; transition: background 0.2s; }
+        .logout-btn:hover { background: rgba(244, 63, 94, 0.2); }
+
+        .main { margin-left: 240px; min-height: 100vh; display: flex; flex-direction: column; }
+        .topbar { background: var(--bg-card); border-bottom: 1px solid var(--border); padding: 14px 32px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 50; }
+        .topbar-title { font-size: 17px; font-weight: 700; }
+        .topbar-sub { font-size: 12px; color: var(--text-muted); margin-top: 1px; }
+        .topbar-actions { display: flex; gap: 10px; align-items: center; }
+
+        .btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: var(--radius-sm); font-size: 13px; font-weight: 600; cursor: pointer; text-decoration: none; border: none; transition: all 0.2s; font-family: 'Inter', sans-serif; }
+        .btn-primary { background: var(--indigo); color: white; }
+        .btn-primary:hover { background: #5254CC; transform: translateY(-1px); }
+        .btn-ghost { background: rgba(255,255,255,0.06); color: var(--text-secondary); border: 1px solid var(--border); }
+        .btn-ghost:hover { background: rgba(255,255,255,0.1); color: var(--text-primary); }
+        .btn-sm { padding: 6px 12px; font-size: 12px; }
+        .btn-danger-soft { background: rgba(244,63,94,0.1); color: var(--rose); border: 1px solid rgba(244,63,94,0.2); }
+        .btn-danger-soft:hover { background: rgba(244,63,94,0.22); }
+        .btn-edit-soft { background: rgba(99,102,241,0.1); color: var(--indigo-light); border: 1px solid rgba(99,102,241,0.2); }
+        .btn-edit-soft:hover { background: rgba(99,102,241,0.2); }
+
+        .content { padding: 28px 32px; flex: 1; }
+        .toolbar { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
+        .search-wrap { position: relative; flex: 1; min-width: 220px; }
+        .search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 15px; pointer-events: none; }
+        .search-input { width: 100%; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 9px 14px 9px 36px; color: var(--text-primary); font-size: 13px; font-family: 'Inter', sans-serif; outline: none; transition: border-color 0.2s; }
+        .search-input::placeholder { color: var(--text-muted); }
+        .search-input:focus { border-color: var(--indigo); }
+
+        .table-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; }
+        .table { width: 100%; border-collapse: collapse; }
+        .table th { background: rgba(255,255,255,0.04); color: var(--text-secondary); text-align: left; padding: 12px 16px; font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
+        .table td { padding: 14px 16px; border-top: 1px solid var(--border); color: var(--text-primary); vertical-align: middle; }
+        .payment-type-row:hover { background: var(--bg-card-hover); }
+        .empty-state { padding: 24px; text-align: center; color: var(--text-secondary); }
+
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.7); display: none; align-items: center; justify-content: center; z-index: 1000; padding: 24px; }
+        .modal-overlay.show { display: flex; }
+        .modal-content { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 28px; max-width: 640px; width: 100%; max-height: 85vh; overflow-y: auto; box-shadow: var(--shadow); animation: slideIn 0.25s ease; }
+        @keyframes slideIn { from { transform: translateY(-20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        .close-btn { float: right; font-size: 28px; font-weight: bold; color: var(--text-muted); cursor: pointer; }
+        .close-btn:hover { color: var(--text-primary); }
+        .form-label { display: block; margin-bottom: 6px; color: var(--text-secondary); font-size: 13px; font-weight: 600; }
+        .form-control, textarea { width: 100%; background: rgba(255,255,255,0.04); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; color: var(--text-primary); font-family: 'Inter', sans-serif; outline: none; }
+        .form-control:focus, textarea:focus { border-color: var(--indigo); box-shadow: 0 0 0 3px rgba(99,102,241,0.15); }
+        .mb-3 { margin-bottom: 14px; }
+        .d-flex { display: flex; gap: 10px; flex-wrap: wrap; }
+        .alert { padding: 10px 12px; border-radius: 10px; margin-top: 12px; }
+        .alert-success { background: rgba(16,185,129,0.15); color: #A7F3D0; }
+        .alert-danger { background: rgba(244,63,94,0.15); color: #FECACA; }
+
+        @media (max-width: 900px) { .sidebar { display: none; } .main { margin-left: 0; } .topbar { padding: 14px 20px; } .content { padding: 20px; } }
     </style>
 </head>
 <body>
 
-<div class="container mt-5">
-    <div class="header-section">
-        <div>
-            <h2>💳 Types de Paiement</h2>
-            <p class="mb-0">Entreprise: {{ company_name }}</p>
-        </div>
-        <div>
-            <a href="#" onclick="openPaymentTypeModal(null)" class="btn btn-light">+ Ajouter</a>
-            <a href="{% url 'dashboard' %}" class="btn btn-light">← Tableau de bord</a>
-        </div>
+<div class="sidebar">
+    <div class="sidebar-logo">
+        <div class="logo-mark">S</div>
+        <div class="logo-text">{{ company_name }}</div>
     </div>
-
-    <div class="card shadow p-3">
-        <input type="text" class="form-control mb-3" id="searchInput" placeholder="🔍 Rechercher un type...">
-
-        <table class="table table-hover">
-            <thead>
-                <tr>
-                    <th>#</th>
-                    <th>Nom</th>
-                    <th>Description</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for pt in payment_types %}
-                <tr class="payment-type-row">
-                    <td>{{ forloop.counter }}</td>
-                    <td class="payment-type-name">{{ pt.name }}</td>
-                    <td>{{ pt.description|truncatewords:5 }}</td>
-                    <td>
-                        <button type="button" onclick="openPaymentTypeModal({{ pt.id }}, '{{ pt.name|escapejs }}', '{{ pt.description|escapejs }}')" class="btn btn-sm btn-warning">Modifier</button>
-                        <button type="button" onclick="deletePaymentType({{ pt.id }})" class="btn btn-sm btn-danger">Supprimer</button>
-                    </td>
-                </tr>
-                {% empty %}
-                <tr>
-                    <td colspan="4" class="text-center">Aucun type de paiement enregistré</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+    <nav class="sidebar-nav">
+        <div class="nav-section-label">Navigation</div>
+        <a href="{% url 'dashboard' %}" class="nav-item"><span class="nav-icon">📊</span> Tableau de bord</a>
+        <a href="{% url 'list_products' %}" class="nav-item"><span class="nav-icon">📦</span> Produits</a>
+        <a href="{% url 'list_clients' %}" class="nav-item"><span class="nav-icon">🤝</span> Clients</a>
+        <a href="{% url 'list_sales' %}" class="nav-item"><span class="nav-icon">💵</span> Ventes</a>
+        <a href="{% url 'list_payment_types' %}" class="nav-item active"><span class="nav-icon">💳</span> Types de paiement</a>
+    </nav>
+    <div class="sidebar-footer">
+        <div class="user-block">
+            <div class="user-avatar">{{ request.user.first_name|default:request.user.username|slice:':1'|upper }}</div>
+            <div>
+                <div class="user-name">{{ request.user.get_full_name|default:request.user.username }}</div>
+                <div class="user-role">Gestionnaire</div>
+            </div>
+        </div>
+        <a href="{% url 'logout' %}" class="logout-btn">Déconnexion</a>
     </div>
 </div>
 
-<!-- MODAL -->
+<div class="main">
+    <div class="topbar">
+        <div>
+            <div class="topbar-title">Types de paiement</div>
+            <div class="topbar-sub">{{ payment_types|length }} élément{{ payment_types|length|pluralize }} enregistré{{ payment_types|length|pluralize }}</div>
+        </div>
+        <div class="topbar-actions">
+            <button onclick="openPaymentTypeModal(null)" class="btn btn-primary">＋ Ajouter</button>
+            <a href="{% url 'dashboard' %}" class="btn btn-ghost">← Tableau de bord</a>
+        </div>
+    </div>
+
+    <div class="content">
+        <div class="toolbar">
+            <div class="search-wrap">
+                <span class="search-icon">🔎</span>
+                <input type="text" class="search-input" id="searchInput" placeholder="Rechercher un type...">
+            </div>
+        </div>
+
+        <div class="table-card">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Nom</th>
+                        <th>Description</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for pt in payment_types %}
+                    <tr class="payment-type-row">
+                        <td>{{ forloop.counter }}</td>
+                        <td class="payment-type-name">{{ pt.name }}</td>
+                        <td>{{ pt.description|truncatewords:5 }}</td>
+                        <td>
+                            <button type="button" onclick="openPaymentTypeModal({{ pt.id }}, '{{ pt.name|escapejs }}', '{{ pt.description|escapejs }}')" class="btn btn-edit-soft btn-sm">Modifier</button>
+                            <button type="button" onclick="deletePaymentType({{ pt.id }})" class="btn btn-danger-soft btn-sm">Supprimer</button>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4"><div class="empty-state">Aucun type de paiement enregistré</div></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
 <div class="modal-overlay" id="paymentTypeModal">
     <div class="modal-content">
         <span class="close-btn" onclick="closePaymentTypeModal()">&times;</span>
         <h3 id="modalTitle">Ajouter un Type de Paiement</h3>
-        
+
         <form id="paymentTypeForm" style="margin-top: 20px;">
             {% csrf_token %}
             <input type="hidden" id="paymentTypeId" name="payment_type_id" value="">
-            
+
             <div class="mb-3">
                 <label for="name" class="form-label">Nom du type *</label>
                 <input type="text" class="form-control" id="name" name="name" required>
@@ -140,9 +200,9 @@
                 <textarea class="form-control" id="description" name="description" rows="3"></textarea>
             </div>
 
-            <div class="d-flex gap-2">
+            <div class="d-flex">
                 <button type="submit" class="btn btn-primary">💾 Enregistrer</button>
-                <button type="button" class="btn btn-secondary" onclick="closePaymentTypeModal()">Annuler</button>
+                <button type="button" class="btn btn-ghost" onclick="closePaymentTypeModal()">Annuler</button>
             </div>
         </form>
 
@@ -154,7 +214,7 @@
     function openPaymentTypeModal(paymentTypeId, name = '', description = '') {
         const modal = document.getElementById('paymentTypeModal');
         const modalTitle = document.getElementById('modalTitle');
-        
+
         if (paymentTypeId) {
             modalTitle.textContent = 'Modifier un Type de Paiement';
             document.getElementById('paymentTypeId').value = paymentTypeId;
@@ -165,7 +225,7 @@
             document.getElementById('paymentTypeId').value = '';
             document.getElementById('paymentTypeForm').reset();
         }
-        
+
         modal.classList.add('show');
     }
 
@@ -198,16 +258,13 @@
 
     document.getElementById('paymentTypeForm').addEventListener('submit', async function(e) {
         e.preventDefault();
-
         const formData = new FormData(this);
 
         try {
             const response = await fetch('{% url "add_payment_type" %}', {
                 method: 'POST',
                 body: formData,
-                headers: {
-                    'X-CSRFToken': csrfToken
-                },
+                headers: { 'X-CSRFToken': csrfToken },
                 credentials: 'same-origin'
             });
 
@@ -221,10 +278,10 @@
 
             const data = await response.json();
             if (data.success) {
-                msgDiv.innerHTML = '<div class="alert alert-success alert-dismissible fade show" role="alert">' + data.message + '<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>';
-                setTimeout(() => location.reload(), 1500);
+                msgDiv.innerHTML = '<div class="alert alert-success">' + data.message + '</div>';
+                setTimeout(() => location.reload(), 1200);
             } else {
-                msgDiv.innerHTML = '<div class="alert alert-danger alert-dismissible fade show" role="alert">' + data.error + '<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>';
+                msgDiv.innerHTML = '<div class="alert alert-danger">' + data.error + '</div>';
             }
         } catch (error) {
             console.error(error);
@@ -240,9 +297,7 @@
         const response = await fetch('{% url "delete_payment_type" %}', {
             method: 'POST',
             body: formData,
-            headers: {
-                'X-CSRFToken': csrfToken
-            },
+            headers: { 'X-CSRFToken': csrfToken },
             credentials: 'same-origin'
         });
 
@@ -263,10 +318,8 @@
 
     document.getElementById('searchInput').addEventListener('keyup', function() {
         const filter = this.value.toLowerCase();
-        const rows = document.querySelectorAll('.payment-type-row');
-        rows.forEach(row => {
-            const text = row.textContent.toLowerCase();
-            row.style.display = text.includes(filter) ? '' : 'none';
+        document.querySelectorAll('.payment-type-row').forEach(row => {
+            row.style.display = row.textContent.toLowerCase().includes(filter) ? '' : 'none';
         });
     });
 </script>
