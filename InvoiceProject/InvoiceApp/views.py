@@ -1,3 +1,6 @@
+import json
+from decimal import Decimal, InvalidOperation
+
 from django.shortcuts import render, redirect
 from django.contrib.auth import authenticate, login, logout, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
@@ -19,6 +22,7 @@ from .models import (
     Supplier,
     Supply,
     Sale,
+    SaleItem,
     Invoice,
     
 )
@@ -186,10 +190,12 @@ def list_payment_types(request):
 def list_payment_methods(request):
     user = request.user
     payment_methods = user.payment_methods.all()
+    payment_types = user.payment_types.all()
     context = {
         'company_name': user.company_name,
         'company_logo_url': user.logo.url if user.logo else None,
         'payment_methods': payment_methods,
+        'payment_types': payment_types,
     }
     return render(request, 'payment_method_list.html', context)
 
@@ -684,48 +690,96 @@ def delete_supply(request):
 def add_sale(request):
     sale_id = request.POST.get("sale_id")
     client_id = request.POST.get("client_id")
-    product_id = request.POST.get("product_id")
-    quantity = request.POST.get("quantity")
-    unit_price = request.POST.get("unit_price")
     currency = request.POST.get("currency", "EUR")
+    sale_items_payload = request.POST.get("sale_items")
 
-    if not client_id or not product_id or not quantity or not unit_price:
-        return JsonResponse({"success": False, "error": "client_id, product_id, quantity et unit_price requis"}, status=400)
-
-    try:
-        quantity = int(quantity)
-        unit_price = float(unit_price)
-    except (ValueError, TypeError):
-        return JsonResponse({"success": False, "error": "quantity et unit_price doivent être des nombres"}, status=400)
+    if not client_id:
+        return JsonResponse({"success": False, "error": "client_id requis"}, status=400)
 
     valid_currencies = dict(Product.CURRENCY_CHOICES).keys()
     if currency not in valid_currencies:
         currency = "EUR"
 
     client = Client.objects.filter(id=client_id, company=request.user).first()
-    product = Product.objects.filter(id=product_id, company=request.user).first()
-    if not client or not product:
-        return JsonResponse({"success": False, "error": "Client ou Produit introuvable"}, status=404)
+    if not client:
+        return JsonResponse({"success": False, "error": "Client introuvable"}, status=404)
+
+    items = []
+    if sale_items_payload:
+        try:
+            parsed_items = json.loads(sale_items_payload)
+        except json.JSONDecodeError:
+            return JsonResponse({"success": False, "error": "Format des produits invalide"}, status=400)
+
+        if not isinstance(parsed_items, list) or not parsed_items:
+            return JsonResponse({"success": False, "error": "Au moins un produit est requis"}, status=400)
+
+        for item_data in parsed_items:
+            product_id = item_data.get('product_id')
+            quantity = item_data.get('quantity')
+            unit_price = item_data.get('unit_price')
+            if not product_id or not quantity:
+                return JsonResponse({"success": False, "error": "Chaque ligne doit contenir un produit et une quantité"}, status=400)
+
+            try:
+                quantity = int(quantity)
+            except (ValueError, TypeError):
+                return JsonResponse({"success": False, "error": "quantity doit être un nombre"}, status=400)
+
+            product = Product.objects.filter(id=product_id, company=request.user).first()
+            if not product:
+                return JsonResponse({"success": False, "error": "Produit introuvable"}, status=404)
+
+            if unit_price in [None, '', 'null']:
+                unit_price = product.price
+            else:
+                try:
+                    unit_price = Decimal(str(unit_price))
+                except (ValueError, TypeError, InvalidOperation):
+                    return JsonResponse({"success": False, "error": "unit_price doit être un nombre"}, status=400)
+
+            items.append((product, quantity, unit_price))
+    else:
+        return JsonResponse({"success": False, "error": "Au moins un produit est requis"}, status=400)
 
     if sale_id:
         sale = Sale.objects.filter(id=sale_id, company=request.user).first()
         if not sale:
             return JsonResponse({"success": False, "error": "Vente introuvable"}, status=404)
+
+        old_items = list(sale.sale_items.all())
+        for old_item in old_items:
+            old_item.product.stock_quantity += old_item.quantity
+            old_item.product.save(update_fields=['stock_quantity'])
+
         sale.client = client
-        sale.product = product
-        sale.quantity = quantity
-        sale.unit_price = unit_price
         sale.currency = currency
         sale.save()
+        sale.sale_items.all().delete()
     else:
-        sale = Sale.objects.create(
-            company=request.user,
-            client=client,
+        sale = Sale.objects.create(company=request.user, client=client, currency=currency)
+
+    for product, quantity, unit_price in items:
+        if product.stock_quantity < quantity:
+            if sale_id:
+                for old_item in old_items:
+                    old_item.product.stock_quantity += old_item.quantity
+                    old_item.product.save(update_fields=['stock_quantity'])
+            sale.delete()
+            return JsonResponse({"success": False, "error": f"Stock insuffisant pour {product.name}"}, status=400)
+
+        product.stock_quantity -= quantity
+        product.save(update_fields=['stock_quantity'])
+
+        SaleItem.objects.create(
+            sale=sale,
             product=product,
             quantity=quantity,
             unit_price=unit_price,
             currency=currency,
         )
+
+    sale.save()
     return JsonResponse({"success": True, "sale_id": sale.id, "message": "Vente enregistrée"})
 
 @require_http_methods(["POST"])

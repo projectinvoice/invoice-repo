@@ -1,3 +1,6 @@
+import json
+from decimal import Decimal
+
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 
@@ -200,19 +203,44 @@ class Supply(models.Model):
 class Sale(models.Model):
     company = models.ForeignKey(User, on_delete=models.CASCADE, related_name='sales', verbose_name="Entreprise")
     client = models.ForeignKey(Client, on_delete=models.CASCADE, related_name='sales', verbose_name="Client")
-    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='sales', verbose_name="Produit")
-    quantity = models.PositiveIntegerField(verbose_name="Quantité")
-    unit_price = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Prix unitaire")
-    total_price = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Prix total")
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='sales', verbose_name="Produit", null=True, blank=True)
+    quantity = models.PositiveIntegerField(default=0, verbose_name="Quantité")
+    unit_price = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'), verbose_name="Prix unitaire")
+    total_price = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'), verbose_name="Prix total")
     currency = models.CharField(max_length=3, choices=Product.CURRENCY_CHOICES, default='EUR', verbose_name="Devise")
     date = models.DateTimeField(auto_now_add=True, verbose_name="Date")
 
     def save(self, *args, **kwargs):
-        self.total_price = self.quantity * self.unit_price
+        if self.pk and self.sale_items.exists():
+            self.total_price = sum((item.total_price for item in self.sale_items.all()), Decimal('0.00'))
+            first_item = self.sale_items.order_by('id').first()
+            self.product = first_item.product
+            self.quantity = sum((item.quantity for item in self.sale_items.all()), 0)
+            self.unit_price = first_item.unit_price
+            self.currency = first_item.currency
+        elif self.total_price == Decimal('0.00'):
+            self.total_price = self.quantity * self.unit_price
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return f"Vente de {self.product.name} à {self.client.name} ({self.company.company_name})"
+        return f"Vente de {self.item_names or 'plusieurs produits'} à {self.client.name} ({self.company.company_name})"
+
+    @property
+    def item_names(self):
+        names = [item.product.name for item in self.sale_items.all() if item.product]
+        return ', '.join(names)
+
+    @property
+    def serialized_items(self):
+        items = [
+            {
+                'product_id': item.product_id,
+                'quantity': item.quantity,
+                'unit_price': str(item.unit_price),
+            }
+            for item in self.sale_items.all()
+        ]
+        return json.dumps(items)
 
     @property
     def formatted_total_price(self):
@@ -224,6 +252,28 @@ class Sale(models.Model):
     class Meta:
         verbose_name = "Vente"
         verbose_name_plural = "Ventes"
+
+
+class SaleItem(models.Model):
+    sale = models.ForeignKey(Sale, on_delete=models.CASCADE, related_name='sale_items', verbose_name="Vente")
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='sale_items', verbose_name="Produit")
+    quantity = models.PositiveIntegerField(default=1, verbose_name="Quantité")
+    unit_price = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'), verbose_name="Prix unitaire")
+    total_price = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'), verbose_name="Prix total")
+    currency = models.CharField(max_length=3, choices=Product.CURRENCY_CHOICES, default='EUR', verbose_name="Devise")
+
+    def save(self, *args, **kwargs):
+        quantity = int(self.quantity)
+        unit_price = Decimal(str(self.unit_price))
+        self.total_price = Decimal(quantity) * unit_price
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.product.name} x{self.quantity}"
+
+    class Meta:
+        verbose_name = "Ligne de vente"
+        verbose_name_plural = "Lignes de vente"
 
 # Modèle pour les factures
 class Invoice(models.Model):
