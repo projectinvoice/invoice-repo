@@ -1,11 +1,14 @@
 import json
 from decimal import Decimal, InvalidOperation
+from functools import wraps
 
 from django.shortcuts import render, redirect
 from django.contrib.auth import authenticate, login, logout, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_http_methods
 from django.http import JsonResponse, HttpResponse
+from django.db import transaction
+from django.utils import timezone
 
 from django import forms
 from .models import Agent
@@ -122,6 +125,8 @@ def list_agents(request):
         'company_name': user.company_name,
         'company_logo_url': user.logo.url if user.logo else None,
         'agents': agents,
+        'roles': user.agent_roles.all(),
+        'agent_login_code': user.agent_login_code,
     }
     return render(request, 'agent_list.html', context)
 
@@ -222,12 +227,14 @@ def list_sales(request):
     sales = user.sales.all()
     clients = user.clients.all()
     products = user.products.all()
+    agents = user.agents.all()
     context = {
         'company_name': user.company_name,
         'company_logo_url': user.logo.url if user.logo else None,
         'sales': sales,
         'clients': clients,
         'products': products,
+        'agents': agents,
     }
     return render(request, 'sale_list.html', context)
 
@@ -335,12 +342,24 @@ def add_agent(request):
     email = request.POST.get("email", "")
     phone = request.POST.get("phone", "")
     role_id = request.POST.get("role_id")
-    
+    pin = request.POST.get("pin", "").strip()
+
     if not name:
         return JsonResponse({"success": False, "error": "name requis"}, status=400)
-    
+
+    if pin:
+        if not pin.isdigit() or not (4 <= len(pin) <= 6):
+            return JsonResponse({"success": False, "error": "Le PIN doit contenir entre 4 et 6 chiffres"}, status=400)
+        # Vérifie qu'aucun autre agent actif de l'entreprise n'utilise déjà ce PIN
+        other_agents = Agent.objects.filter(company=request.user, is_active=True)
+        if agent_id:
+            other_agents = other_agents.exclude(id=agent_id)
+        for other in other_agents:
+            if other.check_pin(pin):
+                return JsonResponse({"success": False, "error": "Ce PIN est déjà utilisé par un autre agent"}, status=400)
+
     role = AgentRole.objects.filter(id=role_id, company=request.user).first() if role_id else None
-    
+
     if agent_id:
         # Édition
         try:
@@ -349,13 +368,18 @@ def add_agent(request):
             agent.email = email
             agent.phone = phone
             agent.role = role
+            if pin:
+                agent.set_pin(pin)
             agent.save()
             return JsonResponse({"success": True, "message": "Agent modifié", "agent_id": agent.id})
         except Agent.DoesNotExist:
             return JsonResponse({"success": False, "error": "Agent non trouvé"}, status=404)
     else:
         # Création
-        agent = Agent.objects.create(company=request.user, name=name, email=email, phone=phone, role=role)
+        agent = Agent(company=request.user, name=name, email=email, phone=phone, role=role)
+        if pin:
+            agent.set_pin(pin)
+        agent.save()
         return JsonResponse({"success": True, "message": "Agent créé", "agent_id": agent.id})
 
 
@@ -690,6 +714,7 @@ def delete_supply(request):
 def add_sale(request):
     sale_id = request.POST.get("sale_id")
     client_id = request.POST.get("client_id")
+    agent_id = request.POST.get("agent_id")
     currency = request.POST.get("currency", "EUR")
     sale_items_payload = request.POST.get("sale_items")
 
@@ -704,82 +729,102 @@ def add_sale(request):
     if not client:
         return JsonResponse({"success": False, "error": "Client introuvable"}, status=404)
 
-    items = []
-    if sale_items_payload:
-        try:
-            parsed_items = json.loads(sale_items_payload)
-        except json.JSONDecodeError:
-            return JsonResponse({"success": False, "error": "Format des produits invalide"}, status=400)
+    agent = None
+    if agent_id:
+        agent = Agent.objects.filter(id=agent_id, company=request.user).first()
+        if not agent:
+            return JsonResponse({"success": False, "error": "Agent introuvable"}, status=404)
 
-        if not isinstance(parsed_items, list) or not parsed_items:
-            return JsonResponse({"success": False, "error": "Au moins un produit est requis"}, status=400)
-
-        for item_data in parsed_items:
-            product_id = item_data.get('product_id')
-            quantity = item_data.get('quantity')
-            unit_price = item_data.get('unit_price')
-            if not product_id or not quantity:
-                return JsonResponse({"success": False, "error": "Chaque ligne doit contenir un produit et une quantité"}, status=400)
-
-            try:
-                quantity = int(quantity)
-            except (ValueError, TypeError):
-                return JsonResponse({"success": False, "error": "quantity doit être un nombre"}, status=400)
-
-            product = Product.objects.filter(id=product_id, company=request.user).first()
-            if not product:
-                return JsonResponse({"success": False, "error": "Produit introuvable"}, status=404)
-
-            if unit_price in [None, '', 'null']:
-                unit_price = product.price
-            else:
-                try:
-                    unit_price = Decimal(str(unit_price))
-                except (ValueError, TypeError, InvalidOperation):
-                    return JsonResponse({"success": False, "error": "unit_price doit être un nombre"}, status=400)
-
-            items.append((product, quantity, unit_price))
-    else:
+    if not sale_items_payload:
         return JsonResponse({"success": False, "error": "Au moins un produit est requis"}, status=400)
 
+    try:
+        parsed_items = json.loads(sale_items_payload)
+    except json.JSONDecodeError:
+        return JsonResponse({"success": False, "error": "Format des produits invalide"}, status=400)
+
+    if not isinstance(parsed_items, list) or not parsed_items:
+        return JsonResponse({"success": False, "error": "Au moins un produit est requis"}, status=400)
+
+    items = []
+    for item_data in parsed_items:
+        product_id = item_data.get('product_id')
+        quantity = item_data.get('quantity')
+        unit_price = item_data.get('unit_price')
+        if not product_id or not quantity:
+            return JsonResponse({"success": False, "error": "Chaque ligne doit contenir un produit et une quantité"}, status=400)
+
+        try:
+            quantity = int(quantity)
+        except (ValueError, TypeError):
+            return JsonResponse({"success": False, "error": "quantity doit être un nombre"}, status=400)
+
+        product = Product.objects.filter(id=product_id, company=request.user).first()
+        if not product:
+            return JsonResponse({"success": False, "error": "Produit introuvable"}, status=404)
+
+        if unit_price in [None, '', 'null']:
+            unit_price = product.price
+        else:
+            try:
+                unit_price = Decimal(str(unit_price))
+            except (ValueError, TypeError, InvalidOperation):
+                return JsonResponse({"success": False, "error": "unit_price doit être un nombre"}, status=400)
+
+        items.append((product, quantity, unit_price))
+
+    # Récupère la vente existante (édition) sans encore rien modifier
+    sale = None
+    old_items = []
     if sale_id:
         sale = Sale.objects.filter(id=sale_id, company=request.user).first()
         if not sale:
             return JsonResponse({"success": False, "error": "Vente introuvable"}, status=404)
+        old_items = list(sale.sale_items.select_related('product').all())
 
-        old_items = list(sale.sale_items.all())
-        for old_item in old_items:
-            old_item.product.stock_quantity += old_item.quantity
-            old_item.product.save(update_fields=['stock_quantity'])
-
-        sale.client = client
-        sale.currency = currency
-        sale.save()
-        sale.sale_items.all().delete()
-    else:
-        sale = Sale.objects.create(company=request.user, client=client, currency=currency)
+    # Simule le stock disponible (en remettant virtuellement les anciennes quantités
+    # si on édite) AVANT de valider — aucune écriture en base à ce stade
+    stock_preview = {}
+    for old_item in old_items:
+        base = stock_preview.get(old_item.product_id, old_item.product.stock_quantity)
+        stock_preview[old_item.product_id] = base + old_item.quantity
 
     for product, quantity, unit_price in items:
-        if product.stock_quantity < quantity:
-            if sale_id:
-                for old_item in old_items:
-                    old_item.product.stock_quantity += old_item.quantity
-                    old_item.product.save(update_fields=['stock_quantity'])
-            sale.delete()
-            return JsonResponse({"success": False, "error": f"Stock insuffisant pour {product.name}"}, status=400)
+        available = stock_preview.get(product.id, product.stock_quantity)
+        if available < quantity:
+            return JsonResponse({
+                "success": False,
+                "error": f"Stock insuffisant pour {product.name} (disponible : {available})"
+            }, status=400)
+        stock_preview[product.id] = available - quantity
 
-        product.stock_quantity -= quantity
-        product.save(update_fields=['stock_quantity'])
+    # Tout est validé : on applique les changements, tout ou rien
+    with transaction.atomic():
+        if sale:
+            for old_item in old_items:
+                old_item.product.stock_quantity += old_item.quantity
+                old_item.product.save(update_fields=['stock_quantity'])
+            sale.client = client
+            sale.agent = agent
+            sale.currency = currency
+            sale.sale_items.all().delete()
+        else:
+            sale = Sale.objects.create(company=request.user, client=client, agent=agent, currency=currency)
 
-        SaleItem.objects.create(
-            sale=sale,
-            product=product,
-            quantity=quantity,
-            unit_price=unit_price,
-            currency=currency,
-        )
+        for product, quantity, unit_price in items:
+            product.refresh_from_db(fields=['stock_quantity'])
+            product.stock_quantity -= quantity
+            product.save(update_fields=['stock_quantity'])
 
-    sale.save()
+            SaleItem.objects.create(
+                sale=sale,
+                product=product,
+                quantity=quantity,
+                unit_price=unit_price,
+                currency=currency,
+            )
+
+        sale.save()
     return JsonResponse({"success": True, "sale_id": sale.id, "message": "Vente enregistrée"})
 
 @require_http_methods(["POST"])
@@ -832,62 +877,189 @@ def delete_invoice(request):
     if not invoice_id:
         return JsonResponse({"success": False, "error": "invoice_id requis"}, status=400)
     Invoice.objects.filter(id=invoice_id, company=request.user).delete()
-    return JsonResponse({"success": True, "message": "Facture supprimée"}) 
-
-def stock(request):
-    products = Product.objects.all()
-    return render(request, 'stock.html', {'products': products})
-
-def seller(request):
-    products = Product.objects.all()
-    return render(request, 'seller.html', {'products': products})
-
-def supplier_list(request):
-    suppliers = Supplier.objects.all()
-    return render(request, 'supplier_list.html', {'suppliers': suppliers})
-
-def supplie_list(request):
-    supplies = Supply.objects.all()
-    return render(request, 'supplie_list.html', {'supplies': supplies})
-
-def sale_list(request):
-    sales = Sale.objects.all()
-    return render(request, 'sale_list.html', {'sales': sales})
-
-def product_list(request):
-    products = Product.objects.all()
-    return render(request, 'product_list.html', {'products': products})
-
-def payment_type_list(request):
-    payment_types = PaymentType.objects.all()
-    return render(request, 'payment_type_list.html', {'payment_types': payment_types})
-
-def payment_method_list(request):
-    payment_methods = PaymentMethod.objects.all()
-    return render(request, 'payment_method_list.html', {'payment_methods': payment_methods})
-
-def agent_list(request):
-    agents = Agent.objects.all()
-    return render(request, 'agent_list.html', {'agents': agents})
-
-def agent_role_list(request):
-    agent_roles = AgentRole.objects.all()
-    return render(request, 'agent_role_list.html', {'agent_roles': agent_roles})
-
-def invoice_list(request):
-    invoices = Invoice.objects.all()
-    return render(request, 'invoice_list.html', {'invoices': invoices})
-
-def supplier_list(request):
-    suppliers = Supplier.objects.all()
-    return render(request, 'supplier_list.html', {'suppliers': suppliers})
-
-def client_list(request):
-    clients = Client.objects.all()
-    return render(request, 'client_list.html', {'clients': clients})
-
-def engine_list(request):
-    engines = Engine.objects.all()
-    return render(request, 'engine_list.html', {'engines': engines})
+    return JsonResponse({"success": True, "message": "Facture supprimée"})
 
 
+# ══════════════════════════════════════════════════════════════════
+#  ESPACE VENDEUR (agents) — authentification par code entreprise + PIN
+#  Complètement séparé de la session admin (request.user).
+#  L'agent connecté est accessible via request.agent dans les vues ci-dessous.
+# ══════════════════════════════════════════════════════════════════
+
+def generate_invoice_number(company):
+    """Génère un numéro de facture séquentiel et unique par entreprise, sans collision
+    même en cas de ventes simultanées (verrouillage de la ligne de l'entreprise)."""
+    with transaction.atomic():
+        locked_company = User.objects.select_for_update().get(pk=company.pk)
+        number = locked_company.next_invoice_number
+        locked_company.next_invoice_number = number + 1
+        locked_company.save(update_fields=['next_invoice_number'])
+    year = timezone.now().year
+    return f"FAC-{year}-{number:05d}"
+
+
+def agent_login_required(view_func):
+    @wraps(view_func)
+    def wrapper(request, *args, **kwargs):
+        agent_id = request.session.get('agent_id')
+        if not agent_id:
+            return redirect('vendor_login')
+        agent = Agent.objects.filter(id=agent_id, is_active=True).select_related('company', 'role').first()
+        if not agent:
+            request.session.flush()
+            return redirect('vendor_login')
+        request.agent = agent
+        return view_func(request, *args, **kwargs)
+    return wrapper
+
+
+@require_http_methods(["GET", "POST"])
+def vendor_login(request):
+    if request.method == "GET":
+        return render(request, 'vendor_login.html')
+
+    company_code = request.POST.get("company_code", "").strip().upper()
+    pin = request.POST.get("pin", "").strip()
+
+    if not company_code or not pin:
+        return JsonResponse({"success": False, "error": "Code entreprise et PIN requis"}, status=400)
+
+    company = User.objects.filter(agent_login_code=company_code).first()
+    if not company:
+        return JsonResponse({"success": False, "error": "Code entreprise invalide"}, status=400)
+
+    matched_agent = None
+    for agent in Agent.objects.filter(company=company, is_active=True):
+        if agent.check_pin(pin):
+            matched_agent = agent
+            break
+
+    if not matched_agent:
+        return JsonResponse({"success": False, "error": "PIN invalide"}, status=400)
+
+    request.session['agent_id'] = matched_agent.id
+    return JsonResponse({"success": True, "message": "Connecté", "redirect": "/vendeur/"})
+
+
+@require_http_methods(["GET", "POST"])
+def vendor_logout(request):
+    request.session.flush()
+    return redirect('vendor_login')
+
+
+@agent_login_required
+def vendor_dashboard(request):
+    agent = request.agent
+    products = Product.objects.filter(company=agent.company)
+    clients = Client.objects.filter(company=agent.company)
+    recent_sales = Sale.objects.filter(company=agent.company, agent=agent).order_by('-date')[:15]
+    context = {
+        'agent': agent,
+        'company_name': agent.company.company_name,
+        'company_logo_url': agent.company.logo.url if agent.company.logo else None,
+        'products': products,
+        'clients': clients,
+        'sales': recent_sales,
+    }
+    return render(request, 'vendor_dashboard.html', context)
+
+
+@require_http_methods(["POST"])
+@agent_login_required
+def vendor_add_sale(request):
+    agent = request.agent
+    company = agent.company
+
+    client_id = request.POST.get("client_id")
+    new_client_name = request.POST.get("new_client_name", "").strip()
+    new_client_phone = request.POST.get("new_client_phone", "").strip()
+    currency = request.POST.get("currency", "EUR")
+    sale_items_payload = request.POST.get("sale_items")
+
+    valid_currencies = dict(Product.CURRENCY_CHOICES).keys()
+    if currency not in valid_currencies:
+        currency = "EUR"
+
+    # Client existant OU création rapide d'un nouveau client
+    if client_id:
+        client = Client.objects.filter(id=client_id, company=company).first()
+        if not client:
+            return JsonResponse({"success": False, "error": "Client introuvable"}, status=404)
+    elif new_client_name:
+        client = Client.objects.create(company=company, name=new_client_name, phone=new_client_phone)
+    else:
+        return JsonResponse({"success": False, "error": "Sélectionnez un client ou renseignez son nom"}, status=400)
+
+    if not sale_items_payload:
+        return JsonResponse({"success": False, "error": "Au moins un produit est requis"}, status=400)
+    try:
+        parsed_items = json.loads(sale_items_payload)
+    except json.JSONDecodeError:
+        return JsonResponse({"success": False, "error": "Format des produits invalide"}, status=400)
+    if not isinstance(parsed_items, list) or not parsed_items:
+        return JsonResponse({"success": False, "error": "Au moins un produit est requis"}, status=400)
+
+    items = []
+    for item_data in parsed_items:
+        product_id = item_data.get('product_id')
+        quantity = item_data.get('quantity')
+        if not product_id or not quantity:
+            return JsonResponse({"success": False, "error": "Chaque ligne doit contenir un produit et une quantité"}, status=400)
+        try:
+            quantity = int(quantity)
+        except (ValueError, TypeError):
+            return JsonResponse({"success": False, "error": "quantity doit être un nombre"}, status=400)
+
+        # Sécurité : le prix vient TOUJOURS du produit en base, jamais de ce que le vendeur envoie.
+        product = Product.objects.filter(id=product_id, company=company).first()
+        if not product:
+            return JsonResponse({"success": False, "error": "Produit introuvable"}, status=404)
+
+        items.append((product, quantity, product.price))
+
+    # Validation du stock avant toute écriture (même logique que add_sale admin)
+    stock_preview = {}
+    for product, quantity, unit_price in items:
+        available = stock_preview.get(product.id, product.stock_quantity)
+        if available < quantity:
+            return JsonResponse({
+                "success": False,
+                "error": f"Stock insuffisant pour {product.name} (disponible : {available})"
+            }, status=400)
+        stock_preview[product.id] = available - quantity
+
+    with transaction.atomic():
+        sale = Sale.objects.create(company=company, client=client, agent=agent, currency=currency)
+
+        for product, quantity, unit_price in items:
+            product.refresh_from_db(fields=['stock_quantity'])
+            product.stock_quantity -= quantity
+            product.save(update_fields=['stock_quantity'])
+
+            SaleItem.objects.create(
+                sale=sale,
+                product=product,
+                quantity=quantity,
+                unit_price=unit_price,
+                currency=currency,
+            )
+
+        sale.save()
+
+        # Facture générée automatiquement, une seule fois, numéro garanti unique et séquentiel
+        invoice_number = generate_invoice_number(company)
+        invoice = Invoice.objects.create(
+            company=company,
+            sale=sale,
+            invoice_number=invoice_number,
+            due_date=timezone.now().date(),
+            status='paid',
+        )
+
+    return JsonResponse({
+        "success": True,
+        "message": "Vente enregistrée",
+        "sale_id": sale.id,
+        "invoice_number": invoice.invoice_number,
+        "invoice_id": invoice.id,
+    })

@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Espace Vendeur — {{ company_name }}</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+        :root {
+            --bg-base: #0F1629;
+            --bg-card: #1A2238;
+            --border: rgba(99, 102, 241, 0.15);
+            --indigo: #6366F1;
+            --indigo-light: #818CF8;
+            --emerald: #10B981;
+            --amber: #F59E0B;
+            --rose: #F43F5E;
+            --text-primary: #E2E8F0;
+            --text-secondary: #94A3B8;
+            --text-muted: #64748B;
+            --radius: 16px;
+            --radius-sm: 10px;
+            --shadow: 0 4px 24px rgba(0,0,0,0.4);
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-base);
+            color: var(--text-primary);
+            min-height: 100vh;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .topbar {
+            background: var(--bg-card);
+            border-bottom: 1px solid var(--border);
+            padding: 16px 24px;
+            display: flex; align-items: center; justify-content: space-between;
+            position: sticky; top: 0; z-index: 50;
+            flex-wrap: wrap; gap: 12px;
+        }
+        .topbar-left { display: flex; align-items: center; gap: 12px; }
+        .logo-mark {
+            width: 40px; height: 40px;
+            background: linear-gradient(135deg, var(--indigo), #9333EA);
+            border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 18px; font-weight: 800; color: white; flex-shrink: 0;
+        }
+        .topbar-title { font-size: 16px; font-weight: 700; }
+        .topbar-sub { font-size: 12px; color: var(--text-muted); }
+
+        .btn {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 9px 16px; border-radius: var(--radius-sm);
+            font-size: 13px; font-weight: 600; cursor: pointer;
+            text-decoration: none; border: none; transition: all 0.2s;
+            font-family: 'Inter', sans-serif;
+        }
+        .btn-primary { background: var(--indigo); color: white; }
+        .btn-primary:hover { background: #5254CC; }
+        .btn-ghost { background: rgba(255,255,255,0.06); color: var(--text-secondary); border: 1px solid var(--border); }
+        .btn-ghost:hover { background: rgba(255,255,255,0.1); color: var(--text-primary); }
+        .btn-sm { padding: 6px 12px; font-size: 12px; }
+        .btn-danger-soft { background: rgba(244,63,94,0.1); color: var(--rose); border: 1px solid rgba(244,63,94,0.2); }
+
+        .content { padding: 24px; max-width: 1100px; margin: 0 auto; }
+
+        .section-title { font-size: 15px; font-weight: 700; margin: 28px 0 14px; }
+        .section-title:first-child { margin-top: 0; }
+
+        .product-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 14px;
+        }
+        .product-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 16px;
+        }
+        .product-image-placeholder, .product-image {
+            width: 100%; height: 90px;
+            border-radius: 10px;
+            background: rgba(255,255,255,0.04);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 26px;
+            margin-bottom: 12px;
+            object-fit: cover;
+        }
+        .product-name { font-weight: 600; font-size: 13.5px; margin-bottom: 4px; }
+        .product-price { font-weight: 800; font-size: 15px; color: var(--indigo-light); margin-bottom: 4px; }
+        .product-stock { font-size: 11.5px; color: var(--text-muted); }
+        .stock-empty { color: var(--rose); }
+
+        .table-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+        .table-wrap { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; }
+        thead th {
+            padding: 11px 16px; text-align: left; font-size: 10.5px; font-weight: 600; color: var(--text-muted);
+            text-transform: uppercase; letter-spacing: 0.08em; background: rgba(255,255,255,0.02);
+            border-bottom: 1px solid var(--border); white-space: nowrap;
+        }
+        tbody tr { border-bottom: 1px solid rgba(255,255,255,0.04); }
+        tbody tr:last-child { border-bottom: none; }
+        td { padding: 12px 16px; font-size: 13px; color: var(--text-primary); }
+        .empty-state { text-align: center; padding: 30px 16px; color: var(--text-muted); font-size: 13px; }
+
+        .fab {
+            position: fixed; bottom: 24px; right: 24px;
+            width: 58px; height: 58px; border-radius: 50%;
+            background: var(--indigo); color: white; border: none;
+            font-size: 26px; cursor: pointer;
+            box-shadow: 0 6px 20px rgba(99,102,241,0.5);
+            display: flex; align-items: center; justify-content: center;
+            transition: transform 0.2s;
+            z-index: 400;
+        }
+        .fab:hover { transform: scale(1.06); }
+
+        .form-group { margin-bottom: 14px; }
+        .form-label { display: block; font-size: 12.5px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; }
+        .form-control, .form-select {
+            width: 100%; background: rgba(255,255,255,0.04); border: 1px solid var(--border);
+            border-radius: var(--radius-sm); padding: 10px 12px; color: var(--text-primary);
+            font-size: 13.5px; font-family: 'Inter', sans-serif; outline: none;
+        }
+        .form-control:focus, .form-select:focus { border-color: var(--indigo); }
+        .form-select { cursor: pointer; }
+        .form-error { color: var(--rose); font-size: 12px; margin-top: 4px; display: none; }
+        .tabs { display: flex; gap: 6px; margin-bottom: 14px; }
+        .tab-btn {
+            flex: 1; padding: 8px; border-radius: var(--radius-sm); text-align: center;
+            font-size: 12.5px; font-weight: 600; cursor: pointer;
+            background: rgba(255,255,255,0.04); color: var(--text-secondary); border: 1px solid var(--border);
+        }
+        .tab-btn.active { background: rgba(99,102,241,0.15); color: var(--indigo-light); border-color: rgba(99,102,241,0.35); }
+
+        .cart-row { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; }
+        .cart-row select { flex: 2; }
+        .cart-row input { flex: 1; }
+        .cart-total-line {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 12px 0; border-top: 1px solid var(--border); margin-top: 8px;
+            font-weight: 700; font-size: 15px;
+        }
+        .cart-total-line span:last-child { color: var(--emerald); }
+
+        .modal-overlay {
+            display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+            z-index: 500; align-items: center; justify-content: center; padding: 16px;
+        }
+        .modal-overlay.open { display: flex; }
+        .modal-box {
+            background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius);
+            padding: 28px; max-width: 460px; width: 100%; box-shadow: var(--shadow);
+            max-height: 90vh; overflow-y: auto;
+        }
+        .modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
+        .modal-title { font-size: 16px; font-weight: 700; }
+        .modal-close { background: none; border: none; color: var(--text-muted); font-size: 20px; cursor: pointer; }
+        .modal-icon { font-size: 40px; text-align: center; margin-bottom: 10px; }
+
+        .toast {
+            position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px);
+            background: #1E293B; border: 1px solid var(--border); border-radius: var(--radius-sm);
+            padding: 12px 18px; font-size: 13px; font-weight: 500;
+            box-shadow: var(--shadow); opacity: 0; transition: all 0.3s; z-index: 999;
+            max-width: 90vw; text-align: center;
+        }
+        .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+        .toast.success { border-color: rgba(16,185,129,0.4); color: var(--emerald); }
+        .toast.error { border-color: rgba(244,63,94,0.4); color: var(--rose); }
+    </style>
+</head>
+<body>
+
+<header class="topbar">
+    <div class="topbar-left">
+        {% if company_logo_url %}
+        <img src="{{ company_logo_url }}" alt="Logo" style="width:40px;height:40px;object-fit:contain;border-radius:10px;background:#fff;padding:3px;">
+        {% else %}
+        <div class="logo-mark">{{ company_name|first|upper }}</div>
+        {% endif %}
+        <div>
+            <div class="topbar-title">{{ company_name }}</div>
+            <div class="topbar-sub">Vendeur : {{ agent.name }}</div>
+        </div>
+    </div>
+    <a href="{% url 'vendor_logout' %}" class="btn btn-ghost btn-sm">🚪 Déconnexion</a>
+</header>
+
+<main class="content">
+
+    <div class="section-title">📦 Catalogue produits</div>
+    <div class="product-grid">
+        {% for product in products %}
+        <div class="product-card">
+            {% if product.image %}
+            <img src="{{ product.image.url }}" alt="{{ product.name }}" class="product-image">
+            {% else %}
+            <div class="product-image-placeholder">📦</div>
+            {% endif %}
+            <div class="product-name">{{ product.name }}</div>
+            <div class="product-price">{{ product.formatted_price }}</div>
+            <div class="product-stock {% if product.stock_quantity == 0 %}stock-empty{% endif %}">
+                {% if product.stock_quantity > 0 %}{{ product.stock_quantity }} en stock{% else %}Rupture de stock{% endif %}
+            </div>
+        </div>
+        {% empty %}
+        <div class="empty-state">Aucun produit disponible pour le moment.</div>
+        {% endfor %}
+    </div>
+
+    <div class="section-title">🧾 Mes dernières ventes</div>
+    <div class="table-card">
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Client</th>
+                        <th>Produits</th>
+                        <th>Total</th>
+                        <th>Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for sale in sales %}
+                    <tr>
+                        <td>{{ sale.client.name }}</td>
+                        <td>{{ sale.item_names }}</td>
+                        <td><strong>{{ sale.formatted_total_price }}</strong></td>
+                        <td>{{ sale.date|date:"d/m/Y H:i" }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="4" class="empty-state">Aucune vente enregistrée pour l'instant.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</main>
+
+<button class="fab" onclick="openSaleModal()" title="Nouvelle vente">＋</button>
+
+<!-- MODAL NOUVELLE VENTE -->
+<div class="modal-overlay" id="saleModal">
+    <div class="modal-box">
+        <div class="modal-header">
+            <div class="modal-title">Nouvelle vente</div>
+            <button type="button" class="modal-close" onclick="closeSaleModal()">&times;</button>
+        </div>
+
+        <form id="saleForm">
+            {% csrf_token %}
+
+            <div class="tabs">
+                <div class="tab-btn active" id="tabExisting" onclick="switchClientTab('existing')">Client existant</div>
+                <div class="tab-btn" id="tabNew" onclick="switchClientTab('new')">Nouveau client</div>
+            </div>
+
+            <div class="form-group" id="existingClientGroup">
+                <label class="form-label" for="clientId">Client *</label>
+                <select class="form-select" id="clientId" name="client_id">
+                    <option value="">Sélectionner un client...</option>
+                    {% for client in clients %}
+                    <option value="{{ client.id }}">{{ client.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-group" id="newClientGroup" style="display:none;">
+                <label class="form-label" for="newClientName">Nom du nouveau client *</label>
+                <input type="text" class="form-control" id="newClientName" name="new_client_name" style="margin-bottom: 10px;">
+                <label class="form-label" for="newClientPhone">Téléphone</label>
+                <input type="text" class="form-control" id="newClientPhone" name="new_client_phone">
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="currency">Devise *</label>
+                <select class="form-select" id="currency" name="currency" required>
+                    <option value="EUR">Euro (€)</option>
+                    <option value="USD">Dollar US ($)</option>
+                    <option value="XOF">Franc CFA (FCFA)</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Produits commandés *</label>
+                <div id="cartContainer"></div>
+                <button type="button" class="btn btn-ghost btn-sm" style="margin-top: 6px;" onclick="addCartRow()">＋ Ajouter un produit</button>
+            </div>
+            <input type="hidden" id="saleItemsInput" name="sale_items" value="[]">
+
+            <div class="cart-total-line">
+                <span>Total</span>
+                <span id="cartTotal">0.00</span>
+            </div>
+
+            <div class="form-error" id="formError"></div>
+
+            <div class="modal-header" style="margin-top: 16px; margin-bottom: 0;">
+                <button type="button" class="btn btn-ghost" style="flex:1;" onclick="closeSaleModal()">Annuler</button>
+                <button type="submit" class="btn btn-primary" style="flex:1;" id="submitBtn">💾 Valider la vente</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- MODAL CONFIRMATION FACTURE -->
+<div class="modal-overlay" id="invoiceModal">
+    <div class="modal-box" style="text-align:center;">
+        <div class="modal-icon">✅</div>
+        <div class="modal-title" style="margin-bottom: 8px;">Vente enregistrée</div>
+        <p style="color: var(--text-secondary); font-size: 13.5px; margin-bottom: 6px;">Facture générée automatiquement :</p>
+        <p style="font-size: 20px; font-weight: 800; color: var(--indigo-light); margin-bottom: 20px;" id="generatedInvoiceNumber"></p>
+        <button type="button" class="btn btn-primary" style="width:100%;" onclick="closeInvoiceModal()">OK</button>
+    </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+    const PRODUCTS = [
+        {% for product in products %}
+        { id: '{{ product.id }}', name: '{{ product.name|escapejs }}', price: {{ product.price }}, stock: {{ product.stock_quantity }} }{% if not forloop.last %},{% endif %}
+        {% endfor %}
+    ];
+
+    const csrfToken = document.querySelector('#saleForm [name=csrfmiddlewaretoken]').value;
+
+    function showToast(message, type = 'success') {
+        const toast = document.getElementById('toast');
+        toast.textContent = (type === 'success' ? '✅ ' : '⚠️ ') + message;
+        toast.className = 'toast show ' + type;
+        setTimeout(() => toast.classList.remove('show'), 3500);
+    }
+
+    function switchClientTab(tab) {
+        const isExisting = tab === 'existing';
+        document.getElementById('tabExisting').classList.toggle('active', isExisting);
+        document.getElementById('tabNew').classList.toggle('active', !isExisting);
+        document.getElementById('existingClientGroup').style.display = isExisting ? 'block' : 'none';
+        document.getElementById('newClientGroup').style.display = isExisting ? 'none' : 'block';
+    }
+
+    function openSaleModal() {
+        document.getElementById('saleForm').reset();
+        document.getElementById('cartContainer').innerHTML = '';
+        switchClientTab('existing');
+        addCartRow();
+        document.getElementById('formError').style.display = 'none';
+        document.getElementById('saleModal').classList.add('open');
+    }
+
+    function closeSaleModal() {
+        document.getElementById('saleModal').classList.remove('open');
+    }
+
+    document.getElementById('saleModal').addEventListener('click', function (e) {
+        if (e.target === this) closeSaleModal();
+    });
+
+    function addCartRow() {
+        const container = document.getElementById('cartContainer');
+        const row = document.createElement('div');
+        row.className = 'cart-row';
+
+        const options = PRODUCTS.map(p => `<option value="${p.id}" data-price="${p.price}" data-stock="${p.stock}">${p.name} — ${p.price}</option>`).join('');
+
+        row.innerHTML = `
+            <select class="form-select cart-product" required>
+                <option value="">Produit...</option>
+                ${options}
+            </select>
+            <input type="number" class="form-control cart-qty" min="1" value="1" required>
+            <button type="button" class="btn btn-danger-soft btn-sm" onclick="this.closest('.cart-row').remove(); syncCart();">✕</button>
+        `;
+        container.appendChild(row);
+        row.querySelector('.cart-product').addEventListener('change', syncCart);
+        row.querySelector('.cart-qty').addEventListener('input', syncCart);
+        syncCart();
+    }
+
+    function syncCart() {
+        const rows = Array.from(document.querySelectorAll('.cart-row'));
+        const items = [];
+        let total = 0;
+
+        rows.forEach(row => {
+            const select = row.querySelector('.cart-product');
+            const qtyInput = row.querySelector('.cart-qty');
+            const productId = select.value;
+            const quantity = parseInt(qtyInput.value, 10) || 0;
+            if (!productId || !quantity) return;
+
+            const option = select.selectedOptions[0];
+            const price = parseFloat(option.dataset.price || '0');
+            total += price * quantity;
+            items.push({ product_id: productId, quantity: quantity });
+        });
+
+        document.getElementById('saleItemsInput').value = JSON.stringify(items);
+        document.getElementById('cartTotal').textContent = total.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    document.getElementById('saleForm').addEventListener('submit', async function (e) {
+        e.preventDefault();
+        syncCart();
+
+        const errorBox = document.getElementById('formError');
+        errorBox.style.display = 'none';
+
+        const isExisting = document.getElementById('tabExisting').classList.contains('active');
+        if (isExisting && !document.getElementById('clientId').value) {
+            errorBox.textContent = 'Sélectionne un client';
+            errorBox.style.display = 'block';
+            return;
+        }
+        if (!isExisting && !document.getElementById('newClientName').value.trim()) {
+            errorBox.textContent = 'Indique le nom du nouveau client';
+            errorBox.style.display = 'block';
+            return;
+        }
+
+        const items = JSON.parse(document.getElementById('saleItemsInput').value || '[]');
+        if (!items.length) {
+            errorBox.textContent = 'Ajoute au moins un produit';
+            errorBox.style.display = 'block';
+            return;
+        }
+
+        const submitBtn = document.getElementById('submitBtn');
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Enregistrement…';
+
+        const formData = new FormData(this);
+        if (!isExisting) formData.delete('client_id');
+
+        try {
+            const response = await fetch("{% url 'vendor_add_sale' %}", {
+                method: 'POST',
+                body: formData,
+                headers: { 'X-CSRFToken': csrfToken },
+                credentials: 'same-origin'
+            });
+            const data = await response.json();
+
+            if (response.ok && data.success) {
+                closeSaleModal();
+                document.getElementById('generatedInvoiceNumber').textContent = data.invoice_number;
+                document.getElementById('invoiceModal').classList.add('open');
+            } else {
+                errorBox.textContent = data.error || 'Une erreur est survenue';
+                errorBox.style.display = 'block';
+            }
+        } catch (err) {
+            console.error(err);
+            errorBox.textContent = 'Erreur serveur, réessaie';
+            errorBox.style.display = 'block';
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.textContent = '💾 Valider la vente';
+        }
+    });
+
+    function closeInvoiceModal() {
+        document.getElementById('invoiceModal').classList.remove('open');
+        location.reload();
+    }
+</script>
+
+</body>
+</html>

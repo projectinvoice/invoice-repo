@@ -1,8 +1,11 @@
 import json
+import random
+import string
 from decimal import Decimal
 
 from django.db import models
 from django.contrib.auth.models import AbstractUser
+from django.contrib.auth.hashers import make_password, check_password
 
 # Modèle utilisateur personnalisé (l'entreprise elle-même est l'utilisateur)
 class User(AbstractUser):
@@ -13,6 +16,23 @@ class User(AbstractUser):
     phone = models.CharField(max_length=20, blank=True, verbose_name="Téléphone")
     address = models.TextField(blank=True, verbose_name="Adresse")
     add_date = models.DateTimeField(auto_now_add=True, verbose_name="Date d'inscription",blank=True, null=True,)
+
+    # Code que l'entreprise communique à ses vendeurs pour se connecter à leur espace dédié
+    agent_login_code = models.CharField(max_length=8, unique=True, blank=True, verbose_name="Code de connexion vendeurs")
+    # Compteur utilisé pour générer les numéros de facture de façon séquentielle et sans collision
+    next_invoice_number = models.PositiveIntegerField(default=1, verbose_name="Prochain numéro de facture")
+
+    def save(self, *args, **kwargs):
+        if not self.agent_login_code:
+            self.agent_login_code = self._generate_unique_login_code()
+        super().save(*args, **kwargs)
+
+    def _generate_unique_login_code(self):
+        alphabet = string.ascii_uppercase + string.digits
+        while True:
+            code = ''.join(random.choices(alphabet, k=6))
+            if not User.objects.filter(agent_login_code=code).exists():
+                return code
 
     def __str__(self):
         return self.company_name
@@ -36,14 +56,24 @@ class AgentRole(models.Model):
         verbose_name_plural = "Rôles d'agents"
         unique_together = ('company', 'name')
 
-# Modèle pour les agents (sous-utilisateurs ajoutés par l'entreprise, sans authentification)
+# Modèle pour les agents (sous-utilisateurs ajoutés par l'entreprise)
 class Agent(models.Model):
     company = models.ForeignKey(User, on_delete=models.CASCADE, related_name='agents', verbose_name="Entreprise")
     name = models.CharField(max_length=255, verbose_name="Nom")
     email = models.EmailField(blank=True, verbose_name="Email")
     phone = models.CharField(max_length=20, blank=True, verbose_name="Téléphone")
     role = models.ForeignKey(AgentRole, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Rôle")
+    pin_hash = models.CharField(max_length=128, blank=True, verbose_name="PIN (haché)")
+    is_active = models.BooleanField(default=True, verbose_name="Accès actif")
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="Date de création")
+
+    def set_pin(self, raw_pin):
+        self.pin_hash = make_password(raw_pin)
+
+    def check_pin(self, raw_pin):
+        if not self.pin_hash:
+            return False
+        return check_password(raw_pin, self.pin_hash)
 
     def __str__(self):
         return f"{self.name} ({self.company.company_name})"
@@ -203,6 +233,7 @@ class Supply(models.Model):
 class Sale(models.Model):
     company = models.ForeignKey(User, on_delete=models.CASCADE, related_name='sales', verbose_name="Entreprise")
     client = models.ForeignKey(Client, on_delete=models.CASCADE, related_name='sales', verbose_name="Client")
+    agent = models.ForeignKey(Agent, on_delete=models.SET_NULL, null=True, blank=True, related_name='sales', verbose_name="Agent")
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='sales', verbose_name="Produit", null=True, blank=True)
     quantity = models.PositiveIntegerField(default=0, verbose_name="Quantité")
     unit_price = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'), verbose_name="Prix unitaire")
@@ -279,7 +310,7 @@ class SaleItem(models.Model):
 class Invoice(models.Model):
     company = models.ForeignKey(User, on_delete=models.CASCADE, related_name='invoices', verbose_name="Entreprise")
     sale = models.OneToOneField(Sale, on_delete=models.CASCADE, related_name='invoice', verbose_name="Vente associée")
-    invoice_number = models.CharField(max_length=50, unique=True, verbose_name="Numéro de facture")
+    invoice_number = models.CharField(max_length=50, verbose_name="Numéro de facture")
     issued_date = models.DateTimeField(auto_now_add=True, verbose_name="Date d'émission")
     due_date = models.DateField(verbose_name="Date d'échéance")
     status = models.CharField(max_length=20, choices=[
@@ -294,3 +325,4 @@ class Invoice(models.Model):
     class Meta:
         verbose_name = "Facture"
         verbose_name_plural = "Factures"
+        unique_together = ('company', 'invoice_number')

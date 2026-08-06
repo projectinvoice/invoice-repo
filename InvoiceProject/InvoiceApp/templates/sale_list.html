@@ -384,6 +384,7 @@
                     <tr>
                         <th>#</th>
                         <th>Client</th>
+                        <th>Agent</th>
                         <th>Produit</th>
                         <th>Qté</th>
                         <th>Prix</th>
@@ -399,6 +400,13 @@
                         <td>
                             {% if sale.client %}
                                 <div class="sale-muted">{{ sale.client.name }}</div>
+                            {% else %}
+                                <span class="image-pill">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if sale.agent %}
+                                <div class="sale-muted">{{ sale.agent.name }}</div>
                             {% else %}
                                 <span class="image-pill">-</span>
                             {% endif %}
@@ -426,6 +434,7 @@
                                     class="btn btn-edit-soft btn-sm"
                                     data-sale-id="{{ sale.id }}"
                                     data-client-id="{{ sale.client.id|default:'' }}"
+                                    data-agent-id="{{ sale.agent.id|default:'' }}"
                                     data-items='{{ sale.serialized_items|escapejs }}'
                                     data-currency="{{ sale.currency }}"
                                     onclick="openSaleModalFromButton(this)">
@@ -436,7 +445,7 @@
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="8">
+                        <td colspan="9">
                             <div class="empty-state">Aucune vente enregistrée</div>
                         </td>
                     </tr>
@@ -462,6 +471,16 @@
                     <option value="">Sélectionner un client...</option>
                     {% for client in clients %}
                         <option value="{{ client.id }}">{{ client.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="mb-3">
+                <label for="agent" class="form-label">Agent</label>
+                <select class="form-select" id="agent" name="agent_id">
+                    <option value="">— Sans agent —</option>
+                    {% for agent in agents %}
+                        <option value="{{ agent.id }}">{{ agent.name }}</option>
                     {% endfor %}
                 </select>
             </div>
@@ -578,7 +597,7 @@
         document.getElementById('saleItemsInput').value = JSON.stringify(items);
     }
 
-    function openSaleModal(saleId, clientId = '', items = [], currency = 'EUR') {
+    function openSaleModal(saleId, clientId = '', agentId = '', items = [], currency = 'EUR') {
         const modal = document.getElementById('saleModal');
         const modalTitle = document.getElementById('modalTitle');
 
@@ -586,6 +605,7 @@
             modalTitle.textContent = 'Modifier une Vente';
             document.getElementById('saleId').value = saleId;
             document.getElementById('client').value = clientId;
+            document.getElementById('agent').value = agentId || '';
             document.getElementById('currency').value = currency || 'EUR';
         } else {
             modalTitle.textContent = 'Ajouter une Vente';
@@ -613,6 +633,7 @@
         openSaleModal(
             button.getAttribute('data-sale-id') || '',
             button.getAttribute('data-client-id') || '',
+            button.getAttribute('data-agent-id') || '',
             parsedItems,
             button.getAttribute('data-currency') || 'EUR'
         );
