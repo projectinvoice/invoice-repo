@@ -5,29 +5,39 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Connexion - Plateforme de Gestion de Stock</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 
+        :root {
+            --bg-base: #0F1629;
+            --bg-card: #1A2238;
+            --border: rgba(99, 102, 241, 0.15);
+            --indigo: #6366F1;
+            --indigo-light: #818CF8;
+            --rose: #F43F5E;
+            --text-primary: #E2E8F0;
+            --text-secondary: #94A3B8;
+            --text-muted: #64748B;
+            --radius: 16px;
+            --radius-sm: 10px;
+            --shadow: 0 4px 24px rgba(0,0,0,0.4);
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-base);
+            color: var(--text-primary);
             min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
+            display: flex; align-items: center; justify-content: center;
             padding: 20px;
         }
-
         .container {
-            background: white;
-            border-radius: 10px;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
-            max-width: 400px;
-            width: 100%;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
             padding: 40px;
+            max-width: 380px;
+            width: 100%;
+            box-shadow: var(--shadow);
         }
 
         h1 {
@@ -52,7 +62,7 @@
         input {
             width: 100%;
             padding: 12px;
-            border: 1px solid #ddd;
+            border: 10px;
             border-radius: 5px;
             font-size: 14px;
             font-family: inherit;
@@ -180,7 +190,11 @@
             </div>
 
             <div class="register-link">
-                Vous n'avez pas de compte? <a href="{% url 'register' %}">S'inscrire</a>
+                Pas encore de compte? <a href="{% url 'register' %}">créez-en un</a>
+            </div>
+
+            <div class="register-link">
+                Vous êtes vendeur ? <a href="{% url 'vendor_login' %}">S'identifier</a>
             </div>
         </form>
     </div>
