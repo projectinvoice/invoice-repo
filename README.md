@@ -2,7 +2,7 @@
 print("bonjour à tous")
 
 
-nouvelle mise a jour :
+⭕⭕🛑nouvelle mise a jour🛑⛔📛 :
 desormais si tu fait une modification qui t'amene a installer de nouvelles librairies,
 
 tu doit taper la commande pip freeze > requirements.txt
