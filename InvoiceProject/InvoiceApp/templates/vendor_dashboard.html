@@ -96,6 +96,15 @@
         .product-stock { font-size: 11.5px; color: var(--text-muted); }
         .stock-empty { color: var(--rose); }
 
+        .status-badge {
+            display: inline-flex; align-items: center; padding: 3px 9px;
+            border-radius: 20px; font-size: 11px; font-weight: 600; white-space: nowrap;
+        }
+        .status-paid { background: rgba(16,185,129,0.12); color: var(--emerald); }
+        .status-partial { background: rgba(245,158,11,0.12); color: var(--amber); }
+        .status-pending { background: rgba(148,163,184,0.15); color: var(--text-secondary); }
+        .status-overdue { background: rgba(244,63,94,0.12); color: var(--rose); }
+
         .table-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
         .table-wrap { overflow-x: auto; }
         table { width: 100%; border-collapse: collapse; }
@@ -195,23 +204,23 @@
 
 <main class="content">
 
-    <div class="section-title">📦 Catalogue produits</div>
+    <div class="section-title">🚚 Mon stock (chargé pour cette tournée)</div>
     <div class="product-grid">
-        {% for product in products %}
+        {% for stock in agent_stocks %}
         <div class="product-card">
-            {% if product.image %}
-            <img src="{{ product.image.url }}" alt="{{ product.name }}" class="product-image">
+            {% if stock.product.image %}
+            <img src="{{ stock.product.image.url }}" alt="{{ stock.product.name }}" class="product-image">
             {% else %}
             <div class="product-image-placeholder">📦</div>
             {% endif %}
-            <div class="product-name">{{ product.name }}</div>
-            <div class="product-price">{{ product.formatted_price }}</div>
-            <div class="product-stock {% if product.stock_quantity == 0 %}stock-empty{% endif %}">
-                {% if product.stock_quantity > 0 %}{{ product.stock_quantity }} en stock{% else %}Rupture de stock{% endif %}
+            <div class="product-name">{{ stock.product.name }}</div>
+            <div class="product-price">{{ stock.formatted_unit_price }}</div>
+            <div class="product-stock {% if stock.quantity == 0 %}stock-empty{% endif %}">
+                {% if stock.quantity > 0 %}{{ stock.quantity }} disponible{% else %}Épuisé{% endif %}
             </div>
         </div>
         {% empty %}
-        <div class="empty-state">Aucun produit disponible pour le moment.</div>
+        <div class="empty-state">Tu n'as encore aucun produit chargé. Demande à ton entreprise de te charger du stock.</div>
         {% endfor %}
     </div>
 
@@ -224,7 +233,9 @@
                         <th>Client</th>
                         <th>Produits</th>
                         <th>Total</th>
+                        <th>Statut</th>
                         <th>Date</th>
+                        <th></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -233,10 +244,31 @@
                         <td>{{ sale.client.name }}</td>
                         <td>{{ sale.item_names }}</td>
                         <td><strong>{{ sale.formatted_total_price }}</strong></td>
+                        <td>
+                            {% if sale.invoice %}
+                                {% if sale.invoice.status == 'paid' %}
+                                <span class="status-badge status-paid">Payée</span>
+                                {% elif sale.invoice.status == 'partial' %}
+                                <span class="status-badge status-partial">Avance — reste {{ sale.invoice.formatted_balance_due }}</span>
+                                {% elif sale.invoice.status == 'overdue' %}
+                                <span class="status-badge status-overdue">En retard — {{ sale.invoice.formatted_balance_due }}</span>
+                                {% else %}
+                                <span class="status-badge status-pending">Crédit — {{ sale.invoice.formatted_balance_due }}</span>
+                                {% endif %}
+                            {% endif %}
+                        </td>
                         <td>{{ sale.date|date:"d/m/Y H:i" }}</td>
+                        <td style="display:flex; gap:6px; flex-wrap:wrap;">
+                            {% if sale.invoice %}
+                            <a href="{% url 'vendor_invoice_pdf' sale.invoice.id %}" target="_blank" class="btn btn-ghost btn-sm">📄 PDF</a>
+                            {% if sale.invoice.balance_due > 0 %}
+                            <button type="button" class="btn btn-primary btn-sm" onclick="openPaymentModal('{{ sale.invoice.id }}', '{{ sale.client.name|escapejs }}', '{{ sale.invoice.formatted_balance_due|escapejs }}')">💰 Encaisser</button>
+                            {% endif %}
+                            {% endif %}
+                        </td>
                     </tr>
                     {% empty %}
-                    <tr><td colspan="4" class="empty-state">Aucune vente enregistrée pour l'instant.</td></tr>
+                    <tr><td colspan="6" class="empty-state">Aucune vente enregistrée pour l'instant.</td></tr>
                     {% endfor %}
                 </tbody>
             </table>
@@ -276,17 +308,10 @@
             <div class="form-group" id="newClientGroup" style="display:none;">
                 <label class="form-label" for="newClientName">Nom du nouveau client *</label>
                 <input type="text" class="form-control" id="newClientName" name="new_client_name" style="margin-bottom: 10px;">
+                <label class="form-label" for="newClientShopName">Nom du magasin</label>
+                <input type="text" class="form-control" id="newClientShopName" name="new_client_shop_name" style="margin-bottom: 10px;">
                 <label class="form-label" for="newClientPhone">Téléphone</label>
                 <input type="text" class="form-control" id="newClientPhone" name="new_client_phone">
-            </div>
-
-            <div class="form-group">
-                <label class="form-label" for="currency">Devise *</label>
-                <select class="form-select" id="currency" name="currency" required>
-                    <option value="EUR">Euro (€)</option>
-                    <option value="USD">Dollar US ($)</option>
-                    <option value="XOF">Franc CFA (FCFA)</option>
-                </select>
             </div>
 
             <div class="form-group">
@@ -300,6 +325,27 @@
                 <span>Total</span>
                 <span id="cartTotal">0.00</span>
             </div>
+
+            <div class="form-group" style="margin-top: 16px;">
+                <label class="form-label">Paiement *</label>
+                <div class="tabs">
+                    <div class="tab-btn active" id="payFull" onclick="switchPaymentType('full')">Comptant</div>
+                    <div class="tab-btn" id="payCredit" onclick="switchPaymentType('credit')">Crédit</div>
+                    <div class="tab-btn" id="payPartial" onclick="switchPaymentType('partial')">Avance</div>
+                </div>
+            </div>
+
+            <div class="form-group" id="amountPaidGroup" style="display:none;">
+                <label class="form-label" for="amountPaid">Montant déjà versé *</label>
+                <input type="number" class="form-control" id="amountPaid" name="amount_paid" min="0" step="0.01">
+            </div>
+
+            <div class="form-group" id="dueDateGroup" style="display:none;">
+                <label class="form-label" for="dueDate">Date d'échéance (paiement du solde) *</label>
+                <input type="date" class="form-control" id="dueDate" name="due_date">
+            </div>
+
+            <input type="hidden" id="paymentTypeInput" name="payment_type" value="full">
 
             <div class="form-error" id="formError"></div>
 
@@ -318,7 +364,33 @@
         <div class="modal-title" style="margin-bottom: 8px;">Vente enregistrée</div>
         <p style="color: var(--text-secondary); font-size: 13.5px; margin-bottom: 6px;">Facture générée automatiquement :</p>
         <p style="font-size: 20px; font-weight: 800; color: var(--indigo-light); margin-bottom: 20px;" id="generatedInvoiceNumber"></p>
+        <a href="#" id="downloadInvoiceLink" target="_blank" class="btn btn-ghost" style="width:100%; margin-bottom:10px; justify-content:center;">📄 Télécharger la facture PDF</a>
         <button type="button" class="btn btn-primary" style="width:100%;" onclick="closeInvoiceModal()">OK</button>
+    </div>
+</div>
+
+<!-- MODAL ENCAISSER UN PAIEMENT -->
+<div class="modal-overlay" id="paymentModal">
+    <div class="modal-box">
+        <div class="modal-header">
+            <div class="modal-title">💰 Encaisser un paiement</div>
+            <button type="button" class="modal-close" onclick="closePaymentModal()">&times;</button>
+        </div>
+        <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 4px;">Client : <strong id="paymentClientName" style="color: var(--text-primary);"></strong></p>
+        <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 18px;">Solde restant : <strong id="paymentBalanceDue" style="color: var(--amber);"></strong></p>
+        <form id="paymentForm">
+            {% csrf_token %}
+            <input type="hidden" id="paymentInvoiceId" name="invoice_id" value="">
+            <div class="form-group">
+                <label class="form-label" for="paymentAmount">Montant versé maintenant *</label>
+                <input type="number" class="form-control" id="paymentAmount" name="amount" min="0.01" step="0.01" required>
+            </div>
+            <div class="form-error" id="paymentFormError"></div>
+            <div class="modal-header" style="margin-top: 8px; margin-bottom: 0;">
+                <button type="button" class="btn btn-ghost" style="flex:1;" onclick="closePaymentModal()">Annuler</button>
+                <button type="submit" class="btn btn-primary" style="flex:1;" id="paymentSubmitBtn">Encaisser</button>
+            </div>
+        </form>
     </div>
 </div>
 
@@ -326,10 +398,12 @@
 
 <script>
     const PRODUCTS = [
-        {% for product in products %}
-        { id: '{{ product.id }}', name: '{{ product.name|escapejs }}', price: {{ product.price }}, stock: {{ product.stock_quantity }} }{% if not forloop.last %},{% endif %}
+        {% for stock in agent_stocks %}
+        { id: '{{ stock.product.id }}', name: '{{ stock.product.name|escapejs }}', price: {{ stock.unit_price }}, stock: {{ stock.quantity }} }{% if not forloop.last %},{% endif %}
         {% endfor %}
     ];
+
+    const invoicePdfUrlTemplate = "{% url 'vendor_invoice_pdf' 999999999 %}";
 
     const csrfToken = document.querySelector('#saleForm [name=csrfmiddlewaretoken]').value;
 
@@ -348,10 +422,33 @@
         document.getElementById('newClientGroup').style.display = isExisting ? 'none' : 'block';
     }
 
+    function switchPaymentType(type) {
+        document.getElementById('paymentTypeInput').value = type;
+        document.getElementById('payFull').classList.toggle('active', type === 'full');
+        document.getElementById('payCredit').classList.toggle('active', type === 'credit');
+        document.getElementById('payPartial').classList.toggle('active', type === 'partial');
+
+        document.getElementById('amountPaidGroup').style.display = type === 'partial' ? 'block' : 'none';
+        document.getElementById('dueDateGroup').style.display = (type === 'credit' || type === 'partial') ? 'block' : 'none';
+
+        document.getElementById('amountPaid').required = type === 'partial';
+        document.getElementById('dueDate').required = (type === 'credit' || type === 'partial');
+
+        if (type === 'credit' || type === 'partial') {
+            const dueDateInput = document.getElementById('dueDate');
+            if (!dueDateInput.value) {
+                const d = new Date();
+                d.setDate(d.getDate() + 7);
+                dueDateInput.value = d.toISOString().split('T')[0];
+            }
+        }
+    }
+
     function openSaleModal() {
         document.getElementById('saleForm').reset();
         document.getElementById('cartContainer').innerHTML = '';
         switchClientTab('existing');
+        switchPaymentType('full');
         addCartRow();
         document.getElementById('formError').style.display = 'none';
         document.getElementById('saleModal').classList.add('open');
@@ -434,6 +531,22 @@
             return;
         }
 
+        const paymentType = document.getElementById('paymentTypeInput').value;
+        const cartTotalValue = parseFloat(document.getElementById('cartTotal').textContent.replace(/\s/g, '').replace(',', '.')) || 0;
+        if (paymentType === 'partial') {
+            const amountPaid = parseFloat(document.getElementById('amountPaid').value);
+            if (!amountPaid || amountPaid <= 0 || amountPaid >= cartTotalValue) {
+                errorBox.textContent = 'Le montant versé doit être supérieur à 0 et inférieur au total';
+                errorBox.style.display = 'block';
+                return;
+            }
+        }
+        if ((paymentType === 'credit' || paymentType === 'partial') && !document.getElementById('dueDate').value) {
+            errorBox.textContent = "Indique une date d'échéance";
+            errorBox.style.display = 'block';
+            return;
+        }
+
         const submitBtn = document.getElementById('submitBtn');
         submitBtn.disabled = true;
         submitBtn.textContent = 'Enregistrement…';
@@ -453,6 +566,7 @@
             if (response.ok && data.success) {
                 closeSaleModal();
                 document.getElementById('generatedInvoiceNumber').textContent = data.invoice_number;
+                document.getElementById('downloadInvoiceLink').href = invoicePdfUrlTemplate.replace('999999999', data.invoice_id);
                 document.getElementById('invoiceModal').classList.add('open');
             } else {
                 errorBox.textContent = data.error || 'Une erreur est survenue';
@@ -472,6 +586,56 @@
         document.getElementById('invoiceModal').classList.remove('open');
         location.reload();
     }
+
+    function openPaymentModal(invoiceId, clientName, balanceDue) {
+        document.getElementById('paymentInvoiceId').value = invoiceId;
+        document.getElementById('paymentClientName').textContent = clientName;
+        document.getElementById('paymentBalanceDue').textContent = balanceDue;
+        document.getElementById('paymentAmount').value = '';
+        document.getElementById('paymentFormError').style.display = 'none';
+        document.getElementById('paymentModal').classList.add('open');
+    }
+
+    function closePaymentModal() {
+        document.getElementById('paymentModal').classList.remove('open');
+    }
+
+    document.getElementById('paymentModal').addEventListener('click', function (e) {
+        if (e.target === this) closePaymentModal();
+    });
+
+    document.getElementById('paymentForm').addEventListener('submit', async function (e) {
+        e.preventDefault();
+        const errorBox = document.getElementById('paymentFormError');
+        errorBox.style.display = 'none';
+        const btn = document.getElementById('paymentSubmitBtn');
+        btn.disabled = true;
+        btn.textContent = 'Enregistrement…';
+
+        try {
+            const response = await fetch("{% url 'vendor_add_payment' %}", {
+                method: 'POST',
+                body: new FormData(this),
+                headers: { 'X-CSRFToken': csrfToken },
+                credentials: 'same-origin'
+            });
+            const data = await response.json();
+            if (response.ok && data.success) {
+                showToast('Paiement encaissé', 'success');
+                closePaymentModal();
+                setTimeout(() => location.reload(), 800);
+            } else {
+                errorBox.textContent = data.error || 'Erreur';
+                errorBox.style.display = 'block';
+            }
+        } catch (err) {
+            errorBox.textContent = 'Erreur serveur';
+            errorBox.style.display = 'block';
+        } finally {
+            btn.disabled = false;
+            btn.textContent = 'Encaisser';
+        }
+    });
 </script>
 
 </body>

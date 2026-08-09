@@ -294,6 +294,7 @@
                             {% endif %}
                         </td>
                         <td>
+                            <a href="{% url 'invoice_pdf' invoice.id %}" class="btn btn-ghost btn-sm" target="_blank">📄 PDF</a>
                             <button type="button" class="btn btn-edit-soft btn-sm edit-invoice-btn"
                                     data-invoice-id="{{ invoice.id }}"
                                     data-invoice-number="{{ invoice.invoice_number|escapejs }}"

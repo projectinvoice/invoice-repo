@@ -66,12 +66,21 @@ urlpatterns = [
     path('delete-sale/', invoice_views.delete_sale, name='delete_sale'),
     path('add-invoice/', invoice_views.add_invoice, name='add_invoice'),
     path('delete-invoice/', invoice_views.delete_invoice, name='delete_invoice'),
+    path('record-invoice-payment/', invoice_views.record_invoice_payment, name='record_invoice_payment'),
+    path('invoices/<int:invoice_id>/pdf/', invoice_views.invoice_pdf, name='invoice_pdf'),
 
     # Espace vendeur (agents) — authentification séparée par code entreprise + PIN
     path('vendeur/login/', invoice_views.vendor_login, name='vendor_login'),
     path('vendeur/logout/', invoice_views.vendor_logout, name='vendor_logout'),
     path('vendeur/', invoice_views.vendor_dashboard, name='vendor_dashboard'),
     path('vendeur/vente/', invoice_views.vendor_add_sale, name='vendor_add_sale'),
+    path('vendeur/factures/<int:invoice_id>/pdf/', invoice_views.vendor_invoice_pdf, name='vendor_invoice_pdf'),
+    path('vendeur/paiement/', invoice_views.vendor_add_payment, name='vendor_add_payment'),
+
+    # Stock vendeur (chargement / retour de tournée) — géré par l'admin
+    path('stock-loads/', invoice_views.list_stock_loads, name='list_stock_loads'),
+    path('add-stock-load/', invoice_views.add_stock_load, name='add_stock_load'),
+    path('add-stock-return/', invoice_views.add_stock_return, name='add_stock_return'),
 
 ]
 
