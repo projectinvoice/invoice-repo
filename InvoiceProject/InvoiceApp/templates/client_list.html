@@ -366,6 +366,7 @@
                     <tr>
                         <th>#</th>
                         <th>Nom</th>
+                        <th>Magasin</th>
                         <th>Email</th>
                         <th>Téléphone</th>
                         <th>Adresse</th>
@@ -379,6 +380,7 @@
                         <td>
                             <div class="client-name">{{ client.name }}</div>
                         </td>
+                        <td>{{ client.shop_name|default:'-' }}</td>
                         <td>
                             {% if client.email %}
                                 <div class="client-muted">{{ client.email }}</div>
@@ -391,7 +393,7 @@
                         <td>
                             <button type="button"
                                     class="btn btn-edit-soft btn-sm"
-                                    onclick="openClientModal({{ client.id }}, '{{ client.name|escapejs }}', '{{ client.email|escapejs }}', '{{ client.phone|escapejs }}', '{{ client.address|escapejs }}')">
+                                    onclick="openClientModal({{ client.id }}, '{{ client.name|escapejs }}', '{{ client.shop_name|escapejs }}', '{{ client.email|escapejs }}', '{{ client.phone|escapejs }}', '{{ client.address|escapejs }}')">
                                 Modifier
                             </button>
                             <button type="button" onclick="deleteClient({{ client.id }})" class="btn btn-danger-soft btn-sm">Supprimer</button>
@@ -399,7 +401,7 @@
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="6">
+                        <td colspan="7">
                             <div class="empty-state">Aucun client enregistré</div>
                         </td>
                     </tr>
@@ -422,6 +424,11 @@
             <div class="mb-3">
                 <label for="name" class="form-label">Nom du Client *</label>
                 <input type="text" class="form-control" id="name" name="name" required>
+            </div>
+
+            <div class="mb-3">
+                <label for="shopName" class="form-label">Nom du magasin</label>
+                <input type="text" class="form-control" id="shopName" name="shop_name">
             </div>
 
             <div class="mb-3">
@@ -450,7 +457,7 @@
 </div>
 
 <script>
-    function openClientModal(clientId, name = '', email = '', phone = '', address = '') {
+    function openClientModal(clientId, name = '', shopName = '', email = '', phone = '', address = '') {
         const modal = document.getElementById('clientModal');
         const modalTitle = document.getElementById('modalTitle');
 
@@ -458,6 +465,7 @@
             modalTitle.textContent = 'Modifier un Client';
             document.getElementById('clientId').value = clientId;
             document.getElementById('name').value = name;
+            document.getElementById('shopName').value = shopName;
             document.getElementById('email').value = email;
             document.getElementById('phone').value = phone;
             document.getElementById('address').value = address;

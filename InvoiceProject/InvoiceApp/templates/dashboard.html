@@ -474,6 +474,9 @@
         <a href="{% url 'list_engines' %}" class="nav-item">
             <span class="nav-icon">⚙️</span> Engins
         </a>
+        <a href="{% url 'list_stock_loads' %}" class="nav-item">
+            <span class="nav-icon">🚚</span> Stock Vendeurs
+        </a>
         <a href="{% url 'list_products' %}" class="nav-item">
             <span class="nav-icon">📦</span> Produits
             <span class="nav-badge">{{ products_count }}</span>
@@ -527,7 +530,7 @@
             <div class="topbar-sub">Vue d'ensemble — <span id="current-date"></span></div>
         </div>
         <div class="topbar-actions">
-            <a href="{% url 'add_agent' %}" class="btn btn-primary">+ Ajouter un agent</a>
+            <a href="{% url 'list_agents' %}" class="btn btn-primary">+ Ajouter un agent</a>
             <a href="{% url 'change_password' %}" class="btn btn-ghost">🔐 Mot de passe</a>
             <a href="{% url 'delete_account' %}" class="btn btn-ghost btn-danger">🗑️</a>
         </div>
