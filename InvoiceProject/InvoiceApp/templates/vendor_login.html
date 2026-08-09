@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Espace Vendeur — Connexion</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+        :root {
+            --bg-base: #0F1629;
+            --bg-card: #1A2238;
+            --border: rgba(99, 102, 241, 0.15);
+            --indigo: #6366F1;
+            --indigo-light: #818CF8;
+            --rose: #F43F5E;
+            --text-primary: #E2E8F0;
+            --text-secondary: #94A3B8;
+            --text-muted: #64748B;
+            --radius: 16px;
+            --radius-sm: 10px;
+            --shadow: 0 4px 24px rgba(0,0,0,0.4);
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-base);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex; align-items: center; justify-content: center;
+            padding: 20px;
+        }
+        .login-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 40px;
+            max-width: 380px;
+            width: 100%;
+            box-shadow: var(--shadow);
+        }
+        .login-icon {
+            width: 56px; height: 56px;
+            background: linear-gradient(135deg, var(--indigo), #9333EA);
+            border-radius: 14px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 26px;
+            margin: 0 auto 20px;
+        }
+        h1 { font-size: 19px; font-weight: 700; text-align: center; margin-bottom: 6px; }
+        .subtitle { font-size: 13px; color: var(--text-muted); text-align: center; margin-bottom: 28px; }
+        .form-group { margin-bottom: 18px; }
+        .form-label { display: block; font-size: 12.5px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; }
+        .form-control {
+            width: 100%;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 12px 14px;
+            color: var(--text-primary);
+            font-size: 15px;
+            font-family: 'Inter', sans-serif;
+            outline: none;
+            letter-spacing: 0.05em;
+            text-align: center;
+            transition: border-color 0.2s;
+        }
+        .form-control:focus { border-color: var(--indigo); }
+        .form-control::placeholder { letter-spacing: normal; color: var(--text-muted); }
+        .btn-primary {
+            width: 100%;
+            padding: 12px;
+            background: var(--indigo);
+            color: white;
+            border: none;
+            border-radius: var(--radius-sm);
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            font-family: 'Inter', sans-serif;
+            transition: background 0.2s;
+        }
+        .btn-primary:hover { background: #5254CC; }
+        .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
+        .form-error {
+            background: rgba(244,63,94,0.1);
+            border: 1px solid rgba(244,63,94,0.25);
+            color: var(--rose);
+            font-size: 13px;
+            padding: 10px 12px;
+            border-radius: var(--radius-sm);
+            margin-bottom: 18px;
+            display: none;
+        }
+        .footer-note { text-align: center; font-size: 12px; color: var(--text-muted); margin-top: 20px; }
+    </style>
+</head>
+<body>
+
+<div class="login-card">
+    <div class="login-icon">🛵</div>
+    <h1>Espace Vendeur</h1>
+    <p class="subtitle">Connecte-toi avec le code de ton entreprise et ton PIN personnel</p>
+
+    <div class="form-error" id="formError"></div>
+
+    <form id="loginForm">
+        {% csrf_token %}
+        <div class="form-group">
+            <label class="form-label" for="companyCode">Code entreprise</label>
+            <input type="text" class="form-control" id="companyCode" name="company_code" maxlength="8" placeholder="EX: A1B2C3" required autocomplete="off">
+        </div>
+        <div class="form-group">
+            <label class="form-label" for="pin">Code PIN</label>
+            <input type="password" class="form-control" id="pin" name="pin" inputmode="numeric" pattern="[0-9]*" maxlength="6" placeholder="••••" required autocomplete="off">
+        </div>
+        <button type="submit" class="btn-primary" id="submitBtn">Se connecter</button>
+    </form>
+
+    <p class="footer-note">Demande ces identifiants à ton entreprise si tu ne les as pas.</p>
+</div>
+
+<script>
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+    const csrfToken = getCookie('csrftoken');
+
+    document.getElementById('companyCode').addEventListener('input', function () {
+        this.value = this.value.toUpperCase();
+    });
+
+    document.getElementById('loginForm').addEventListener('submit', async function (e) {
+        e.preventDefault();
+        const errorBox = document.getElementById('formError');
+        const submitBtn = document.getElementById('submitBtn');
+        errorBox.style.display = 'none';
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Connexion…';
+
+        const formData = new FormData(this);
+
+        try {
+            const response = await fetch("{% url 'vendor_login' %}", {
+                method: 'POST',
+                body: formData,
+                headers: { 'X-CSRFToken': csrfToken },
+                credentials: 'same-origin'
+            });
+            const data = await response.json();
+
+            if (response.ok && data.success) {
+                window.location.href = data.redirect || "{% url 'vendor_dashboard' %}";
+            } else {
+                errorBox.textContent = data.error || 'Identifiants invalides';
+                errorBox.style.display = 'block';
+            }
+        } catch (err) {
+            console.error(err);
+            errorBox.textContent = 'Erreur serveur, réessaie';
+            errorBox.style.display = 'block';
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Se connecter';
+        }
+    });
+</script>
+
+</body>
+</html>

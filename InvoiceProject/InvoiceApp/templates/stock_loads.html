@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stock Vendeurs — {{ company_name }}</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+        :root {
+            --bg-base: #0F1629;
+            --bg-card: #1A2238;
+            --border: rgba(99, 102, 241, 0.15);
+            --indigo: #6366F1;
+            --indigo-light: #818CF8;
+            --emerald: #10B981;
+            --amber: #F59E0B;
+            --rose: #F43F5E;
+            --text-primary: #E2E8F0;
+            --text-secondary: #94A3B8;
+            --text-muted: #64748B;
+            --radius: 16px;
+            --radius-sm: 10px;
+            --shadow: 0 4px 24px rgba(0,0,0,0.4);
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg-base); color: var(--text-primary); min-height: 100vh; font-size: 14px; line-height: 1.6; }
+
+        .sidebar {
+            position: fixed; left: 0; top: 0; bottom: 0; width: 240px;
+            background: var(--bg-card); border-right: 1px solid var(--border);
+            display: flex; flex-direction: column; z-index: 100;
+        }
+        .sidebar-logo { padding: 24px 20px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 12px; }
+        .logo-mark {
+            width: 36px; height: 36px; background: linear-gradient(135deg, var(--indigo), #9333EA);
+            border-radius: 10px; display: flex; align-items: center; justify-content: center;
+            font-size: 18px; font-weight: 800; color: white; flex-shrink: 0;
+        }
+        .logo-text { font-size: 15px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .sidebar-nav { flex: 1; padding: 16px 12px; overflow-y: auto; }
+        .nav-section-label { font-size: 10px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.12em; padding: 12px 8px 6px; }
+        .nav-item {
+            display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: var(--radius-sm);
+            color: var(--text-secondary); text-decoration: none; font-weight: 500; font-size: 13.5px;
+            transition: all 0.18s; margin-bottom: 2px;
+        }
+        .nav-item:hover, .nav-item.active { background: rgba(99, 102, 241, 0.12); color: var(--indigo-light); }
+        .nav-item.active { font-weight: 600; }
+        .nav-item .nav-icon { font-size: 16px; width: 20px; text-align: center; }
+        .sidebar-footer { padding: 16px 12px; border-top: 1px solid var(--border); }
+        .user-block { display: flex; align-items: center; gap: 10px; padding: 10px; border-radius: var(--radius-sm); background: rgba(255,255,255,0.04); }
+        .user-avatar {
+            width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, var(--emerald), #059669);
+            display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; color: white; flex-shrink: 0;
+        }
+        .user-name { font-weight: 600; font-size: 13px; }
+        .user-role { font-size: 11px; color: var(--text-muted); }
+        .logout-btn {
+            margin-top: 10px; display: block; text-align: center; padding: 8px;
+            background: rgba(244, 63, 94, 0.1); color: var(--rose); border-radius: var(--radius-sm);
+            text-decoration: none; font-size: 13px; font-weight: 500;
+        }
+
+        .main { margin-left: 240px; min-height: 100vh; display: flex; flex-direction: column; }
+        .topbar {
+            background: var(--bg-card); border-bottom: 1px solid var(--border); padding: 14px 32px;
+            display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 50;
+            flex-wrap: wrap; gap: 10px;
+        }
+        .topbar-title { font-size: 17px; font-weight: 700; }
+        .topbar-sub { font-size: 12px; color: var(--text-muted); margin-top: 1px; }
+        .topbar-actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+
+        .btn {
+            display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: var(--radius-sm);
+            font-size: 13px; font-weight: 600; cursor: pointer; text-decoration: none; border: none;
+            transition: all 0.2s; font-family: 'Inter', sans-serif;
+        }
+        .btn-primary { background: var(--indigo); color: white; }
+        .btn-primary:hover { background: #5254CC; }
+        .btn-ghost { background: rgba(255,255,255,0.06); color: var(--text-secondary); border: 1px solid var(--border); }
+        .btn-ghost:hover { background: rgba(255,255,255,0.1); color: var(--text-primary); }
+        .btn-sm { padding: 6px 12px; font-size: 12px; }
+        .btn-danger-soft { background: rgba(244,63,94,0.1); color: var(--rose); border: 1px solid rgba(244,63,94,0.2); }
+
+        .content { padding: 28px 32px; flex: 1; }
+        .section-title { font-size: 15px; font-weight: 700; margin: 26px 0 12px; }
+        .section-title:first-child { margin-top: 0; }
+
+        .table-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-bottom: 8px; }
+        .table-wrap { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; }
+        thead th {
+            padding: 12px 18px; text-align: left; font-size: 10.5px; font-weight: 600; color: var(--text-muted);
+            text-transform: uppercase; letter-spacing: 0.08em; background: rgba(255,255,255,0.02);
+            border-bottom: 1px solid var(--border); white-space: nowrap;
+        }
+        tbody tr { border-bottom: 1px solid rgba(255,255,255,0.04); }
+        tbody tr:last-child { border-bottom: none; }
+        td { padding: 11px 18px; font-size: 13px; color: var(--text-primary); }
+        .muted-cell { color: var(--text-muted); }
+        .empty-state { text-align: center; padding: 30px 16px; color: var(--text-muted); font-size: 13px; }
+
+        .form-group { margin-bottom: 14px; }
+        .form-label { display: block; font-size: 12.5px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; }
+        .form-control, .form-select {
+            width: 100%; background: rgba(255,255,255,0.04); border: 1px solid var(--border);
+            border-radius: var(--radius-sm); padding: 9px 12px; color: var(--text-primary);
+            font-size: 13.5px; font-family: 'Inter', sans-serif; outline: none;
+        }
+        .form-control:focus, .form-select:focus { border-color: var(--indigo); }
+        .form-select { cursor: pointer; }
+        .form-error { color: var(--rose); font-size: 12px; margin-top: 4px; display: none; }
+
+        .cart-row { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; }
+        .cart-row select { flex: 2; }
+        .cart-row input { flex: 1; }
+
+        .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.65); z-index: 500; align-items: center; justify-content: center; padding: 16px; }
+        .modal-overlay.open { display: flex; }
+        .modal-box {
+            background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius);
+            padding: 28px; max-width: 500px; width: 100%; box-shadow: var(--shadow);
+            max-height: 90vh; overflow-y: auto;
+        }
+        .modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
+        .modal-title { font-size: 16px; font-weight: 700; }
+        .modal-close { background: none; border: none; color: var(--text-muted); font-size: 20px; cursor: pointer; }
+        .modal-actions { display: flex; gap: 10px; margin-top: 16px; }
+        .modal-actions .btn { flex: 1; justify-content: center; }
+
+        .toast {
+            position: fixed; bottom: 24px; right: 24px; background: #1E293B; border: 1px solid var(--border);
+            border-radius: var(--radius-sm); padding: 12px 18px; font-size: 13px; font-weight: 500;
+            display: flex; align-items: center; gap: 10px; box-shadow: var(--shadow);
+            transform: translateY(80px); opacity: 0; transition: all 0.3s; z-index: 999; pointer-events: none;
+        }
+        .toast.show { transform: translateY(0); opacity: 1; }
+        .toast.success { border-color: rgba(16,185,129,0.4); color: var(--emerald); }
+        .toast.error { border-color: rgba(244,63,94,0.4); color: var(--rose); }
+
+        @media (max-width: 768px) {
+            .sidebar { display: none; }
+            .main { margin-left: 0; }
+            .content { padding: 16px; }
+        }
+    </style>
+</head>
+<body>
+
+<aside class="sidebar">
+    <div class="sidebar-logo">
+        {% if company_logo_url %}
+        <img src="{{ company_logo_url }}" alt="Logo" style="width:36px;height:36px;object-fit:contain;border-radius:10px;background:#fff;padding:4px;">
+        {% else %}
+        <div class="logo-mark">{{ company_name|first|upper }}</div>
+        {% endif %}
+        <span class="logo-text">{{ company_name }}</span>
+    </div>
+    <nav class="sidebar-nav">
+        <div class="nav-section-label">Général</div>
+        <a href="{% url 'dashboard' %}" class="nav-item"><span class="nav-icon">📊</span> Tableau de bord</a>
+        <div class="nav-section-label">Gestion</div>
+        <a href="{% url 'list_agents' %}" class="nav-item"><span class="nav-icon">👥</span> Agents</a>
+        <a href="{% url 'manage_agent_roles' %}" class="nav-item"><span class="nav-icon">🎭</span> Rôles</a>
+        <a href="{% url 'list_engines' %}" class="nav-item"><span class="nav-icon">⚙️</span> Engins</a>
+        <a href="{% url 'list_stock_loads' %}" class="nav-item active"><span class="nav-icon">🚚</span> Stock Vendeurs</a>
+        <a href="{% url 'list_products' %}" class="nav-item"><span class="nav-icon">📦</span> Produits</a>
+        <div class="nav-section-label">Commerce</div>
+        <a href="{% url 'list_clients' %}" class="nav-item"><span class="nav-icon">🤝</span> Clients</a>
+        <a href="{% url 'list_suppliers' %}" class="nav-item"><span class="nav-icon">🏭</span> Fournisseurs</a>
+        <a href="{% url 'list_sales' %}" class="nav-item"><span class="nav-icon">💹</span> Ventes</a>
+        <a href="{% url 'list_supplies' %}" class="nav-item"><span class="nav-icon">🛒</span> Appros</a>
+        <a href="{% url 'list_invoices' %}" class="nav-item"><span class="nav-icon">🧾</span> Factures</a>
+        <div class="nav-section-label">Finance</div>
+        <a href="{% url 'list_payment_methods' %}" class="nav-item"><span class="nav-icon">💳</span> Modes de paiement</a>
+        <a href="{% url 'list_payment_types' %}" class="nav-item"><span class="nav-icon">🏷️</span> Types de paiement</a>
+    </nav>
+    <div class="sidebar-footer">
+        <div class="user-block">
+            <div class="user-avatar">A</div>
+            <div><div class="user-name">Admin</div><div class="user-role">Administrateur</div></div>
+        </div>
+        <a href="{% url 'logout' %}" class="logout-btn">🚪 Se déconnecter</a>
+    </div>
+</aside>
+
+<div class="main">
+    <header class="topbar">
+        <div>
+            <div class="topbar-title">Stock Vendeurs</div>
+            <div class="topbar-sub">Ce que chaque vendeur transporte, séparé du stock magasin</div>
+        </div>
+        <div class="topbar-actions">
+            <button type="button" class="btn btn-primary" onclick="openLoadModal()">🚚 Charger un vendeur</button>
+            <button type="button" class="btn btn-ghost" onclick="openReturnModal()">↩ Enregistrer un retour</button>
+            <a href="{% url 'dashboard' %}" class="btn btn-ghost">← Tableau de bord</a>
+        </div>
+    </header>
+
+    <main class="content">
+
+        {% if messages %}
+            {% for message in messages %}
+            <div class="django-msg" data-type="{{ message.tags }}" data-text="{{ message }}" style="display:none;"></div>
+            {% endfor %}
+        {% endif %}
+
+        <div class="section-title">📋 Stock actuel par vendeur</div>
+        <div class="table-card">
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr><th>Agent</th><th>Produit</th><th>Quantité</th><th>Prix fixé</th><th>Maj</th></tr>
+                    </thead>
+                    <tbody>
+                        {% for stock in agent_stocks %}
+                        <tr>
+                            <td>{{ stock.agent.name }}</td>
+                            <td>{{ stock.product.name }}</td>
+                            <td><strong>{{ stock.quantity }}</strong></td>
+                            <td>{{ stock.formatted_unit_price }}</td>
+                            <td class="muted-cell">{{ stock.updated_at|date:"d/m/Y H:i" }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="5"><div class="empty-state">Aucun vendeur n'a de stock chargé pour l'instant.</div></td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="section-title">🚚 Derniers chargements</div>
+        <div class="table-card">
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr><th>Agent</th><th>Produits chargés</th><th>Note</th><th>Date</th></tr>
+                    </thead>
+                    <tbody>
+                        {% for load in loads %}
+                        <tr>
+                            <td>{{ load.agent.name }}</td>
+                            <td class="muted-cell">
+                                {% for item in load.items.all %}{{ item.product.name }} ({{ item.quantity }}){% if not forloop.last %}, {% endif %}{% endfor %}
+                            </td>
+                            <td class="muted-cell">{{ load.note|default:"—" }}</td>
+                            <td class="muted-cell">{{ load.date|date:"d/m/Y H:i" }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="4"><div class="empty-state">Aucun chargement enregistré.</div></td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="section-title">↩ Derniers retours</div>
+        <div class="table-card">
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr><th>Agent</th><th>Produits retournés</th><th>Note</th><th>Date</th></tr>
+                    </thead>
+                    <tbody>
+                        {% for ret in returns %}
+                        <tr>
+                            <td>{{ ret.agent.name }}</td>
+                            <td class="muted-cell">
+                                {% for item in ret.items.all %}{{ item.product.name }} ({{ item.quantity }}){% if not forloop.last %}, {% endif %}{% endfor %}
+                            </td>
+                            <td class="muted-cell">{{ ret.note|default:"—" }}</td>
+                            <td class="muted-cell">{{ ret.date|date:"d/m/Y H:i" }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="4"><div class="empty-state">Aucun retour enregistré.</div></td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </main>
+</div>
+
+<!-- MODAL CHARGEMENT -->
+<div class="modal-overlay" id="loadModal">
+    <div class="modal-box">
+        <div class="modal-header">
+            <div class="modal-title">🚚 Charger un vendeur</div>
+            <button type="button" class="modal-close" onclick="closeLoadModal()">&times;</button>
+        </div>
+        <form id="loadForm">
+            {% csrf_token %}
+            <div class="form-group">
+                <label class="form-label" for="loadAgent">Vendeur *</label>
+                <select class="form-select" id="loadAgent" name="agent_id" required>
+                    <option value="">Sélectionner un agent...</option>
+                    {% for agent in agents %}
+                    <option value="{{ agent.id }}">{{ agent.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="loadNote">Note (destination, tournée...)</label>
+                <input type="text" class="form-control" id="loadNote" name="note" placeholder="Ex: Tournée Bobo-Dioulasso">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Produits chargés *</label>
+                <div id="loadCartContainer"></div>
+                <button type="button" class="btn btn-ghost btn-sm" style="margin-top:6px;" onclick="addLoadRow()">＋ Ajouter un produit</button>
+            </div>
+            <input type="hidden" id="loadItemsInput" name="items" value="[]">
+            <div class="form-error" id="loadFormError"></div>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-ghost" onclick="closeLoadModal()">Annuler</button>
+                <button type="submit" class="btn btn-primary" id="loadSubmitBtn">💾 Enregistrer le chargement</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- MODAL RETOUR -->
+<div class="modal-overlay" id="returnModal">
+    <div class="modal-box">
+        <div class="modal-header">
+            <div class="modal-title">↩ Enregistrer un retour</div>
+            <button type="button" class="modal-close" onclick="closeReturnModal()">&times;</button>
+        </div>
+        <form id="returnForm">
+            {% csrf_token %}
+            <div class="form-group">
+                <label class="form-label" for="returnAgent">Vendeur *</label>
+                <select class="form-select" id="returnAgent" name="agent_id" required onchange="renderReturnRows()">
+                    <option value="">Sélectionner un agent...</option>
+                    {% for agent in agents %}
+                    <option value="{{ agent.id }}">{{ agent.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="returnNote">Note</label>
+                <input type="text" class="form-control" id="returnNote" name="note">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Produits à retourner *</label>
+                <div id="returnCartContainer">
+                    <p class="muted-cell" style="font-size:12.5px;">Choisis d'abord un vendeur pour voir son stock.</p>
+                </div>
+            </div>
+            <input type="hidden" id="returnItemsInput" name="items" value="[]">
+            <div class="form-error" id="returnFormError"></div>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-ghost" onclick="closeReturnModal()">Annuler</button>
+                <button type="submit" class="btn btn-primary" id="returnSubmitBtn">💾 Enregistrer le retour</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+    const PRODUCTS = [
+        {% for product in products %}
+        { id: '{{ product.id }}', name: '{{ product.name|escapejs }}', price: {{ product.price }}, stock: {{ product.stock_quantity }} }{% if not forloop.last %},{% endif %}
+        {% endfor %}
+    ];
+
+    // Stock personnel actuel par agent, construit depuis agent_stocks
+    const AGENT_STOCKS = {};
+    {% for stock in agent_stocks %}
+    AGENT_STOCKS['{{ stock.agent.id }}'] = AGENT_STOCKS['{{ stock.agent.id }}'] || [];
+    AGENT_STOCKS['{{ stock.agent.id }}'].push({ productId: '{{ stock.product.id }}', name: '{{ stock.product.name|escapejs }}', quantity: {{ stock.quantity }} });
+    {% endfor %}
+
+    const csrfToken = document.querySelector('#loadForm [name=csrfmiddlewaretoken]').value;
+
+    function showToast(message, type = 'success') {
+        const toast = document.getElementById('toast');
+        toast.textContent = (type === 'success' ? '✅ ' : '⚠️ ') + message;
+        toast.className = 'toast show ' + type;
+        setTimeout(() => toast.classList.remove('show'), 3500);
+    }
+    document.querySelectorAll('.django-msg').forEach(el => {
+        const type = el.dataset.type.includes('error') ? 'error' : 'success';
+        showToast(el.dataset.text, type);
+    });
+
+    /* ── CHARGEMENT ── */
+    function openLoadModal() {
+        document.getElementById('loadForm').reset();
+        document.getElementById('loadCartContainer').innerHTML = '';
+        document.getElementById('loadFormError').style.display = 'none';
+        addLoadRow();
+        document.getElementById('loadModal').classList.add('open');
+    }
+    function closeLoadModal() { document.getElementById('loadModal').classList.remove('open'); }
+    document.getElementById('loadModal').addEventListener('click', e => { if (e.target === e.currentTarget) closeLoadModal(); });
+
+    function addLoadRow() {
+        const container = document.getElementById('loadCartContainer');
+        const row = document.createElement('div');
+        row.className = 'cart-row';
+        const options = PRODUCTS.map(p => `<option value="${p.id}" data-price="${p.price}">${p.name} (stock magasin: ${p.stock})</option>`).join('');
+        row.innerHTML = `
+            <select class="form-select load-product" required>
+                <option value="">Produit...</option>
+                ${options}
+            </select>
+            <input type="number" class="form-control load-qty" min="1" value="1" required placeholder="Qté">
+            <input type="number" class="form-control load-price" min="0" step="0.01" required placeholder="Prix vendeur">
+            <button type="button" class="btn btn-danger-soft btn-sm" onclick="this.closest('.cart-row').remove(); syncLoadItems();">✕</button>
+        `;
+        container.appendChild(row);
+        const select = row.querySelector('.load-product');
+        select.addEventListener('change', function () {
+            const opt = this.selectedOptions[0];
+            if (opt && opt.dataset.price) row.querySelector('.load-price').value = opt.dataset.price;
+            syncLoadItems();
+        });
+        row.querySelector('.load-qty').addEventListener('input', syncLoadItems);
+        row.querySelector('.load-price').addEventListener('input', syncLoadItems);
+        syncLoadItems();
+    }
+
+    function syncLoadItems() {
+        const items = [];
+        document.querySelectorAll('#loadCartContainer .cart-row').forEach(row => {
+            const productId = row.querySelector('.load-product').value;
+            const quantity = parseInt(row.querySelector('.load-qty').value, 10) || 0;
+            const unitPrice = row.querySelector('.load-price').value;
+            if (productId && quantity && unitPrice !== '') {
+                items.push({ product_id: productId, quantity: quantity, unit_price: unitPrice });
+            }
+        });
+        document.getElementById('loadItemsInput').value = JSON.stringify(items);
+    }
+
+    document.getElementById('loadForm').addEventListener('submit', async function (e) {
+        e.preventDefault();
+        syncLoadItems();
+        const errorBox = document.getElementById('loadFormError');
+        errorBox.style.display = 'none';
+
+        const items = JSON.parse(document.getElementById('loadItemsInput').value || '[]');
+        if (!document.getElementById('loadAgent').value) {
+            errorBox.textContent = 'Sélectionne un vendeur'; errorBox.style.display = 'block'; return;
+        }
+        if (!items.length) {
+            errorBox.textContent = 'Ajoute au moins un produit'; errorBox.style.display = 'block'; return;
+        }
+
+        const btn = document.getElementById('loadSubmitBtn');
+        btn.disabled = true; btn.textContent = 'Enregistrement…';
+
+        try {
+            const response = await fetch("{% url 'add_stock_load' %}", {
+                method: 'POST', body: new FormData(this),
+                headers: { 'X-CSRFToken': csrfToken }, credentials: 'same-origin'
+            });
+            const data = await response.json();
+            if (response.ok && data.success) {
+                showToast(data.message, 'success');
+                closeLoadModal();
+                setTimeout(() => location.reload(), 800);
+            } else {
+                errorBox.textContent = data.error || 'Erreur'; errorBox.style.display = 'block';
+            }
+        } catch (err) {
+            errorBox.textContent = 'Erreur serveur'; errorBox.style.display = 'block';
+        } finally {
+            btn.disabled = false; btn.textContent = '💾 Enregistrer le chargement';
+        }
+    });
+
+    /* ── RETOUR ── */
+    function openReturnModal() {
+        document.getElementById('returnForm').reset();
+        document.getElementById('returnFormError').style.display = 'none';
+        renderReturnRows();
+        document.getElementById('returnModal').classList.add('open');
+    }
+    function closeReturnModal() { document.getElementById('returnModal').classList.remove('open'); }
+    document.getElementById('returnModal').addEventListener('click', e => { if (e.target === e.currentTarget) closeReturnModal(); });
+
+    function renderReturnRows() {
+        const agentId = document.getElementById('returnAgent').value;
+        const container = document.getElementById('returnCartContainer');
+        const stocks = AGENT_STOCKS[agentId] || [];
+
+        if (!agentId) {
+            container.innerHTML = '<p class="muted-cell" style="font-size:12.5px;">Choisis d\'abord un vendeur pour voir son stock.</p>';
+            document.getElementById('returnItemsInput').value = '[]';
+            return;
+        }
+        if (!stocks.length) {
+            container.innerHTML = '<p class="muted-cell" style="font-size:12.5px;">Ce vendeur n\'a aucun stock actuellement.</p>';
+            document.getElementById('returnItemsInput').value = '[]';
+            return;
+        }
+
+        container.innerHTML = stocks.map(s => `
+            <div class="cart-row">
+                <span style="flex:2; font-size:13px;">${s.name} <span class="muted-cell">(dispo: ${s.quantity})</span></span>
+                <input type="number" class="form-control return-qty" data-product-id="${s.productId}" data-max="${s.quantity}" min="0" max="${s.quantity}" value="0">
+            </div>
+        `).join('');
+
+        container.querySelectorAll('.return-qty').forEach(input => input.addEventListener('input', syncReturnItems));
+        syncReturnItems();
+    }
+
+    function syncReturnItems() {
+        const items = [];
+        document.querySelectorAll('#returnCartContainer .return-qty').forEach(input => {
+            const quantity = parseInt(input.value, 10) || 0;
+            if (quantity > 0) items.push({ product_id: input.dataset.productId, quantity: quantity });
+        });
+        document.getElementById('returnItemsInput').value = JSON.stringify(items);
+    }
+
+    document.getElementById('returnForm').addEventListener('submit', async function (e) {
+        e.preventDefault();
+        syncReturnItems();
+        const errorBox = document.getElementById('returnFormError');
+        errorBox.style.display = 'none';
+
+        const items = JSON.parse(document.getElementById('returnItemsInput').value || '[]');
+        if (!document.getElementById('returnAgent').value) {
+            errorBox.textContent = 'Sélectionne un vendeur'; errorBox.style.display = 'block'; return;
+        }
+        if (!items.length) {
+            errorBox.textContent = 'Indique une quantité à retourner pour au moins un produit'; errorBox.style.display = 'block'; return;
+        }
+
+        const btn = document.getElementById('returnSubmitBtn');
+        btn.disabled = true; btn.textContent = 'Enregistrement…';
+
+        try {
+            const response = await fetch("{% url 'add_stock_return' %}", {
+                method: 'POST', body: new FormData(this),
+                headers: { 'X-CSRFToken': csrfToken }, credentials: 'same-origin'
+            });
+            const data = await response.json();
+            if (response.ok && data.success) {
+                showToast(data.message, 'success');
+                closeReturnModal();
+                setTimeout(() => location.reload(), 800);
+            } else {
+                errorBox.textContent = data.error || 'Erreur'; errorBox.style.display = 'block';
+            }
+        } catch (err) {
+            errorBox.textContent = 'Erreur serveur'; errorBox.style.display = 'block';
+        } finally {
+            btn.disabled = false; btn.textContent = '💾 Enregistrer le retour';
+        }
+    });
+</script>
+
+</body>
+</html>

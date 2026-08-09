@@ -277,7 +277,7 @@
                         <td class="invoice-number">{{ invoice.invoice_number }}</td>
                         <td>
                             {% if invoice.sale %}
-                                <div class="invoice-muted">{{ invoice.sale.client.name }} — {{ invoice.sale.product.name }}</div>
+                                <div class="invoice-muted">{{ invoice.sale.client.name }} — {{ invoice.sale.item_names|default:invoice.sale.product.name }}</div>
                             {% else %}
                                 <span class="invoice-muted">-</span>
                             {% endif %}
@@ -294,6 +294,7 @@
                             {% endif %}
                         </td>
                         <td>
+                            <a href="{% url 'invoice_pdf' invoice.id %}" class="btn btn-ghost btn-sm" target="_blank">📄 PDF</a>
                             <button type="button" class="btn btn-edit-soft btn-sm edit-invoice-btn"
                                     data-invoice-id="{{ invoice.id }}"
                                     data-invoice-number="{{ invoice.invoice_number|escapejs }}"
@@ -334,7 +335,7 @@
                 <select class="form-select" id="sale" name="sale_id" required>
                     <option value="">Sélectionner une vente...</option>
                     {% for sale in sales %}
-                        <option value="{{ sale.id }}">{{ sale.client.name }} — {{ sale.product.name }} ({{ sale.total_price }} €)</option>
+                        <option value="{{ sale.id }}">{{ sale.client.name }} — {{ sale.item_names|default:sale.product.name }} ({{ sale.formatted_total_price }})</option>
                     {% endfor %}
                 </select>
             </div>
@@ -501,4 +502,3 @@
 
 </body>
 </html>
-
