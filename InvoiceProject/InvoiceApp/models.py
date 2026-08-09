@@ -4,6 +4,7 @@ import string
 from decimal import Decimal
 
 from django.db import models
+from django.utils import timezone
 from django.contrib.auth.models import AbstractUser
 from django.contrib.auth.hashers import make_password, check_password
 
@@ -141,6 +142,7 @@ class Product(models.Model):
 class Client(models.Model):
     company = models.ForeignKey(User, on_delete=models.CASCADE, related_name='clients', verbose_name="Entreprise")
     name = models.CharField(max_length=255, verbose_name="Nom du client")
+    shop_name = models.CharField(max_length=255, blank=True, verbose_name="Nom du magasin")
     email = models.EmailField(blank=True, verbose_name="Email")
     phone = models.CharField(max_length=20, blank=True, verbose_name="Téléphone")
     address = models.TextField(blank=True, verbose_name="Adresse")
@@ -313,8 +315,10 @@ class Invoice(models.Model):
     invoice_number = models.CharField(max_length=50, verbose_name="Numéro de facture")
     issued_date = models.DateTimeField(auto_now_add=True, verbose_name="Date d'émission")
     due_date = models.DateField(verbose_name="Date d'échéance")
+    amount_paid = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'), verbose_name="Montant déjà payé")
     status = models.CharField(max_length=20, choices=[
-        ('pending', 'E n attente'),
+        ('pending', 'En attente (crédit)'),
+        ('partial', 'Paiement partiel'),
         ('paid', 'Payée'),
         ('overdue', 'En retard')
     ], default='pending', verbose_name="Statut")
@@ -322,7 +326,156 @@ class Invoice(models.Model):
     def __str__(self):
         return f"Facture {self.invoice_number} ({self.company.company_name})"
 
+    @property
+    def balance_due(self):
+        """Ce qu'il reste à payer."""
+        total = self.sale.total_price if self.sale else Decimal('0.00')
+        remaining = total - self.amount_paid
+        return remaining if remaining > 0 else Decimal('0.00')
+
+    @property
+    def formatted_amount_paid(self):
+        return self._format_money(self.amount_paid)
+
+    @property
+    def formatted_balance_due(self):
+        return self._format_money(self.balance_due)
+
+    def _format_money(self, value):
+        currency = self.sale.currency if self.sale else 'EUR'
+        symbols = {'EUR': '€', 'USD': '$', 'XOF': 'FCFA'}
+        symbol = symbols.get(currency, currency)
+        amount = f"{value:,.0f}".replace(',', ' ') if currency == 'XOF' else f"{value:,.2f}".replace(',', ' ')
+        return f"{symbol}{amount}" if currency == 'USD' else f"{amount} {symbol}"
+
+    def refresh_status(self):
+        """Recalcule le statut à partir du montant payé. À appeler après chaque paiement enregistré."""
+        total = self.sale.total_price if self.sale else Decimal('0.00')
+        if self.amount_paid <= 0:
+            self.status = 'overdue' if self.due_date < timezone.now().date() else 'pending'
+        elif self.amount_paid < total:
+            self.status = 'partial'
+        else:
+            self.status = 'paid'
+
     class Meta:
         verbose_name = "Facture"
         verbose_name_plural = "Factures"
         unique_together = ('company', 'invoice_number')
+
+
+# Historique des versements d'une facture (comptant, avance, ou remboursement de crédit)
+class Payment(models.Model):
+    invoice = models.ForeignKey(Invoice, on_delete=models.CASCADE, related_name='payments', verbose_name="Facture")
+    amount = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Montant versé")
+    date = models.DateTimeField(auto_now_add=True, verbose_name="Date du versement")
+    note = models.CharField(max_length=255, blank=True, verbose_name="Note")
+    recorded_by_agent = models.ForeignKey(
+        Agent, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='recorded_payments', verbose_name="Enregistré par (vendeur)"
+    )
+
+    def __str__(self):
+        return f"Versement {self.amount} — Facture {self.invoice.invoice_number}"
+
+    @property
+    def formatted_amount(self):
+        currency = self.invoice.sale.currency if self.invoice.sale else 'EUR'
+        symbols = {'EUR': '€', 'USD': '$', 'XOF': 'FCFA'}
+        symbol = symbols.get(currency, currency)
+        amount = f"{self.amount:,.0f}".replace(',', ' ') if currency == 'XOF' else f"{self.amount:,.2f}".replace(',', ' ')
+        return f"{symbol}{amount}" if currency == 'USD' else f"{amount} {symbol}"
+
+    class Meta:
+        verbose_name = "Versement"
+        verbose_name_plural = "Versements"
+        ordering = ['date']
+
+
+# ═══════════════════════════════════════════════════════════════
+# Stock personnel des vendeurs (chargement / retour de tournée)
+# ═══════════════════════════════════════════════════════════════
+
+# Le stock que chaque vendeur transporte réellement (différent du stock magasin)
+class AgentStock(models.Model):
+    agent = models.ForeignKey(Agent, on_delete=models.CASCADE, related_name='stocks', verbose_name="Agent")
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='agent_stocks', verbose_name="Produit")
+    quantity = models.PositiveIntegerField(default=0, verbose_name="Quantité chez le vendeur")
+    unit_price = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'), verbose_name="Prix de vente fixé")
+    currency = models.CharField(max_length=3, choices=Product.CURRENCY_CHOICES, default='EUR', verbose_name="Devise")
+    updated_at = models.DateTimeField(auto_now=True, verbose_name="Dernière mise à jour")
+
+    def __str__(self):
+        return f"{self.agent.name} — {self.product.name} ({self.quantity})"
+
+    @property
+    def formatted_unit_price(self):
+        symbols = {'EUR': '€', 'USD': '$', 'XOF': 'FCFA'}
+        symbol = symbols.get(self.currency, self.currency)
+        amount = f"{self.unit_price:,.0f}".replace(',', ' ') if self.currency == 'XOF' else f"{self.unit_price:,.2f}".replace(',', ' ')
+        return f"{symbol}{amount}" if self.currency == 'USD' else f"{amount} {symbol}"
+
+    class Meta:
+        verbose_name = "Stock vendeur"
+        verbose_name_plural = "Stocks vendeurs"
+        unique_together = ('agent', 'product')
+
+
+# La "fiche" de chargement : ce que la secrétaire a fait sortir du magasin pour un vendeur
+class StockLoad(models.Model):
+    company = models.ForeignKey(User, on_delete=models.CASCADE, related_name='stock_loads', verbose_name="Entreprise")
+    agent = models.ForeignKey(Agent, on_delete=models.CASCADE, related_name='stock_loads', verbose_name="Agent")
+    note = models.CharField(max_length=255, blank=True, verbose_name="Note (ex: destination, tournée)")
+    date = models.DateTimeField(auto_now_add=True, verbose_name="Date de chargement")
+
+    def __str__(self):
+        return f"Chargement {self.agent.name} du {self.date.strftime('%d/%m/%Y')}"
+
+    class Meta:
+        verbose_name = "Chargement"
+        verbose_name_plural = "Chargements"
+        ordering = ['-date']
+
+
+class StockLoadItem(models.Model):
+    load = models.ForeignKey(StockLoad, on_delete=models.CASCADE, related_name='items', verbose_name="Chargement")
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='stock_load_items', verbose_name="Produit")
+    quantity = models.PositiveIntegerField(verbose_name="Quantité chargée")
+    unit_price = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Prix fixé pour le vendeur")
+    currency = models.CharField(max_length=3, choices=Product.CURRENCY_CHOICES, default='EUR', verbose_name="Devise")
+
+    def __str__(self):
+        return f"{self.product.name} x{self.quantity}"
+
+    class Meta:
+        verbose_name = "Ligne de chargement"
+        verbose_name_plural = "Lignes de chargement"
+
+
+# Le retour de marchandise invendue vers le magasin
+class StockReturn(models.Model):
+    company = models.ForeignKey(User, on_delete=models.CASCADE, related_name='stock_returns', verbose_name="Entreprise")
+    agent = models.ForeignKey(Agent, on_delete=models.CASCADE, related_name='stock_returns', verbose_name="Agent")
+    note = models.CharField(max_length=255, blank=True, verbose_name="Note")
+    date = models.DateTimeField(auto_now_add=True, verbose_name="Date de retour")
+
+    def __str__(self):
+        return f"Retour {self.agent.name} du {self.date.strftime('%d/%m/%Y')}"
+
+    class Meta:
+        verbose_name = "Retour de stock"
+        verbose_name_plural = "Retours de stock"
+        ordering = ['-date']
+
+
+class StockReturnItem(models.Model):
+    stock_return = models.ForeignKey(StockReturn, on_delete=models.CASCADE, related_name='items', verbose_name="Retour")
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='stock_return_items', verbose_name="Produit")
+    quantity = models.PositiveIntegerField(verbose_name="Quantité retournée")
+
+    def __str__(self):
+        return f"{self.product.name} x{self.quantity}"
+
+    class Meta:
+        verbose_name = "Ligne de retour"
+        verbose_name_plural = "Lignes de retour"
