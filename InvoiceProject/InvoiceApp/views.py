@@ -21,6 +21,7 @@ from .models import Agent
 
 from .models import (
     User,
+    CURRENCY_CHOICES,
     AgentRole,
     Agent,
     Engine,
@@ -30,6 +31,7 @@ from .models import (
     PaymentMethod,
     Supplier,
     Supply,
+    SupplyItem,
     Sale,
     SaleItem,
     Invoice,
@@ -54,6 +56,7 @@ def register_company(request):
         password_confirm = request.POST.get("password_confirm")
         phone = request.POST.get("phone", "")
         address = request.POST.get("address", "")
+        default_currency = request.POST.get("default_currency", "EUR")
         logo = request.FILES.get("logo")
 
         if not company_name or not email or not password:
@@ -63,6 +66,10 @@ def register_company(request):
         if User.objects.filter(username=email).exists() or User.objects.filter(company_email=email).exists():
             return JsonResponse({"success": False, "error": "Un utilisateur avec cet email existe déjà"}, status=400)
 
+        valid_currencies = dict(CURRENCY_CHOICES).keys()
+        if default_currency not in valid_currencies:
+            default_currency = "EUR"
+
         user = User.objects.create_user(
             username=email,
             email=email,
@@ -71,6 +78,7 @@ def register_company(request):
             company_email=email,
             phone=phone,
             address=address,
+            default_currency=default_currency,
             logo=logo,
         )
         return JsonResponse({"success": True, "message": "Compte créé", "user_id": user.id})
@@ -454,16 +462,15 @@ def add_product(request):
     name = request.POST.get("name")
     description = request.POST.get("description", "")
     price = request.POST.get("price")
-    currency = request.POST.get("currency", "EUR")
     stock = request.POST.get("stock") or request.POST.get("stock_quantity", 0)
     image = request.FILES.get("image") if hasattr(request, 'FILES') else None
 
     if not name or price is None:
         return JsonResponse({"success": False, "error": "name et price requis"}, status=400)
 
-    valid_currencies = dict(Product.CURRENCY_CHOICES).keys()
-    if currency not in valid_currencies:
-        currency = "EUR"
+    # La devise est celle de l'entreprise, définie une fois à l'inscription :
+    # inutile de la redemander à chaque produit
+    currency = request.user.default_currency
 
     stock_quantity = int(stock) if stock not in (None, "", "0") else 0
 
@@ -670,48 +677,90 @@ def delete_supplier(request):
 def add_supply(request):
     supply_id = request.POST.get("supply_id")
     supplier_id = request.POST.get("supplier_id")
-    product_id = request.POST.get("product_id")
-    quantity = request.POST.get("quantity")
-    unit_price = request.POST.get("unit_price")
-    currency = request.POST.get("currency", "EUR")
+    supply_items_payload = request.POST.get("supply_items")
 
-    if not supplier_id or not product_id or not quantity or not unit_price:
-        return JsonResponse({"success": False, "error": "supplier_id, product_id, quantity et unit_price requis"}, status=400)
-
-    try:
-        quantity = int(quantity)
-        unit_price = float(unit_price)
-    except (ValueError, TypeError):
-        return JsonResponse({"success": False, "error": "quantity et unit_price doivent être des nombres"}, status=400)
-
-    valid_currencies = dict(Product.CURRENCY_CHOICES).keys()
-    if currency not in valid_currencies:
-        currency = "EUR"
+    if not supplier_id:
+        return JsonResponse({"success": False, "error": "supplier_id requis"}, status=400)
 
     supplier = Supplier.objects.filter(id=supplier_id, company=request.user).first()
-    product = Product.objects.filter(id=product_id, company=request.user).first()
-    if not supplier or not product:
-        return JsonResponse({"success": False, "error": "Supplier ou Product introuvable"}, status=404)
+    if not supplier:
+        return JsonResponse({"success": False, "error": "Fournisseur introuvable"}, status=404)
 
+    if not supply_items_payload:
+        return JsonResponse({"success": False, "error": "Au moins un produit est requis"}, status=400)
+
+    try:
+        parsed_items = json.loads(supply_items_payload)
+    except json.JSONDecodeError:
+        return JsonResponse({"success": False, "error": "Format des produits invalide"}, status=400)
+
+    if not isinstance(parsed_items, list) or not parsed_items:
+        return JsonResponse({"success": False, "error": "Au moins un produit est requis"}, status=400)
+
+    items = []
+    for item_data in parsed_items:
+        product_id = item_data.get('product_id')
+        quantity = item_data.get('quantity')
+        unit_price = item_data.get('unit_price')
+        if not product_id or not quantity:
+            return JsonResponse({"success": False, "error": "Chaque ligne doit contenir un produit et une quantité"}, status=400)
+
+        try:
+            quantity = int(quantity)
+        except (ValueError, TypeError):
+            return JsonResponse({"success": False, "error": "quantity doit être un nombre"}, status=400)
+
+        product = Product.objects.filter(id=product_id, company=request.user).first()
+        if not product:
+            return JsonResponse({"success": False, "error": "Produit introuvable"}, status=404)
+
+        if unit_price in [None, '', 'null']:
+            unit_price = product.price
+        else:
+            try:
+                unit_price = Decimal(str(unit_price))
+            except (ValueError, TypeError, InvalidOperation):
+                return JsonResponse({"success": False, "error": "unit_price doit être un nombre"}, status=400)
+
+        # La devise suit toujours le produit : pas de choix manuel de devise
+        items.append((product, quantity, unit_price, product.currency))
+
+    # Récupère l'approvisionnement existant (édition) sans encore rien modifier
+    supply = None
+    old_items = []
     if supply_id:
         supply = Supply.objects.filter(id=supply_id, company=request.user).first()
         if not supply:
             return JsonResponse({"success": False, "error": "Approvisionnement introuvable"}, status=404)
-        supply.supplier = supplier
-        supply.product = product
-        supply.quantity = quantity
-        supply.unit_price = unit_price
-        supply.currency = currency
+        old_items = list(supply.supply_items.select_related('product').all())
+
+    with transaction.atomic():
+        if supply:
+            # Retire l'effet des anciennes lignes sur le stock avant de les remplacer
+            for old_item in old_items:
+                old_item.product.refresh_from_db(fields=['stock_quantity'])
+                old_item.product.stock_quantity -= old_item.quantity
+                old_item.product.save(update_fields=['stock_quantity'])
+            supply.supplier = supplier
+            supply.supply_items.all().delete()
+        else:
+            supply = Supply.objects.create(company=request.user, supplier=supplier)
+
+        for product, quantity, unit_price, item_currency in items:
+            product.refresh_from_db(fields=['stock_quantity'])
+            product.stock_quantity += quantity
+            product.save(update_fields=['stock_quantity'])
+
+            SupplyItem.objects.create(
+                supply=supply,
+                product=product,
+                quantity=quantity,
+                unit_price=unit_price,
+                currency=item_currency,
+            )
+
         supply.save()
-    else:
-        supply = Supply.objects.create(
-            company=request.user,
-            supplier=supplier,
-            product=product,
-            quantity=quantity,
-            unit_price=unit_price,
-            currency=currency,
-        )
+
     return JsonResponse({"success": True, "supply_id": supply.id, "message": "Approvisionnement enregistré"})
 
 @require_http_methods(["POST"])
@@ -720,7 +769,19 @@ def delete_supply(request):
     supply_id = request.POST.get("supply_id")
     if not supply_id:
         return JsonResponse({"success": False, "error": "supply_id requis"}, status=400)
-    Supply.objects.filter(id=supply_id, company=request.user).delete()
+
+    with transaction.atomic():
+        supply = Supply.objects.filter(id=supply_id, company=request.user).first()
+        if not supply:
+            return JsonResponse({"success": False, "error": "Approvisionnement introuvable"}, status=404)
+
+        for item in supply.supply_items.select_related('product').all():
+            item.product.refresh_from_db(fields=['stock_quantity'])
+            item.product.stock_quantity = max(0, item.product.stock_quantity - item.quantity)
+            item.product.save(update_fields=['stock_quantity'])
+
+        supply.delete()  # cascade supprime les SupplyItem associées
+
     return JsonResponse({"success": True, "message": "Approvisionnement supprimé"})
 
 @require_http_methods(["POST"])
@@ -729,15 +790,10 @@ def add_sale(request):
     sale_id = request.POST.get("sale_id")
     client_id = request.POST.get("client_id")
     agent_id = request.POST.get("agent_id")
-    currency = request.POST.get("currency", "EUR")
     sale_items_payload = request.POST.get("sale_items")
 
     if not client_id:
         return JsonResponse({"success": False, "error": "client_id requis"}, status=400)
-
-    valid_currencies = dict(Product.CURRENCY_CHOICES).keys()
-    if currency not in valid_currencies:
-        currency = "EUR"
 
     client = Client.objects.filter(id=client_id, company=request.user).first()
     if not client:
@@ -785,7 +841,8 @@ def add_sale(request):
             except (ValueError, TypeError, InvalidOperation):
                 return JsonResponse({"success": False, "error": "unit_price doit être un nombre"}, status=400)
 
-        items.append((product, quantity, unit_price))
+        # La devise suit toujours le produit : pas de choix manuel de devise
+        items.append((product, quantity, unit_price, product.currency))
 
     # Récupère la vente existante (édition) sans encore rien modifier
     sale = None
@@ -803,7 +860,7 @@ def add_sale(request):
         base = stock_preview.get(old_item.product_id, old_item.product.stock_quantity)
         stock_preview[old_item.product_id] = base + old_item.quantity
 
-    for product, quantity, unit_price in items:
+    for product, quantity, unit_price, item_currency in items:
         available = stock_preview.get(product.id, product.stock_quantity)
         if available < quantity:
             return JsonResponse({
@@ -820,12 +877,11 @@ def add_sale(request):
                 old_item.product.save(update_fields=['stock_quantity'])
             sale.client = client
             sale.agent = agent
-            sale.currency = currency
             sale.sale_items.all().delete()
         else:
-            sale = Sale.objects.create(company=request.user, client=client, agent=agent, currency=currency)
+            sale = Sale.objects.create(company=request.user, client=client, agent=agent)
 
-        for product, quantity, unit_price in items:
+        for product, quantity, unit_price, item_currency in items:
             product.refresh_from_db(fields=['stock_quantity'])
             product.stock_quantity -= quantity
             product.save(update_fields=['stock_quantity'])
@@ -835,7 +891,7 @@ def add_sale(request):
                 product=product,
                 quantity=quantity,
                 unit_price=unit_price,
-                currency=currency,
+                currency=item_currency,
             )
 
         sale.save()
