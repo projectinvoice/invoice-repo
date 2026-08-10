@@ -209,21 +209,55 @@
         <div class="logo-text">{{ company_name }}</div>
     </div>
 
-    <nav class="sidebar-nav">
-        <div class="nav-section-label">Navigation</div>
-        <a href="{% url 'dashboard' %}" class="nav-item"><span class="nav-icon">📊</span> Tableau de bord</a>
-        <a href="{% url 'list_products' %}" class="nav-item"><span class="nav-icon">📦</span> Produits</a>
-        <a href="{% url 'list_clients' %}" class="nav-item"><span class="nav-icon">🤝</span> Clients</a>
-        <a href="{% url 'list_sales' %}" class="nav-item"><span class="nav-icon">💵</span> Ventes</a>
-        <a href="{% url 'list_invoices' %}" class="nav-item"><span class="nav-icon">📄</span> Factures</a>
-        <a href="{% url 'list_suppliers' %}" class="nav-item"><span class="nav-icon">🏢</span> Fournisseurs</a>
-        <a href="{% url 'list_supplies' %}" class="nav-item"><span class="nav-icon">📥</span> Approvisionnements</a>
-        <a href="{% url 'list_engines' %}" class="nav-item active"><span class="nav-icon">⚙️</span> Engins <span class="nav-badge">{{ engines|length }}</span></a>
-        <a href="{% url 'list_stock_loads' %}" class="nav-item"><span class="nav-icon">🚚</span> Stock Vendeurs</a>
-        <a href="{% url 'list_agents' %}" class="nav-item"><span class="nav-icon">👥</span> Agents</a>
-    </nav>
+        <nav class="sidebar-nav">
+        <div class="nav-section-label">Général</div>
+        <a href="{% url 'dashboard' %}" class="nav-item">
+            <span class="nav-icon">📊</span> Tableau de bord
+        </a>
 
-    <div class="sidebar-footer">
+        <div class="nav-section-label">Gestion</div>
+        <a href="{% url 'list_agents' %}" class="nav-item">
+            <span class="nav-icon">👥</span> Agents
+        </a>
+        <a href="{% url 'manage_agent_roles' %}" class="nav-item">
+            <span class="nav-icon">🎭</span> Rôles
+        </a>
+        <a href="{% url 'list_engines' %}" class="nav-item active">
+            <span class="nav-icon">⚙️</span> Engins
+        </a>
+        <a href="{% url 'list_stock_loads' %}" class="nav-item">
+            <span class="nav-icon">🚚</span> Stock Vendeurs
+        </a>
+        <a href="{% url 'list_products' %}" class="nav-item">
+            <span class="nav-icon">📦</span> Produits
+        </a>
+
+        <div class="nav-section-label">Commerce</div>
+        <a href="{% url 'list_clients' %}" class="nav-item">
+            <span class="nav-icon">🤝</span> Clients
+        </a>
+        <a href="{% url 'list_suppliers' %}" class="nav-item">
+            <span class="nav-icon">🏭</span> Fournisseurs
+        </a>
+        <a href="{% url 'list_sales' %}" class="nav-item">
+            <span class="nav-icon">💹</span> Ventes
+        </a>
+        <a href="{% url 'list_supplies' %}" class="nav-item">
+            <span class="nav-icon">🛒</span> Appros
+        </a>
+        <a href="{% url 'list_invoices' %}" class="nav-item">
+            <span class="nav-icon">🧾</span> Factures
+        </a>
+
+        <div class="nav-section-label">Finance</div>
+        <a href="{% url 'list_payment_methods' %}" class="nav-item">
+            <span class="nav-icon">💳</span> Modes de paiement
+        </a>
+        <a href="{% url 'list_payment_types' %}" class="nav-item">
+            <span class="nav-icon">🏷️</span> Types de paiement
+        </a>
+    </nav>
+<div class="sidebar-footer">
         <div class="user-block">
             <div class="user-avatar">{{ request.user.first_name|default:request.user.username|slice:':1'|upper }}</div>
             <div>
@@ -264,6 +298,7 @@
                         <th>Description</th>
                         <th>N° Série</th>
                         <th>Statut</th>
+                        <th>Assigné à</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
@@ -284,13 +319,18 @@
                             {% endif %}
                         </td>
                         <td>
+                            {% with engine.assigned_agents.first as driver %}
+                                {% if driver %}{{ driver.name }}{% else %}<span class="engine-meta">— libre —</span>{% endif %}
+                            {% endwith %}
+                        </td>
+                        <td>
                             <button onclick="openEngineModal({{ engine.id }}, '{{ engine.name|escapejs }}', '{{ engine.description|escapejs }}', '{{ engine.serial_number|escapejs }}', '{{ engine.status|escapejs }}')" class="btn btn-edit-soft btn-sm">Modifier</button>
                             <button type="button" onclick="deleteEngine({{ engine.id }})" class="btn btn-danger-soft btn-sm">Supprimer</button>
                         </td>
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="6"><div class="empty-state">Aucun engin enregistré</div></td>
+                        <td colspan="7"><div class="empty-state">Aucun engin enregistré</div></td>
                     </tr>
                     {% endfor %}
                 </tbody>
