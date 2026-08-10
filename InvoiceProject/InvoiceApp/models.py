@@ -8,6 +8,14 @@ from django.utils import timezone
 from django.contrib.auth.models import AbstractUser
 from django.contrib.auth.hashers import make_password, check_password
 
+# Devises supportées par la plateforme (utilisée par l'entreprise, les produits,
+# les approvisionnements et les ventes)
+CURRENCY_CHOICES = [
+    ('EUR', 'Euro (€)'),
+    ('USD', 'Dollar US ($)'),
+    ('XOF', 'Franc CFA (FCFA)'),
+]
+
 # Modèle utilisateur personnalisé (l'entreprise elle-même est l'utilisateur)
 class User(AbstractUser):
     logo = models.ImageField(upload_to="company_logos/", blank=True, null=True, verbose_name="Logo de l'entreprise")
@@ -17,6 +25,9 @@ class User(AbstractUser):
     phone = models.CharField(max_length=20, blank=True, verbose_name="Téléphone")
     address = models.TextField(blank=True, verbose_name="Adresse")
     add_date = models.DateTimeField(auto_now_add=True, verbose_name="Date d'inscription",blank=True, null=True,)
+    # Devise unique de l'entreprise : définie une seule fois à l'inscription,
+    # puis héritée automatiquement par les produits, approvisionnements et ventes
+    default_currency = models.CharField(max_length=3, choices=CURRENCY_CHOICES, default='EUR', verbose_name="Devise de l'entreprise")
 
     # Code que l'entreprise communique à ses vendeurs pour se connecter à leur espace dédié
     agent_login_code = models.CharField(max_length=8, unique=True, blank=True, verbose_name="Code de connexion vendeurs")
@@ -106,11 +117,7 @@ class Engine(models.Model):
 
 # Modèle pour les produits
 class Product(models.Model):
-    CURRENCY_CHOICES = [
-        ('EUR', 'Euro (€)'),
-        ('USD', 'Dollar US ($)'),
-        ('XOF', 'Franc CFA (FCFA)'),
-    ]
+    CURRENCY_CHOICES = CURRENCY_CHOICES
 
     company = models.ForeignKey(User, on_delete=models.CASCADE, related_name='products', verbose_name="Entreprise")
     image = models.ImageField(upload_to="product_images/", blank=True, null=True, verbose_name="Image du produit")
@@ -207,19 +214,36 @@ class Supplier(models.Model):
 class Supply(models.Model):
     company = models.ForeignKey(User, on_delete=models.CASCADE, related_name='supplies', verbose_name="Entreprise")
     supplier = models.ForeignKey(Supplier, on_delete=models.CASCADE, related_name='supplies', verbose_name="Fournisseur")
-    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='supplies', verbose_name="Produit")
-    quantity = models.PositiveIntegerField(verbose_name="Quantité")
-    unit_price = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Prix unitaire")
-    total_price = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Prix total")
+    total_price = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'), verbose_name="Prix total")
     currency = models.CharField(max_length=3, choices=Product.CURRENCY_CHOICES, default='EUR', verbose_name="Devise")
     date = models.DateTimeField(auto_now_add=True, verbose_name="Date")
 
     def save(self, *args, **kwargs):
-        self.total_price = self.quantity * self.unit_price
+        if self.pk and self.supply_items.exists():
+            self.total_price = sum((item.total_price for item in self.supply_items.all()), Decimal('0.00'))
+            first_item = self.supply_items.order_by('id').first()
+            self.currency = first_item.currency
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return f"Approvisionnement de {self.product.name} ({self.company.company_name})"
+        return f"Approvisionnement de {self.item_names or 'plusieurs produits'} ({self.company.company_name})"
+
+    @property
+    def item_names(self):
+        names = [item.product.name for item in self.supply_items.all() if item.product]
+        return ', '.join(names)
+
+    @property
+    def serialized_items(self):
+        items = [
+            {
+                'product_id': item.product_id,
+                'quantity': item.quantity,
+                'unit_price': str(item.unit_price),
+            }
+            for item in self.supply_items.all()
+        ]
+        return json.dumps(items)
 
     @property
     def formatted_total_price(self):
@@ -231,6 +255,28 @@ class Supply(models.Model):
     class Meta:
         verbose_name = "Approvisionnement"
         verbose_name_plural = "Approvisionnements"
+
+
+class SupplyItem(models.Model):
+    supply = models.ForeignKey(Supply, on_delete=models.CASCADE, related_name='supply_items', verbose_name="Approvisionnement")
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='supply_items', verbose_name="Produit")
+    quantity = models.PositiveIntegerField(default=1, verbose_name="Quantité")
+    unit_price = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'), verbose_name="Prix unitaire")
+    total_price = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'), verbose_name="Prix total")
+    currency = models.CharField(max_length=3, choices=Product.CURRENCY_CHOICES, default='EUR', verbose_name="Devise")
+
+    def save(self, *args, **kwargs):
+        quantity = int(self.quantity)
+        unit_price = Decimal(str(self.unit_price))
+        self.total_price = Decimal(quantity) * unit_price
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.product.name} x{self.quantity}"
+
+    class Meta:
+        verbose_name = "Ligne d'approvisionnement"
+        verbose_name_plural = "Lignes d'approvisionnement"
 
 # Modèle pour les ventes
 class Sale(models.Model):
