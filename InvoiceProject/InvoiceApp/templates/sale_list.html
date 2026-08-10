@@ -436,7 +436,6 @@
                                     data-client-id="{{ sale.client.id|default:'' }}"
                                     data-agent-id="{{ sale.agent.id|default:'' }}"
                                     data-items='{{ sale.serialized_items|escapejs }}'
-                                    data-currency="{{ sale.currency }}"
                                     onclick="openSaleModalFromButton(this)">
                                 Modifier
                             </button>
@@ -492,19 +491,6 @@
             </div>
 
             <input type="hidden" id="saleItemsInput" name="sale_items" value="[]">
-
-            <div class="row">
-                <div class="col-md-4">
-                    <div class="mb-3">
-                        <label for="currency" class="form-label">Devise *</label>
-                        <select class="form-select" id="currency" name="currency" required>
-                            <option value="EUR">Euro (€)</option>
-                            <option value="USD">Dollar US ($)</option>
-                            <option value="XOF">Franc CFA (FCFA)</option>
-                        </select>
-                    </div>
-                </div>
-            </div>
 
             <div class="d-flex">
                 <button type="submit" class="btn btn-primary">💾 Enregistrer</button>
@@ -597,7 +583,7 @@
         document.getElementById('saleItemsInput').value = JSON.stringify(items);
     }
 
-    function openSaleModal(saleId, clientId = '', agentId = '', items = [], currency = 'EUR') {
+    function openSaleModal(saleId, clientId = '', agentId = '', items = []) {
         const modal = document.getElementById('saleModal');
         const modalTitle = document.getElementById('modalTitle');
 
@@ -606,12 +592,10 @@
             document.getElementById('saleId').value = saleId;
             document.getElementById('client').value = clientId;
             document.getElementById('agent').value = agentId || '';
-            document.getElementById('currency').value = currency || 'EUR';
         } else {
             modalTitle.textContent = 'Ajouter une Vente';
             document.getElementById('saleId').value = '';
             document.getElementById('saleForm').reset();
-            document.getElementById('currency').value = 'EUR';
         }
 
         renderSaleItemRows(items);
@@ -634,8 +618,7 @@
             button.getAttribute('data-sale-id') || '',
             button.getAttribute('data-client-id') || '',
             button.getAttribute('data-agent-id') || '',
-            parsedItems,
-            button.getAttribute('data-currency') || 'EUR'
+            parsedItems
         );
     }
 

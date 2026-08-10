@@ -428,7 +428,6 @@
                                     data-name="{{ product.name|escapejs }}"
                                     data-description="{{ product.description|escapejs }}"
                                     data-price="{{ product.price }}"
-                                    data-currency="{{ product.currency|default:'EUR' }}"
                                     data-stock="{{ product.stock_quantity }}"
                                     onclick="openProductModalFromButton(this)">
                                 Modifier
@@ -469,23 +468,13 @@
             </div>
 
             <div class="row">
-                <div class="col-md-5">
+                <div class="col-md-6">
                     <div class="mb-3">
                         <label for="price" class="form-label">Prix Unitaire *</label>
                         <input type="number" class="form-control" id="price" name="price" step="0.01" required>
                     </div>
                 </div>
-                <div class="col-md-3">
-                    <div class="mb-3">
-                        <label for="currency" class="form-label">Devise *</label>
-                        <select class="form-select" id="currency" name="currency" required>
-                            <option value="EUR">Euro (€)</option>
-                            <option value="USD">Dollar US ($)</option>
-                            <option value="XOF">Franc CFA (FCFA)</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="col-md-4">
+                <div class="col-md-6">
                     <div class="mb-3">
                         <label for="stock" class="form-label">Stock</label>
                         <input type="number" class="form-control" id="stock" name="stock" min="0">
@@ -509,7 +498,7 @@
 </div>
 
 <script>
-    function openProductModal(productId, name = '', description = '', price = '', stock = '', currency = 'EUR') {
+    function openProductModal(productId, name = '', description = '', price = '', stock = '') {
         const modal = document.getElementById('productModal');
         const modalTitle = document.getElementById('modalTitle');
 
@@ -520,12 +509,10 @@
             document.getElementById('description').value = description;
             document.getElementById('price').value = price;
             document.getElementById('stock').value = stock;
-            document.getElementById('currency').value = currency || 'EUR';
         } else {
             modalTitle.textContent = 'Ajouter un Produit';
             document.getElementById('productId').value = '';
             document.getElementById('productForm').reset();
-            document.getElementById('currency').value = 'EUR';
         }
 
         modal.classList.add('show');
@@ -537,8 +524,7 @@
             button.dataset.name || '',
             button.dataset.description || '',
             button.dataset.price || '',
-            button.dataset.stock || '',
-            button.dataset.currency || 'EUR'
+            button.dataset.stock || ''
         );
     }
 
