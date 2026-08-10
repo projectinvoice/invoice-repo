@@ -169,6 +169,9 @@
         .supply-meta { color: var(--text-secondary); font-size: 12px; }
         .supply-total { font-weight: 700; color: var(--emerald); }
         .empty-state { padding: 24px; text-align: center; color: var(--text-secondary); }
+        .supply-item-stack { display: flex; flex-direction: column; gap: 6px; }
+        .supply-item-line { display: block; padding: 4px 0; line-height: 1.45; }
+        .supply-item-meta { color: var(--text-secondary); font-size: 11px; margin-top: 2px; }
 
         .modal-overlay {
             position: fixed; inset: 0; background: rgba(0, 0, 0, 0.7); display: none;
@@ -261,9 +264,7 @@
                     <tr>
                         <th>#</th>
                         <th>Fournisseur</th>
-                        <th>Produit</th>
-                        <th>Qté</th>
-                        <th>Prix</th>
+                        <th>Produits</th>
                         <th>Total</th>
                         <th>Date</th>
                         <th>Actions</th>
@@ -281,14 +282,19 @@
                             {% endif %}
                         </td>
                         <td>
-                            {% if supply.product %}
-                                <div class="supply-meta">{{ supply.product.name }}</div>
+                            {% if supply.supply_items.all %}
+                                <div class="supply-item-stack">
+                                    {% for item in supply.supply_items.all %}
+                                    <div class="supply-item-line">
+                                        <div class="supply-meta">{{ item.product.name }}</div>
+                                        <div class="supply-item-meta">Qté {{ item.quantity }} • Prix {{ item.unit_price|floatformat:2 }} • Total {{ item.total_price|floatformat:2 }} {{ supply.get_currency_display }}</div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
                             {% else %}
                                 <span class="supply-meta">-</span>
                             {% endif %}
                         </td>
-                        <td>{{ supply.quantity }}</td>
-                        <td>{{ supply.unit_price|floatformat:2 }} {{ supply.get_currency_display }}</td>
                         <td><span class="supply-total">{{ supply.formatted_total_price }}</span></td>
                         <td>{{ supply.date|date:"d/m/Y" }}</td>
                         <td>
@@ -296,10 +302,7 @@
                                     class="btn btn-edit-soft btn-sm"
                                     data-supply-id="{{ supply.id }}"
                                     data-supplier-id="{{ supply.supplier.id|default:'' }}"
-                                    data-product-id="{{ supply.product.id|default:'' }}"
-                                    data-quantity="{{ supply.quantity }}"
-                                    data-unit-price="{{ supply.unit_price }}"
-                                    data-currency="{{ supply.currency }}"
+                                    data-items='{{ supply.serialized_items|escapejs }}'
                                     onclick="openSupplyModalFromButton(this)">
                                 Modifier
                             </button>
@@ -308,7 +311,7 @@
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="8"><div class="empty-state">Aucun approvisionnement enregistré</div></td>
+                        <td colspan="6"><div class="empty-state">Aucun approvisionnement enregistré</div></td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -337,39 +340,12 @@
             </div>
 
             <div class="mb-3">
-                <label for="product" class="form-label">Produit *</label>
-                <select class="form-select" id="product" name="product_id" required>
-                    <option value="">Sélectionner un produit...</option>
-                    {% for product in products %}
-                        <option value="{{ product.id }}">{{ product.name }}</option>
-                    {% endfor %}
-                </select>
+                <label class="form-label">Produits *</label>
+                <div id="supplyItemsContainer"></div>
+                <button type="button" class="btn btn-ghost btn-sm" style="margin-top: 10px;" onclick="addSupplyItemRow()">＋ Ajouter une ligne</button>
             </div>
 
-            <div class="row">
-                <div class="col-md-4">
-                    <div class="mb-3">
-                        <label for="quantity" class="form-label">Quantité *</label>
-                        <input type="number" class="form-control" id="quantity" name="quantity" min="1" required>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="mb-3">
-                        <label for="unitPrice" class="form-label">Prix Unitaire *</label>
-                        <input type="number" class="form-control" id="unitPrice" name="unit_price" step="0.01" required>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="mb-3">
-                        <label for="currency" class="form-label">Devise *</label>
-                        <select class="form-select" id="currency" name="currency" required>
-                            <option value="EUR">Euro (€)</option>
-                            <option value="USD">Dollar US ($)</option>
-                            <option value="XOF">Franc CFA (FCFA)</option>
-                        </select>
-                    </div>
-                </div>
-            </div>
+            <input type="hidden" id="supplyItemsInput" name="supply_items" value="[]">
 
             <div class="d-flex">
                 <button type="submit" class="btn btn-primary">💾 Enregistrer</button>
@@ -382,7 +358,87 @@
 </div>
 
 <script>
-    function openSupplyModal(supplyId, supplierId = '', productId = '', quantity = '', unitPrice = '', currency = 'EUR') {
+    function createSupplyItemRow(productId = '', quantity = '', unitPrice = '') {
+        const container = document.getElementById('supplyItemsContainer');
+        const row = document.createElement('div');
+        row.className = 'supply-item-row';
+        row.style.marginBottom = '10px';
+        const productOptions = [{% for product in products %}{ value: '{{ product.id }}', label: '{{ product.name|escapejs }}', price: '{{ product.price|escapejs }}' }{% if not forloop.last %},{% endif %}{% endfor %}];
+        const optionHtml = productOptions.map(option => {
+            const selected = String(productId) === String(option.value) ? ' selected' : '';
+            return `<option value="${option.value}"${selected}>${option.label}</option>`;
+        }).join('');
+
+        const productLookup = Object.fromEntries(productOptions.map(option => [String(option.value), option.price || '']));
+
+        row.innerHTML = `
+            <div class="row">
+                <div class="col-md-4">
+                    <select class="form-select" required>
+                        <option value="">Sélectionner un produit...</option>
+                        ${optionHtml}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <input type="number" class="form-control" min="1" value="${quantity}" placeholder="Qté" required>
+                </div>
+                <div class="col-md-3">
+                    <input type="number" class="form-control" step="0.01" value="${unitPrice || (productId ? productLookup[String(productId)] || '' : '')}" placeholder="Prix" required>
+                </div>
+                <div class="col-md-2">
+                    <button type="button" class="btn btn-danger-soft btn-sm" onclick="this.closest('.supply-item-row').remove(); syncSupplyItemsInput();">✕</button>
+                </div>
+            </div>
+        `;
+        container.appendChild(row);
+
+        const select = row.querySelector('select');
+        const priceInput = row.querySelectorAll('input')[1];
+        if (select) {
+            select.addEventListener('change', function() {
+                const chosenProductId = this.value;
+                const price = productLookup[String(chosenProductId)] || '';
+                if (priceInput && !priceInput.value) {
+                    priceInput.value = price;
+                }
+                syncSupplyItemsInput();
+            });
+        }
+        syncSupplyItemsInput();
+    }
+
+    function addSupplyItemRow() {
+        createSupplyItemRow();
+    }
+
+    function renderSupplyItemRows(items = []) {
+        const container = document.getElementById('supplyItemsContainer');
+        container.innerHTML = '';
+        if (!items.length) {
+            createSupplyItemRow();
+            return;
+        }
+        items.forEach(item => createSupplyItemRow(item.product_id || '', item.quantity || '', item.unit_price || ''));
+    }
+
+    function syncSupplyItemsInput() {
+        const rows = Array.from(document.querySelectorAll('#supplyItemsContainer .supply-item-row'));
+        const items = rows.map(row => {
+            const selects = row.querySelectorAll('select');
+            const inputs = row.querySelectorAll('input');
+            const productId = selects[0] ? selects[0].value : '';
+            const quantity = inputs[0] ? inputs[0].value : '';
+            const unitPrice = inputs[1] ? inputs[1].value : '';
+            return {
+                product_id: productId,
+                quantity: quantity,
+                unit_price: unitPrice || null,
+            };
+        }).filter(item => item.product_id && item.quantity);
+        document.getElementById('supplyItemsInput').value = JSON.stringify(items);
+    }
+
+    function openSupplyModal(supplyId, supplierId = '', items = []) {
         const modal = document.getElementById('supplyModal');
         const modalTitle = document.getElementById('modalTitle');
 
@@ -390,28 +446,32 @@
             modalTitle.textContent = 'Modifier un Approvisionnement';
             document.getElementById('supplyId').value = supplyId;
             document.getElementById('supplier').value = supplierId;
-            document.getElementById('product').value = productId;
-            document.getElementById('quantity').value = quantity;
-            document.getElementById('unitPrice').value = unitPrice;
-            document.getElementById('currency').value = currency || 'EUR';
         } else {
             modalTitle.textContent = 'Ajouter un Approvisionnement';
             document.getElementById('supplyId').value = '';
             document.getElementById('supplyForm').reset();
-            document.getElementById('currency').value = 'EUR';
         }
 
+        renderSupplyItemRows(items);
         modal.classList.add('show');
     }
 
     function openSupplyModalFromButton(button) {
+        let parsedItems = [];
+        const rawItems = button.getAttribute('data-items');
+        if (rawItems) {
+            try {
+                parsedItems = JSON.parse(rawItems);
+            } catch (error) {
+                console.warn('Impossible de parser les lignes d\'approvisionnement', error);
+                parsedItems = [];
+            }
+        }
+
         openSupplyModal(
-            button.dataset.supplyId,
-            button.dataset.supplierId || '',
-            button.dataset.productId || '',
-            button.dataset.quantity || '',
-            button.dataset.unitPrice || '',
-            button.dataset.currency || 'EUR'
+            button.getAttribute('data-supply-id') || '',
+            button.getAttribute('data-supplier-id') || '',
+            parsedItems
         );
     }
 
@@ -419,6 +479,8 @@
         const modal = document.getElementById('supplyModal');
         modal.classList.remove('show');
         document.getElementById('message').innerHTML = '';
+        document.getElementById('supplyItemsContainer').innerHTML = '';
+        document.getElementById('supplyItemsInput').value = '[]';
     }
 
     document.getElementById('supplyModal').addEventListener('click', function(event) {
@@ -444,8 +506,14 @@
 
     document.getElementById('supplyForm').addEventListener('submit', async function(e) {
         e.preventDefault();
+        syncSupplyItemsInput();
 
         const formData = new FormData(this);
+        const items = JSON.parse(document.getElementById('supplyItemsInput').value || '[]');
+        if (!items.length) {
+            document.getElementById('message').innerHTML = '<div class="alert alert-danger">Ajoutez au moins un produit pour enregistrer l\'approvisionnement.</div>';
+            return;
+        }
 
         try {
             const response = await fetch('{% url "add_supply" %}', {
