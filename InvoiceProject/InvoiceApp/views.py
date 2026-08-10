@@ -137,6 +137,7 @@ def list_agents(request):
         'company_logo_url': user.logo.url if user.logo else None,
         'agents': agents,
         'roles': user.agent_roles.all(),
+        'engines': user.engines.all(),
         'agent_login_code': user.agent_login_code,
     }
     return render(request, 'agent_list.html', context)
@@ -353,6 +354,7 @@ def add_agent(request):
     email = request.POST.get("email", "")
     phone = request.POST.get("phone", "")
     role_id = request.POST.get("role_id")
+    engine_id = request.POST.get("engine_id")
     pin = request.POST.get("pin", "").strip()
 
     if not name:
@@ -370,6 +372,7 @@ def add_agent(request):
                 return JsonResponse({"success": False, "error": "Ce PIN est déjà utilisé par un autre agent"}, status=400)
 
     role = AgentRole.objects.filter(id=role_id, company=request.user).first() if role_id else None
+    engine = Engine.objects.filter(id=engine_id, company=request.user).first() if engine_id else None
 
     if agent_id:
         # Édition
@@ -379,6 +382,7 @@ def add_agent(request):
             agent.email = email
             agent.phone = phone
             agent.role = role
+            agent.engine = engine
             if pin:
                 agent.set_pin(pin)
             agent.save()
@@ -387,7 +391,7 @@ def add_agent(request):
             return JsonResponse({"success": False, "error": "Agent non trouvé"}, status=404)
     else:
         # Création
-        agent = Agent(company=request.user, name=name, email=email, phone=phone, role=role)
+        agent = Agent(company=request.user, name=name, email=email, phone=phone, role=role, engine=engine)
         if pin:
             agent.set_pin(pin)
         agent.save()
@@ -1387,15 +1391,17 @@ def vendor_add_payment(request):
 def list_stock_loads(request):
     user = request.user
     agents = user.agents.all()
+    engines = user.engines.all()
     products = user.products.all()
     agent_stocks = AgentStock.objects.filter(agent__company=user).select_related('agent', 'product').filter(quantity__gt=0).order_by('agent__name', 'product__name')
-    loads = StockLoad.objects.filter(company=user).select_related('agent').prefetch_related('items__product').order_by('-date')[:30]
+    loads = StockLoad.objects.filter(company=user).select_related('agent', 'engine').prefetch_related('items__product').order_by('-date')[:30]
     returns = StockReturn.objects.filter(company=user).select_related('agent').prefetch_related('items__product').order_by('-date')[:30]
 
     context = {
         'company_name': user.company_name,
         'company_logo_url': user.logo.url if user.logo else None,
         'agents': agents,
+        'engines': engines,
         'products': products,
         'agent_stocks': agent_stocks,
         'loads': loads,
@@ -1409,12 +1415,22 @@ def list_stock_loads(request):
 def add_stock_load(request):
     user = request.user
     agent_id = request.POST.get("agent_id")
+    engine_id = request.POST.get("engine_id")
     note = request.POST.get("note", "")
     items_payload = request.POST.get("items")
 
     agent = Agent.objects.filter(id=agent_id, company=user).first()
     if not agent:
         return JsonResponse({"success": False, "error": "Agent introuvable"}, status=404)
+
+    # Engin utilisé pour cette tournée : celui choisi explicitement, sinon l'engin par défaut de l'agent
+    engine = None
+    if engine_id:
+        engine = Engine.objects.filter(id=engine_id, company=user).first()
+        if not engine:
+            return JsonResponse({"success": False, "error": "Engin introuvable"}, status=404)
+    else:
+        engine = agent.engine
 
     if not items_payload:
         return JsonResponse({"success": False, "error": "Au moins un produit est requis"}, status=400)
@@ -1456,7 +1472,7 @@ def add_stock_load(request):
         stock_preview[product.id] = available - quantity
 
     with transaction.atomic():
-        load = StockLoad.objects.create(company=user, agent=agent, note=note)
+        load = StockLoad.objects.create(company=user, agent=agent, engine=engine, note=note)
 
         for product, quantity, unit_price in items:
             product.refresh_from_db(fields=['stock_quantity'])

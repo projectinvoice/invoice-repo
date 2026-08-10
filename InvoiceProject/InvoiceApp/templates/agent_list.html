@@ -383,7 +383,7 @@
         <span class="logo-text">{{ company_name }}</span>
     </div>
 
-    <nav class="sidebar-nav">
+        <nav class="sidebar-nav">
         <div class="nav-section-label">Général</div>
         <a href="{% url 'dashboard' %}" class="nav-item">
             <span class="nav-icon">📊</span> Tableau de bord
@@ -392,7 +392,6 @@
         <div class="nav-section-label">Gestion</div>
         <a href="{% url 'list_agents' %}" class="nav-item active">
             <span class="nav-icon">👥</span> Agents
-            <span class="nav-badge">{{ agents_count }}</span>
         </a>
         <a href="{% url 'manage_agent_roles' %}" class="nav-item">
             <span class="nav-icon">🎭</span> Rôles
@@ -405,7 +404,6 @@
         </a>
         <a href="{% url 'list_products' %}" class="nav-item">
             <span class="nav-icon">📦</span> Produits
-            <span class="nav-badge">{{ products_count }}</span>
         </a>
 
         <div class="nav-section-label">Commerce</div>
@@ -433,8 +431,7 @@
             <span class="nav-icon">🏷️</span> Types de paiement
         </a>
     </nav>
-
-    <div class="sidebar-footer">
+<div class="sidebar-footer">
         <div class="user-block">
             <div class="user-avatar">A</div>
             <div>
@@ -507,6 +504,7 @@
                             <th>Agent</th>
                             <th>Téléphone</th>
                             <th>Rôle</th>
+                            <th>Engin</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
@@ -536,10 +534,11 @@
                                 <span class="role-badge no-role">Sans rôle</span>
                                 {% endif %}
                             </td>
+                            <td class="muted-cell">{{ agent.engine.name|default:"—" }}</td>
                             <td>
                                 <div class="actions-col">
                                     <button class="btn btn-sm btn-edit-soft"
-                                        onclick="openAgentModal('{{ agent.id }}', '{{ agent.name|escapejs }}', '{{ agent.email|escapejs }}', '{{ agent.phone|escapejs }}', '{{ agent.role.id|default:'' }}')">
+                                        onclick="openAgentModal('{{ agent.id }}', '{{ agent.name|escapejs }}', '{{ agent.email|escapejs }}', '{{ agent.phone|escapejs }}', '{{ agent.role.id|default:'' }}', '{{ agent.engine.id|default:'' }}')">
                                         ✏️ Modifier
                                     </button>
                                     <button class="btn btn-sm btn-danger-soft"
@@ -551,7 +550,7 @@
                         </tr>
                         {% empty %}
                         <tr id="emptyRow">
-                            <td colspan="5">
+                            <td colspan="6">
                                 <div class="empty-state">
                                     <div class="empty-icon">👥</div>
                                     <div class="empty-title">Aucun agent enregistré</div>
@@ -631,6 +630,16 @@
             </div>
 
             <div class="form-group">
+                <label class="form-label" for="engineId">Engin par défaut (véhicule habituel)</label>
+                <select class="form-select" id="engineId" name="engine_id">
+                    <option value="">— Aucun —</option>
+                    {% for engine in engines %}
+                    <option value="{{ engine.id }}">{{ engine.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-group">
                 <label class="form-label" for="pin">Code PIN (accès espace vendeur)</label>
                 <input type="text" class="form-control" id="pin" name="pin" pattern="[0-9]{4,6}" maxlength="6" placeholder="4 à 6 chiffres — laisser vide pour ne pas changer">
             </div>
@@ -688,7 +697,7 @@
     });
 
     /* ── MODAL AJOUT / ÉDITION ── */
-    function openAgentModal(agentId = null, name = '', email = '', phone = '', roleId = '') {
+    function openAgentModal(agentId = null, name = '', email = '', phone = '', roleId = '', engineId = '') {
         const modal = document.getElementById('agentModal');
         const modalTitle = document.getElementById('modalTitle');
         document.getElementById('formError').style.display = 'none';
@@ -700,6 +709,7 @@
             document.getElementById('email').value = email;
             document.getElementById('phone').value = phone;
             document.getElementById('roleId').value = roleId || '';
+            document.getElementById('engineId').value = engineId || '';
         } else {
             modalTitle.textContent = 'Ajouter un agent';
             document.getElementById('agentForm').reset();
