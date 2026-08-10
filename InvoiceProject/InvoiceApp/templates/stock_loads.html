@@ -158,26 +158,55 @@
         {% endif %}
         <span class="logo-text">{{ company_name }}</span>
     </div>
-    <nav class="sidebar-nav">
+        <nav class="sidebar-nav">
         <div class="nav-section-label">Général</div>
-        <a href="{% url 'dashboard' %}" class="nav-item"><span class="nav-icon">📊</span> Tableau de bord</a>
+        <a href="{% url 'dashboard' %}" class="nav-item">
+            <span class="nav-icon">📊</span> Tableau de bord
+        </a>
+
         <div class="nav-section-label">Gestion</div>
-        <a href="{% url 'list_agents' %}" class="nav-item"><span class="nav-icon">👥</span> Agents</a>
-        <a href="{% url 'manage_agent_roles' %}" class="nav-item"><span class="nav-icon">🎭</span> Rôles</a>
-        <a href="{% url 'list_engines' %}" class="nav-item"><span class="nav-icon">⚙️</span> Engins</a>
-        <a href="{% url 'list_stock_loads' %}" class="nav-item active"><span class="nav-icon">🚚</span> Stock Vendeurs</a>
-        <a href="{% url 'list_products' %}" class="nav-item"><span class="nav-icon">📦</span> Produits</a>
+        <a href="{% url 'list_agents' %}" class="nav-item">
+            <span class="nav-icon">👥</span> Agents
+        </a>
+        <a href="{% url 'manage_agent_roles' %}" class="nav-item">
+            <span class="nav-icon">🎭</span> Rôles
+        </a>
+        <a href="{% url 'list_engines' %}" class="nav-item">
+            <span class="nav-icon">⚙️</span> Engins
+        </a>
+        <a href="{% url 'list_stock_loads' %}" class="nav-item active">
+            <span class="nav-icon">🚚</span> Stock Vendeurs
+        </a>
+        <a href="{% url 'list_products' %}" class="nav-item">
+            <span class="nav-icon">📦</span> Produits
+        </a>
+
         <div class="nav-section-label">Commerce</div>
-        <a href="{% url 'list_clients' %}" class="nav-item"><span class="nav-icon">🤝</span> Clients</a>
-        <a href="{% url 'list_suppliers' %}" class="nav-item"><span class="nav-icon">🏭</span> Fournisseurs</a>
-        <a href="{% url 'list_sales' %}" class="nav-item"><span class="nav-icon">💹</span> Ventes</a>
-        <a href="{% url 'list_supplies' %}" class="nav-item"><span class="nav-icon">🛒</span> Appros</a>
-        <a href="{% url 'list_invoices' %}" class="nav-item"><span class="nav-icon">🧾</span> Factures</a>
+        <a href="{% url 'list_clients' %}" class="nav-item">
+            <span class="nav-icon">🤝</span> Clients
+        </a>
+        <a href="{% url 'list_suppliers' %}" class="nav-item">
+            <span class="nav-icon">🏭</span> Fournisseurs
+        </a>
+        <a href="{% url 'list_sales' %}" class="nav-item">
+            <span class="nav-icon">💹</span> Ventes
+        </a>
+        <a href="{% url 'list_supplies' %}" class="nav-item">
+            <span class="nav-icon">🛒</span> Appros
+        </a>
+        <a href="{% url 'list_invoices' %}" class="nav-item">
+            <span class="nav-icon">🧾</span> Factures
+        </a>
+
         <div class="nav-section-label">Finance</div>
-        <a href="{% url 'list_payment_methods' %}" class="nav-item"><span class="nav-icon">💳</span> Modes de paiement</a>
-        <a href="{% url 'list_payment_types' %}" class="nav-item"><span class="nav-icon">🏷️</span> Types de paiement</a>
+        <a href="{% url 'list_payment_methods' %}" class="nav-item">
+            <span class="nav-icon">💳</span> Modes de paiement
+        </a>
+        <a href="{% url 'list_payment_types' %}" class="nav-item">
+            <span class="nav-icon">🏷️</span> Types de paiement
+        </a>
     </nav>
-    <div class="sidebar-footer">
+<div class="sidebar-footer">
         <div class="user-block">
             <div class="user-avatar">A</div>
             <div><div class="user-name">Admin</div><div class="user-role">Administrateur</div></div>
@@ -236,12 +265,13 @@
             <div class="table-wrap">
                 <table>
                     <thead>
-                        <tr><th>Agent</th><th>Produits chargés</th><th>Note</th><th>Date</th></tr>
+                        <tr><th>Agent</th><th>Engin</th><th>Produits chargés</th><th>Note</th><th>Date</th></tr>
                     </thead>
                     <tbody>
                         {% for load in loads %}
                         <tr>
                             <td>{{ load.agent.name }}</td>
+                            <td class="muted-cell">{{ load.engine.name|default:"—" }}</td>
                             <td class="muted-cell">
                                 {% for item in load.items.all %}{{ item.product.name }} ({{ item.quantity }}){% if not forloop.last %}, {% endif %}{% endfor %}
                             </td>
@@ -249,7 +279,7 @@
                             <td class="muted-cell">{{ load.date|date:"d/m/Y H:i" }}</td>
                         </tr>
                         {% empty %}
-                        <tr><td colspan="4"><div class="empty-state">Aucun chargement enregistré.</div></td></tr>
+                        <tr><td colspan="5"><div class="empty-state">Aucun chargement enregistré.</div></td></tr>
                         {% endfor %}
                     </tbody>
                 </table>
@@ -295,10 +325,19 @@
             {% csrf_token %}
             <div class="form-group">
                 <label class="form-label" for="loadAgent">Vendeur *</label>
-                <select class="form-select" id="loadAgent" name="agent_id" required>
+                <select class="form-select" id="loadAgent" name="agent_id" required onchange="prefillLoadEngine()">
                     <option value="">Sélectionner un agent...</option>
                     {% for agent in agents %}
                     <option value="{{ agent.id }}">{{ agent.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="loadEngine">Engin utilisé pour cette tournée</label>
+                <select class="form-select" id="loadEngine" name="engine_id">
+                    <option value="">— Aucun / non renseigné —</option>
+                    {% for engine in engines %}
+                    <option value="{{ engine.id }}">{{ engine.name }}</option>
                     {% endfor %}
                 </select>
             </div>
@@ -374,6 +413,19 @@
     AGENT_STOCKS['{{ stock.agent.id }}'] = AGENT_STOCKS['{{ stock.agent.id }}'] || [];
     AGENT_STOCKS['{{ stock.agent.id }}'].push({ productId: '{{ stock.product.id }}', name: '{{ stock.product.name|escapejs }}', quantity: {{ stock.quantity }} });
     {% endfor %}
+
+    // Engin par défaut de chaque agent, pour pré-remplir automatiquement au chargement
+    const AGENT_DEFAULT_ENGINE = {
+        {% for agent in agents %}
+        '{{ agent.id }}': '{{ agent.engine.id|default:"" }}'{% if not forloop.last %},{% endif %}
+        {% endfor %}
+    };
+
+    function prefillLoadEngine() {
+        const agentId = document.getElementById('loadAgent').value;
+        const defaultEngineId = AGENT_DEFAULT_ENGINE[agentId] || '';
+        document.getElementById('loadEngine').value = defaultEngineId;
+    }
 
     const csrfToken = document.querySelector('#loadForm [name=csrfmiddlewaretoken]').value;
 
