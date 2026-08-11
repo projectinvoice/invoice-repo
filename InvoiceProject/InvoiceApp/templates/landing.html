@@ -1,435 +1,663 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Grosstock — Gestion grossiste, vendeurs terrain & facturation</title>
-<style>
-    @import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap');
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>InvoiceApp — Facturation & Gestion de Stock pour PME</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
 
-    :root {
-        --bg-base: #0F1629;
-        --bg-card: #1A2238;
-        --bg-card-hover: #1F2A44;
-        --border: rgba(99, 102, 241, 0.15);
-        --border-hover: rgba(99, 102, 241, 0.4);
-        --indigo: #6366F1;
-        --indigo-light: #818CF8;
-        --emerald: #10B981;
-        --amber: #F59E0B;
-        --rose: #F43F5E;
-        --sky: #38BDF8;
-        --text-primary: #E2E8F0;
-        --text-secondary: #94A3B8;
-        --text-muted: #64748B;
-        --radius: 16px;
-        --radius-sm: 10px;
-    }
+        :root {
+            --bg-base: #0F1629;
+            --bg-card: #1A2238;
+            --bg-card-hover: #1F2A44;
+            --border: rgba(99, 102, 241, 0.15);
+            --indigo: #6366F1;
+            --indigo-light: #818CF8;
+            --violet: #9333EA;
+            --emerald: #10B981;
+            --amber: #F59E0B;
+            --rose: #F43F5E;
+            --sky: #38BDF8;
+            --text-primary: #E2E8F0;
+            --text-secondary: #94A3B8;
+            --text-muted: #64748B;
+            --radius: 20px;
+            --radius-sm: 12px;
+        }
 
-    * { margin: 0; padding: 0; box-sizing: border-box; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
 
-    html { scroll-behavior: smooth; }
+        html { scroll-behavior: smooth; }
 
-    body {
-        font-family: 'Inter', sans-serif;
-        background: var(--bg-base);
-        color: var(--text-primary);
-        line-height: 1.6;
-        overflow-x: hidden;
-    }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-base);
+            color: var(--text-primary);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
 
-    h1, h2, h3, .display {
-        font-family: 'Sora', sans-serif;
-    }
+        a { color: inherit; }
+        img { max-width: 100%; display: block; }
+        section { position: relative; }
 
-    .mono { font-family: 'JetBrains Mono', monospace; }
+        .wrap { max-width: 1180px; margin: 0 auto; padding: 0 24px; }
 
-    a { color: inherit; }
+        /* Fond décoratif */
+        .glow {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(90px);
+            opacity: 0.35;
+            pointer-events: none;
+            z-index: 0;
+        }
+        .glow-indigo { background: var(--indigo); }
+        .glow-violet { background: var(--violet); }
+        .glow-emerald { background: var(--emerald); }
 
-    body::before {
-        content: '';
-        position: fixed;
-        top: -20%; left: 50%;
-        transform: translateX(-50%);
-        width: 1200px; height: 800px;
-        background: radial-gradient(ellipse at center, rgba(99,102,241,0.16) 0%, transparent 65%);
-        pointer-events: none;
-        z-index: 0;
-    }
+        /* Header */
+        header {
+            position: sticky; top: 0; z-index: 200;
+            background: rgba(15, 22, 41, 0.82);
+            backdrop-filter: blur(14px);
+            border-bottom: 1px solid var(--border);
+        }
+        .header-inner {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 16px 24px;
+            max-width: 1180px; margin: 0 auto;
+        }
+        .brand { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 17px; }
+        .brand-mark {
+            width: 34px; height: 34px; border-radius: 10px;
+            background: linear-gradient(135deg, var(--indigo), var(--violet));
+            display: flex; align-items: center; justify-content: center; font-size: 16px;
+        }
 
-    .wrap { max-width: 1180px; margin: 0 auto; padding: 0 32px; position: relative; z-index: 1; }
+        nav.desktop-nav { display: flex; align-items: center; gap: 6px; }
+        nav.desktop-nav a.nav-link {
+            padding: 9px 14px; border-radius: 999px; text-decoration: none;
+            color: var(--text-secondary); font-size: 13.5px; font-weight: 500;
+            transition: all 0.2s;
+        }
+        nav.desktop-nav a.nav-link:hover { color: var(--text-primary); background: rgba(255,255,255,0.06); }
 
-    nav {
-        position: sticky; top: 0; z-index: 100;
-        background: rgba(15, 22, 41, 0.85);
-        backdrop-filter: blur(10px);
-        border-bottom: 1px solid var(--border);
-    }
-    .nav-inner {
-        max-width: 1180px; margin: 0 auto; padding: 16px 32px;
-        display: flex; align-items: center; justify-content: space-between;
-    }
-    .logo { display: flex; align-items: center; gap: 10px; font-family: 'Sora', sans-serif; font-weight: 700; font-size: 17px; }
-    .logo-mark {
-        width: 34px; height: 34px; border-radius: 9px;
-        background: linear-gradient(135deg, var(--indigo), #9333EA);
-        display: flex; align-items: center; justify-content: center;
-        font-size: 16px; flex-shrink: 0;
-    }
-    .nav-links { display: flex; align-items: center; gap: 8px; }
-    .btn {
-        display: inline-flex; align-items: center; gap: 6px;
-        padding: 9px 18px; border-radius: var(--radius-sm);
-        font-size: 13.5px; font-weight: 600; cursor: pointer;
-        text-decoration: none; border: none; transition: all 0.2s;
-        font-family: 'Inter', sans-serif;
-    }
-    .btn-primary { background: var(--indigo); color: white; }
-    .btn-primary:hover { background: #5254CC; transform: translateY(-1px); }
-    .btn-ghost { background: rgba(255,255,255,0.06); color: var(--text-secondary); border: 1px solid var(--border); }
-    .btn-ghost:hover { background: rgba(255,255,255,0.1); color: var(--text-primary); }
-    .btn-lg { padding: 13px 28px; font-size: 14.5px; }
+        .header-actions { display: flex; align-items: center; gap: 10px; }
+        .btn {
+            display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+            padding: 10px 20px; border-radius: 999px; font-size: 13.5px; font-weight: 600;
+            text-decoration: none; border: none; cursor: pointer; transition: all 0.2s;
+            font-family: 'Inter', sans-serif; white-space: nowrap;
+        }
+        .btn-ghost { color: var(--text-primary); background: rgba(255,255,255,0.06); border: 1px solid var(--border); }
+        .btn-ghost:hover { background: rgba(255,255,255,0.12); }
+        .btn-primary { background: linear-gradient(135deg, var(--indigo), var(--violet)); color: white; }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 10px 28px rgba(99,102,241,0.4); }
+        .btn-lg { padding: 15px 30px; font-size: 15px; }
 
-    .hero { padding: 90px 0 60px; text-align: center; }
-    .eyebrow {
-        display: inline-flex; align-items: center; gap: 8px;
-        background: rgba(99,102,241,0.1); border: 1px solid var(--border);
-        color: var(--indigo-light); font-size: 12.5px; font-weight: 600;
-        padding: 6px 14px; border-radius: 20px; margin-bottom: 24px;
-    }
-    .hero h1 {
-        font-size: 52px; font-weight: 800; line-height: 1.12;
-        max-width: 780px; margin: 0 auto 20px;
-        letter-spacing: -0.02em;
-    }
-    .hero h1 .accent {
-        background: linear-gradient(135deg, var(--indigo-light), var(--sky));
-        -webkit-background-clip: text; background-clip: text; color: transparent;
-    }
-    .hero p.lead {
-        font-size: 17px; color: var(--text-secondary);
-        max-width: 560px; margin: 0 auto 34px;
-    }
-    .hero-ctas { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; margin-bottom: 16px; }
-    .hero-note { font-size: 12.5px; color: var(--text-muted); }
+        .burger {
+            display: none; flex-direction: column; gap: 5px; background: transparent; border: none;
+            cursor: pointer; padding: 8px;
+        }
+        .burger span { width: 22px; height: 2px; background: var(--text-primary); border-radius: 2px; }
 
-    .route-section { padding: 70px 0 40px; }
-    .route-card {
-        background: var(--bg-card);
-        border: 1px solid var(--border);
-        border-radius: 20px;
-        padding: 48px 40px 36px;
-        position: relative;
-        overflow: hidden;
-    }
-    .route-card::before {
-        content: '';
-        position: absolute; inset: 0;
-        background: radial-gradient(ellipse at top, rgba(99,102,241,0.08), transparent 60%);
-        pointer-events: none;
-    }
-    .route-track {
-        position: relative;
-        display: flex; align-items: center; justify-content: space-between;
-        max-width: 780px; margin: 0 auto 8px;
-        padding: 0 10px;
-    }
-    .route-line {
-        position: absolute; top: 27px; left: 40px; right: 40px; height: 2px;
-        background: repeating-linear-gradient(90deg, var(--border) 0, var(--border) 8px, transparent 8px, transparent 16px);
-    }
-    .route-line-fill {
-        position: absolute; top: 27px; left: 40px; height: 2px;
-        background: linear-gradient(90deg, var(--emerald), var(--indigo-light));
-        width: calc(100% - 80px);
-        animation: fillTrack 5s ease-in-out infinite;
-        transform-origin: left;
-    }
-    .route-dot {
-        position: absolute; top: 22px; width: 12px; height: 12px; border-radius: 50%;
-        background: var(--sky); box-shadow: 0 0 12px 3px rgba(56,189,248,0.6);
-        animation: moveDot 5s ease-in-out infinite;
-    }
-    .route-stop { position: relative; z-index: 2; display: flex; flex-direction: column; align-items: center; width: 120px; }
-    .route-icon {
-        width: 56px; height: 56px; border-radius: 16px;
-        background: var(--bg-base); border: 1px solid var(--border);
-        display: flex; align-items: center; justify-content: center;
-        font-size: 24px; margin-bottom: 10px;
-        transition: border-color 0.3s;
-    }
-    .route-stop:nth-child(2) .route-icon { animation: pulseStop1 5s ease-in-out infinite; }
-    .route-stop:nth-child(4) .route-icon { animation: pulseStop2 5s ease-in-out infinite; }
-    .route-stop:nth-child(6) .route-icon { animation: pulseStop3 5s ease-in-out infinite; }
-    .route-label { font-size: 12.5px; font-weight: 700; color: var(--text-primary); }
-    .route-sub { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+        .mobile-nav {
+            display: none;
+            flex-direction: column;
+            gap: 4px;
+            padding: 12px 24px 18px;
+            border-top: 1px solid var(--border);
+            background: rgba(15,22,41,0.98);
+        }
+        .mobile-nav.open { display: flex; }
+        .mobile-nav a.nav-link { padding: 10px 12px; border-radius: 10px; text-decoration: none; color: var(--text-secondary); font-size: 14px; font-weight: 500; }
+        .mobile-nav a.nav-link:hover { background: rgba(255,255,255,0.06); color: var(--text-primary); }
+        .mobile-nav .btn { margin-top: 8px; width: 100%; }
 
-    @keyframes moveDot {
-        0%, 8% { left: 40px; opacity: 0; }
-        12% { opacity: 1; }
-        45%, 55% { left: calc(50% - 6px); }
-        88% { opacity: 1; }
-        92%, 100% { left: calc(100% - 52px); opacity: 0; }
-    }
-    @keyframes fillTrack {
-        0%, 8% { transform: scaleX(0); }
-        50% { transform: scaleX(0.5); }
-        92%, 100% { transform: scaleX(1); }
-    }
-    @keyframes pulseStop1 { 0%, 10% { border-color: var(--emerald); box-shadow: 0 0 0 4px rgba(16,185,129,0.12);} 30%,100%{border-color: var(--border); box-shadow:none;} }
-    @keyframes pulseStop2 { 0%,40% {border-color: var(--border); box-shadow:none;} 50%,65% { border-color: var(--amber); box-shadow: 0 0 0 4px rgba(245,158,11,0.12);} 80%,100%{border-color: var(--border); box-shadow:none;} }
-    @keyframes pulseStop3 { 0%,85% {border-color: var(--border); box-shadow:none;} 92% { border-color: var(--sky); box-shadow: 0 0 0 4px rgba(56,189,248,0.15);} 100%{border-color: var(--sky);} }
+        /* Hero */
+        .hero { padding: 90px 0 70px; overflow: hidden; }
+        .hero-grid {
+            display: grid; grid-template-columns: 1.05fr 0.95fr; gap: 56px; align-items: center;
+            position: relative; z-index: 1;
+        }
+        .badge-pill {
+            display: inline-flex; align-items: center; gap: 8px;
+            background: rgba(99,102,241,0.12); border: 1px solid rgba(99,102,241,0.3);
+            color: var(--indigo-light); font-size: 12.5px; font-weight: 600;
+            padding: 7px 14px; border-radius: 999px; margin-bottom: 22px;
+        }
+        .badge-pill .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--emerald); }
 
-    .route-caption {
-        text-align: center; margin-top: 28px; padding-top: 24px;
-        border-top: 1px solid var(--border);
-        font-size: 13px; color: var(--text-secondary);
-        max-width: 620px; margin-left: auto; margin-right: auto;
-    }
-    .route-caption strong { color: var(--text-primary); }
+        .hero h1 { font-size: 46px; font-weight: 800; line-height: 1.15; letter-spacing: -0.02em; margin-bottom: 20px; }
+        .hero h1 .accent {
+            background: linear-gradient(135deg, var(--indigo-light), var(--sky));
+            -webkit-background-clip: text; background-clip: text; color: transparent;
+        }
+        .hero .lead { font-size: 17px; color: var(--text-secondary); max-width: 520px; margin-bottom: 32px; }
+        .hero-cta { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 28px; }
+        .hero-trust { display: flex; align-items: center; gap: 10px; color: var(--text-muted); font-size: 13px; }
+        .avatar-stack { display: flex; }
+        .avatar-stack span {
+            width: 28px; height: 28px; border-radius: 50%; border: 2px solid var(--bg-base);
+            margin-left: -8px; display: flex; align-items: center; justify-content: center;
+            font-size: 11px; font-weight: 700; color: white;
+        }
+        .avatar-stack span:first-child { margin-left: 0; }
 
-    @media (prefers-reduced-motion: reduce) {
-        .route-dot, .route-line-fill, .route-stop .route-icon { animation: none !important; }
-    }
+        /* Mockup produit (illustration CSS) */
+        .mockup-wrap { position: relative; }
+        .mockup {
+            background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius);
+            box-shadow: 0 30px 70px rgba(0,0,0,0.5); overflow: hidden;
+            transform: perspective(1200px) rotateY(-6deg) rotateX(2deg);
+        }
+        .mockup-bar { display: flex; align-items: center; gap: 6px; padding: 12px 16px; border-bottom: 1px solid var(--border); background: rgba(255,255,255,0.02); }
+        .mockup-bar span { width: 10px; height: 10px; border-radius: 50%; background: rgba(255,255,255,0.15); }
+        .mockup-body { padding: 20px; }
+        .mockup-row { display: flex; gap: 14px; margin-bottom: 14px; }
+        .mockup-card { flex: 1; background: rgba(255,255,255,0.04); border: 1px solid var(--border); border-radius: 12px; padding: 14px; }
+        .mockup-card .mc-label { font-size: 10.5px; color: var(--text-muted); margin-bottom: 6px; }
+        .mockup-card .mc-value { font-size: 17px; font-weight: 800; }
+        .mockup-card .mc-value.up { color: var(--emerald); }
+        .mockup-chart { background: rgba(255,255,255,0.04); border: 1px solid var(--border); border-radius: 12px; padding: 16px; display: flex; align-items: flex-end; gap: 8px; height: 120px; }
+        .mockup-chart .bar { flex: 1; border-radius: 6px 6px 0 0; background: linear-gradient(180deg, var(--indigo-light), var(--indigo)); }
 
-    .section { padding: 70px 0; }
-    .section-head { text-align: center; max-width: 560px; margin: 0 auto 44px; }
-    .section-eyebrow { font-size: 12px; font-weight: 700; color: var(--indigo-light); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 10px; }
-    .section-head h2 { font-size: 32px; font-weight: 800; letter-spacing: -0.01em; margin-bottom: 12px; }
-    .section-head p { color: var(--text-secondary); font-size: 15px; }
+        .float-card {
+            position: absolute; background: var(--bg-card); border: 1px solid var(--border);
+            border-radius: 14px; padding: 12px 16px; box-shadow: 0 20px 40px rgba(0,0,0,0.45);
+            display: flex; align-items: center; gap: 10px; font-size: 12.5px; font-weight: 600;
+            animation: floaty 5s ease-in-out infinite;
+        }
+        .float-card .fc-icon { width: 32px; height: 32px; border-radius: 9px; display: flex; align-items: center; justify-content: center; font-size: 15px; }
+        .float-1 { top: -18px; right: -18px; }
+        .float-1 .fc-icon { background: rgba(16,185,129,0.18); }
+        .float-2 { bottom: -16px; left: -24px; animation-delay: 1.2s; }
+        .float-2 .fc-icon { background: rgba(56,189,248,0.18); }
 
-    .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
-    .step-card {
-        background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius);
-        padding: 28px 24px; position: relative; transition: border-color 0.25s, transform 0.25s;
-    }
-    .step-card:hover { border-color: var(--border-hover); transform: translateY(-4px); }
-    .step-num { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--indigo-light); font-weight: 500; margin-bottom: 14px; }
-    .step-card h3 { font-size: 16.5px; font-weight: 700; margin-bottom: 8px; }
-    .step-card p { font-size: 13.5px; color: var(--text-secondary); }
+        @keyframes floaty { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
 
-    .feature-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
-    .feature-card {
-        background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius);
-        padding: 26px; transition: all 0.25s;
-    }
-    .feature-card:hover { border-color: var(--border-hover); background: var(--bg-card-hover); }
-    .feature-icon {
-        width: 42px; height: 42px; border-radius: 11px;
-        display: flex; align-items: center; justify-content: center;
-        font-size: 19px; margin-bottom: 16px;
-    }
-    .feature-card h3 { font-size: 15px; font-weight: 700; margin-bottom: 8px; }
-    .feature-card p { font-size: 13px; color: var(--text-secondary); }
+        /* Preuve sociale */
+        .social-proof { padding: 30px 0 60px; opacity: 0.7; }
+        .social-proof-label { text-align: center; font-size: 12px; color: var(--text-muted); margin-bottom: 18px; text-transform: uppercase; letter-spacing: 0.1em; }
+        .logo-row { display: flex; justify-content: center; gap: 40px; flex-wrap: wrap; font-weight: 700; color: var(--text-muted); font-size: 15px; }
 
-    .capability-strip {
-        background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius);
-        display: grid; grid-template-columns: repeat(4, 1fr);
-    }
-    .capability-item { padding: 28px 20px; text-align: center; border-right: 1px solid var(--border); }
-    .capability-item:last-child { border-right: none; }
-    .capability-value { font-family: 'JetBrains Mono', monospace; font-size: 26px; font-weight: 500; color: var(--indigo-light); margin-bottom: 4px; }
-    .capability-label { font-size: 12px; color: var(--text-muted); }
+        /* Sections génériques */
+        .section { padding: 90px 0; }
+        .section-head { text-align: center; max-width: 620px; margin: 0 auto 56px; }
+        .section-kicker { display: inline-block; font-size: 12px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--indigo-light); margin-bottom: 12px; }
+        .section-head h2 { font-size: 32px; font-weight: 800; letter-spacing: -0.01em; margin-bottom: 12px; }
+        .section-head p { color: var(--text-secondary); font-size: 15.5px; }
 
-    .cta-section {
-        background: linear-gradient(135deg, rgba(99,102,241,0.12), rgba(147,51,234,0.08));
-        border: 1px solid var(--border);
-        border-radius: 24px;
-        padding: 64px 40px;
-        text-align: center;
-    }
-    .cta-section h2 { font-size: 30px; font-weight: 800; margin-bottom: 12px; }
-    .cta-section p { color: var(--text-secondary); font-size: 15px; margin-bottom: 30px; max-width: 460px; margin-left: auto; margin-right: auto; }
+        /* Features */
+        .features-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+        .feature-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 28px; transition: all 0.25s; }
+        .feature-card:hover { transform: translateY(-6px); border-color: rgba(99,102,241,0.4); background: var(--bg-card-hover); }
+        .feature-icon { width: 46px; height: 46px; border-radius: 13px; display: flex; align-items: center; justify-content: center; font-size: 21px; margin-bottom: 16px; }
+        .feature-card h3 { font-size: 16.5px; font-weight: 700; margin-bottom: 8px; }
+        .feature-card p { font-size: 13.5px; color: var(--text-secondary); }
 
-    footer { border-top: 1px solid var(--border); padding: 36px 0; }
-    .footer-inner { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 14px; }
-    .footer-inner .logo { font-size: 14px; opacity: 0.8; }
-    footer .links { display: flex; gap: 22px; font-size: 12.5px; color: var(--text-muted); }
-    footer .links a { text-decoration: none; }
-    footer .links a:hover { color: var(--text-secondary); }
+        /* Comment ça marche */
+        .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; position: relative; }
+        .step-card { text-align: center; padding: 0 12px; }
+        .step-num {
+            width: 44px; height: 44px; border-radius: 50%; margin: 0 auto 16px;
+            background: linear-gradient(135deg, var(--indigo), var(--violet));
+            display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 16px;
+        }
+        .step-card h3 { font-size: 16px; font-weight: 700; margin-bottom: 8px; }
+        .step-card p { font-size: 13.5px; color: var(--text-secondary); max-width: 260px; margin: 0 auto; }
 
-    @media (max-width: 860px) {
-        .hero h1 { font-size: 36px; }
-        .steps, .feature-grid { grid-template-columns: 1fr; }
-        .capability-strip { grid-template-columns: repeat(2, 1fr); }
-        .capability-item { border-bottom: 1px solid var(--border); }
-        .route-track { flex-wrap: nowrap; overflow-x: auto; }
-        .route-label, .route-sub { white-space: nowrap; }
-    }
-    @media (max-width: 600px) {
-        .wrap { padding: 0 18px; }
-        .nav-inner { padding: 14px 18px; }
-        .hero { padding: 50px 0 40px; }
-        .route-card { padding: 30px 18px 26px; }
-        .cta-section { padding: 44px 22px; }
-    }
+        /* Benefits */
+        .benefits-wrap { display: grid; grid-template-columns: 1fr 1fr; gap: 60px; align-items: center; }
+        .benefit-list { display: flex; flex-direction: column; gap: 22px; }
+        .benefit-item { display: flex; gap: 16px; }
+        .benefit-check {
+            flex-shrink: 0; width: 30px; height: 30px; border-radius: 9px;
+            background: rgba(16,185,129,0.15); color: var(--emerald);
+            display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 14px;
+        }
+        .benefit-item h3 { font-size: 15.5px; font-weight: 700; margin-bottom: 4px; }
+        .benefit-item p { font-size: 13.5px; color: var(--text-secondary); }
 
-    :focus-visible { outline: 2px solid var(--indigo-light); outline-offset: 2px; }
-</style>
+        .benefit-visual { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 26px; box-shadow: 0 20px 50px rgba(0,0,0,0.35); }
+        .bv-row { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--border); }
+        .bv-row:last-child { border-bottom: none; }
+        .bv-icon { width: 34px; height: 34px; border-radius: 9px; display: flex; align-items: center; justify-content: center; font-size: 15px; flex-shrink: 0; }
+        .bv-text b { display: block; font-size: 13.5px; }
+        .bv-text span { font-size: 11.5px; color: var(--text-muted); }
+
+        /* Stats */
+        .stats-band {
+            background: linear-gradient(135deg, rgba(99,102,241,0.12), rgba(147,51,234,0.12));
+            border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);
+            padding: 56px 0;
+        }
+        .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; text-align: center; }
+        .stat-item h3 { font-size: 30px; font-weight: 800; margin-bottom: 4px; }
+        .stat-item p { font-size: 12.5px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; }
+
+        /* Témoignages */
+        .testimonials-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+        .testimonial-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 26px; }
+        .testimonial-stars { color: var(--amber); font-size: 13px; margin-bottom: 14px; letter-spacing: 2px; }
+        .testimonial-card p.quote { font-size: 13.5px; color: var(--text-secondary); margin-bottom: 20px; }
+        .testimonial-author { display: flex; align-items: center; gap: 10px; }
+        .ta-avatar { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; color: white; flex-shrink: 0; }
+        .ta-name { font-size: 13px; font-weight: 700; }
+        .ta-role { font-size: 11.5px; color: var(--text-muted); }
+
+        /* CTA final */
+        .cta-final {
+            background: linear-gradient(135deg, var(--indigo), var(--violet));
+            border-radius: 28px; padding: 64px 40px; text-align: center;
+            margin: 0 auto 90px; max-width: 1132px;
+            position: relative; overflow: hidden;
+        }
+        .cta-final h2 { font-size: 32px; font-weight: 800; margin-bottom: 12px; }
+        .cta-final p { font-size: 15.5px; opacity: 0.92; max-width: 480px; margin: 0 auto 30px; }
+        .cta-final .cta-buttons { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+        .cta-final .btn-primary { background: white; color: var(--indigo); }
+        .cta-final .btn-primary:hover { box-shadow: 0 10px 28px rgba(0,0,0,0.25); }
+        .cta-final .btn-ghost { background: rgba(255,255,255,0.12); border-color: rgba(255,255,255,0.3); color: white; }
+
+        /* Footer */
+        footer { border-top: 1px solid var(--border); padding: 50px 0 26px; }
+        .footer-grid { display: grid; grid-template-columns: 1.4fr repeat(3, 1fr); gap: 32px; margin-bottom: 36px; }
+        .footer-brand .brand { margin-bottom: 12px; }
+        .footer-brand p { font-size: 13px; color: var(--text-muted); max-width: 260px; }
+        .footer-col h4 { font-size: 12.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); margin-bottom: 14px; }
+        .footer-col a { display: block; font-size: 13.5px; color: var(--text-secondary); text-decoration: none; margin-bottom: 10px; }
+        .footer-col a:hover { color: var(--text-primary); }
+        .footer-bottom {
+            display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;
+            border-top: 1px solid var(--border); padding-top: 22px; font-size: 12.5px; color: var(--text-muted);
+        }
+        .footer-bottom .legal-links { display: flex; gap: 18px; }
+        .footer-bottom a { text-decoration: none; color: var(--text-muted); }
+        .footer-bottom a:hover { color: var(--text-secondary); }
+
+        /* Scroll reveal */
+        .reveal { opacity: 0; transform: translateY(24px); transition: opacity 0.6s ease, transform 0.6s ease; }
+        .reveal.in-view { opacity: 1; transform: translateY(0); }
+
+        /* ══ RESPONSIVE ══ */
+        @media (max-width: 980px) {
+            .hero-grid { grid-template-columns: 1fr; gap: 48px; }
+            .hero .lead { max-width: none; }
+            .mockup { transform: none; max-width: 480px; margin: 0 auto; }
+            .benefits-wrap { grid-template-columns: 1fr; }
+            .features-grid { grid-template-columns: repeat(2, 1fr); }
+            .testimonials-grid { grid-template-columns: repeat(2, 1fr); }
+            .footer-grid { grid-template-columns: 1fr 1fr; }
+        }
+
+        @media (max-width: 720px) {
+            nav.desktop-nav, .header-actions .btn { display: none; }
+            .burger { display: flex; }
+            .hero { padding: 56px 0 40px; }
+            .hero h1 { font-size: 32px; }
+            .hero-cta { flex-direction: column; }
+            .hero-cta .btn { width: 100%; }
+            .section { padding: 60px 0; }
+            .section-head h2 { font-size: 26px; }
+            .features-grid { grid-template-columns: 1fr; }
+            .steps { grid-template-columns: 1fr; gap: 32px; }
+            .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 28px; }
+            .testimonials-grid { grid-template-columns: 1fr; }
+            .footer-grid { grid-template-columns: 1fr; gap: 26px; }
+            .cta-final { padding: 48px 24px; margin: 0 16px 60px; }
+            .cta-final h2 { font-size: 24px; }
+            .float-card { display: none; }
+        }
+
+        @media (max-width: 420px) {
+            .wrap, .hero-grid { padding-left: 18px; padding-right: 18px; }
+            .header-inner { padding: 14px 18px; }
+        }
+    </style>
 </head>
 <body>
 
-<nav>
-    <div class="nav-inner">
-        <div class="logo">
-            <div class="logo-mark">📦</div>
-            Grosstock
+    <header>
+        <div class="header-inner">
+            <a href="{% url 'landing' %}" class="brand" style="text-decoration:none;">
+                <div class="brand-mark">📦</div>
+                InvoiceApp
+            </a>
+
+            <nav class="desktop-nav">
+                <a href="#features" class="nav-link">Fonctionnalités</a>
+                <a href="#how-it-works" class="nav-link">Comment ça marche</a>
+                <a href="#testimonials" class="nav-link">Avis clients</a>
+            </nav>
+
+            <div class="header-actions">
+                <a href="{% url 'login' %}" class="btn btn-ghost">Se connecter</a>
+                <a href="{% url 'register' %}" class="btn btn-primary">Essai gratuit</a>
+                <button class="burger" id="burgerBtn" aria-label="Menu">
+                    <span></span><span></span><span></span>
+                </button>
+            </div>
         </div>
-        <div class="nav-links">
+
+        <div class="mobile-nav" id="mobileNav">
+            <a href="#features" class="nav-link">Fonctionnalités</a>
+            <a href="#how-it-works" class="nav-link">Comment ça marche</a>
+            <a href="#testimonials" class="nav-link">Avis clients</a>
             <a href="{% url 'login' %}" class="btn btn-ghost">Se connecter</a>
-            <a href="{% url 'register' %}" class="btn btn-primary">Créer un compte</a>
+            <a href="{% url 'register' %}" class="btn btn-primary">Essai gratuit</a>
         </div>
-    </div>
-</nav>
+    </header>
 
-<section class="hero wrap">
-    <div class="eyebrow">🚚 Pensé pour la vente en tournée</div>
-    <h1>Le stock ne quitte plus <span class="accent">le magasin sans laisser de trace</span></h1>
-    <p class="lead">Chargez vos vendeurs, suivez ce qu'ils transportent, et laissez-les facturer sur le terrain — pendant que tout remonte, en temps réel, dans votre tableau de bord.</p>
-    <div class="hero-ctas">
-        <a href="{% url 'register' %}" class="btn btn-primary btn-lg">Créer mon compte entreprise</a>
-        <a href="#comment-ca-marche" class="btn btn-ghost btn-lg">Voir comment ça marche</a>
-    </div>
-    <p class="hero-note">Aucune carte bancaire requise pour démarrer</p>
-</section>
+    <section class="hero">
+        <div class="glow glow-indigo" style="width:420px;height:420px;top:-120px;left:-140px;"></div>
+        <div class="glow glow-violet" style="width:380px;height:380px;top:60px;right:-160px;"></div>
 
-<section class="route-section wrap">
-    <div class="route-card">
-        <div class="route-track">
-            <div class="route-line"></div>
-            <div class="route-line-fill"></div>
-            <div class="route-dot"></div>
+        <div class="wrap hero-grid">
+            <div>
+                <div class="badge-pill"><span class="dot"></span> Nouveau — Multi-devises EUR / USD / XOF</div>
+                <h1>La gestion commerciale qui <span class="accent">suit le rythme</span> de votre entreprise</h1>
+                <p class="lead">Stock, achats, ventes, équipe terrain et factures professionnelles : tout ce dont votre PME a besoin, réuni dans une seule plateforme pensée pour aller vite.</p>
 
-            <div class="route-stop">
-                <div class="route-icon">🏬</div>
-                <div class="route-label">Magasin</div>
-                <div class="route-sub">Stock central</div>
+                <div class="hero-cta">
+                    <a href="{% url 'register' %}" class="btn btn-primary btn-lg">Créer mon compte gratuitement</a>
+                    <a href="#how-it-works" class="btn btn-ghost btn-lg">Voir comment ça marche</a>
+                </div>
+
+                <div class="hero-trust">
+                    <div class="avatar-stack">
+                        <span style="background:#6366F1;">A</span>
+                        <span style="background:#10B981;">B</span>
+                        <span style="background:#F59E0B;">C</span>
+                        <span style="background:#38BDF8;">+</span>
+                    </div>
+                    Déjà utilisé par des centaines d'entreprises et de vendeurs terrain
+                </div>
             </div>
-            <div style="width:40px;"></div>
-            <div class="route-stop">
-                <div class="route-icon">🛵</div>
-                <div class="route-label">Chargement</div>
-                <div class="route-sub">Prix fixé, quantité notée</div>
+
+            <div class="mockup-wrap">
+                <div class="float-card float-1">
+                    <div class="fc-icon">💰</div>
+                    <div>Facture réglée<br><span style="color:var(--text-muted);font-weight:500;">Il y a 2 min</span></div>
+                </div>
+
+                <div class="mockup">
+                    <div class="mockup-bar"><span></span><span></span><span></span></div>
+                    <div class="mockup-body">
+                        <div class="mockup-row">
+                            <div class="mockup-card">
+                                <div class="mc-label">CHIFFRE D'AFFAIRES</div>
+                                <div class="mc-value up">+18,4%</div>
+                            </div>
+                            <div class="mockup-card">
+                                <div class="mc-label">VENTES CE MOIS</div>
+                                <div class="mc-value">1 284</div>
+                            </div>
+                        </div>
+                        <div class="mockup-chart">
+                            <div class="bar" style="height:35%;"></div>
+                            <div class="bar" style="height:55%;"></div>
+                            <div class="bar" style="height:40%;"></div>
+                            <div class="bar" style="height:72%;"></div>
+                            <div class="bar" style="height:58%;"></div>
+                            <div class="bar" style="height:90%;"></div>
+                            <div class="bar" style="height:66%;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="float-card float-2">
+                    <div class="fc-icon">📦</div>
+                    <div>Stock synchronisé<br><span style="color:var(--text-muted);font-weight:500;">En temps réel</span></div>
+                </div>
             </div>
-            <div style="width:40px;"></div>
-            <div class="route-stop">
-                <div class="route-icon">🧾</div>
-                <div class="route-label">Vente & facture</div>
-                <div class="route-sub">Générée automatiquement</div>
+        </div>
+    </section>
+
+    <div class="social-proof">
+        <div class="social-proof-label">Conçu pour les commerces, distributeurs et équipes de vente terrain</div>
+        <div class="logo-row">
+            <span>🏪 Commerces</span>
+            <span>🚚 Distributeurs</span>
+            <span>🏭 Grossistes</span>
+            <span>🛠️ Prestataires</span>
+            <span>🌍 Import / Export</span>
+        </div>
+    </div>
+
+    <section class="section reveal" id="features">
+        <div class="wrap">
+            <div class="section-head">
+                <span class="section-kicker">Fonctionnalités</span>
+                <h2>Tout votre back-office, au même endroit</h2>
+                <p>Fini les tableurs éparpillés et les carnets de commandes perdus. Une seule plateforme pour piloter votre activité du stock jusqu'au paiement.</p>
+            </div>
+
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon" style="background:rgba(99,102,241,0.15);">📊</div>
+                    <h3>Gestion de stock en temps réel</h3>
+                    <p>Chaque vente et chaque approvisionnement met à jour votre stock automatiquement. Fini les ruptures surprises.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon" style="background:rgba(16,185,129,0.15);">📄</div>
+                    <h3>Factures professionnelles</h3>
+                    <p>Générez des factures PDF soignées en un clic, avec suivi des paiements partiels et relances automatiques.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon" style="background:rgba(56,189,248,0.15);">👥</div>
+                    <h3>Clients & fournisseurs</h3>
+                    <p>Centralisez tous vos contacts commerciaux et retrouvez leur historique complet en un instant.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon" style="background:rgba(245,158,11,0.15);">💳</div>
+                    <h3>Paiements multi-devises</h3>
+                    <p>Travaillez en EUR, USD ou XOF selon votre marché, avec un suivi précis de chaque versement.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon" style="background:rgba(147,51,234,0.15);">🧑‍💼</div>
+                    <h3>Équipe & vendeurs terrain</h3>
+                    <p>Donnez à vos vendeurs itinérants un espace dédié pour vendre et encaisser, même en déplacement.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon" style="background:rgba(244,63,94,0.15);">🔒</div>
+                    <h3>Données isolées & sécurisées</h3>
+                    <p>Chaque entreprise évolue dans son espace privé, totalement cloisonné des autres comptes.</p>
+                </div>
             </div>
         </div>
-        <p class="route-caption">
-            Chaque vendeur a <strong>son propre stock</strong>, distinct du magasin. Ce qu'il vend au client se déduit de sa camionnette,
-            jamais directement de l'entrepôt — et une facture numérotée part avec le client, sans jamais pouvoir être doublée.
-        </p>
-    </div>
-</section>
+    </section>
 
-<section class="section wrap" id="comment-ca-marche">
-    <div class="section-head">
-        <div class="section-eyebrow">Le circuit</div>
-        <h2>Trois étapes, un seul système</h2>
-        <p>Chaque acteur voit exactement ce qui le concerne — rien de plus.</p>
-    </div>
-    <div class="steps">
-        <div class="step-card">
-            <div class="step-num mono">01 — Secrétaire / Admin</div>
-            <h3>Charger un vendeur</h3>
-            <p>Choisissez l'agent, les produits, la quantité et le prix de vente fixé pour cette tournée. Le stock magasin se déduit automatiquement.</p>
-        </div>
-        <div class="step-card">
-            <div class="step-num mono">02 — Vendeur (PIN)</div>
-            <h3>Vendre depuis le terrain</h3>
-            <p>Connexion par code entreprise + PIN, sans jamais voir le tableau de bord admin. Il ne peut vendre que ce qu'il a réellement en charge.</p>
-        </div>
-        <div class="step-card">
-            <div class="step-num mono">03 — Client</div>
-            <h3>Facture instantanée</h3>
-            <p>Numéro unique généré à la volée, logo et nom du magasin du client inclus, PDF téléchargeable — comptant, à crédit ou en avance.</p>
-        </div>
-    </div>
-</section>
+    <section class="section reveal" id="how-it-works" style="background:rgba(255,255,255,0.015);">
+        <div class="wrap">
+            <div class="section-head">
+                <span class="section-kicker">Démarrage rapide</span>
+                <h2>Opérationnel en moins de 5 minutes</h2>
+                <p>Aucune installation, aucune formation nécessaire.</p>
+            </div>
 
-<section class="section wrap">
-    <div class="section-head">
-        <div class="section-eyebrow">Fonctionnalités</div>
-        <h2>Tout ce qu'un grossiste multi-vendeurs réclame</h2>
-        <p>Construit autour de la réalité du terrain, pas d'un tableur générique.</p>
-    </div>
-    <div class="feature-grid">
-        <div class="feature-card">
-            <div class="feature-icon" style="background:rgba(99,102,241,0.12); color:var(--indigo-light);">📦</div>
-            <h3>Stock à deux niveaux</h3>
-            <p>Le magasin et chaque vendeur ont leur propre stock. Retours de tournée pris en charge.</p>
+            <div class="steps">
+                <div class="step-card">
+                    <div class="step-num">1</div>
+                    <h3>Créez votre compte</h3>
+                    <p>Renseignez le nom de votre entreprise et votre devise. Les autres informations peuvent attendre.</p>
+                </div>
+                <div class="step-card">
+                    <div class="step-num">2</div>
+                    <h3>Ajoutez vos produits</h3>
+                    <p>Importez votre catalogue et vos premiers stocks en quelques clics.</p>
+                </div>
+                <div class="step-card">
+                    <div class="step-num">3</div>
+                    <h3>Vendez et facturez</h3>
+                    <p>Enregistrez vos ventes, générez vos factures et suivez vos encaissements en direct.</p>
+                </div>
+            </div>
         </div>
-        <div class="feature-card">
-            <div class="feature-icon" style="background:rgba(16,185,129,0.12); color:var(--emerald);">💱</div>
-            <h3>Multi-devises</h3>
-            <p>Euro, dollar, franc CFA — chaque produit, vente et facture garde sa devise sans mélange.</p>
-        </div>
-        <div class="feature-card">
-            <div class="feature-icon" style="background:rgba(245,158,11,0.12); color:var(--amber);">🚚</div>
-            <h3>Suivi des engins</h3>
-            <p>Chaque vendeur a un véhicule par défaut, modifiable à chaque chargement — traçabilité complète des tournées.</p>
-        </div>
-        <div class="feature-card">
-            <div class="feature-icon" style="background:rgba(56,189,248,0.12); color:var(--sky);">💳</div>
-            <h3>Comptant, crédit, avance</h3>
-            <p>Historique de versements daté pour chaque facture — plus jamais de solde perdu de vue.</p>
-        </div>
-        <div class="feature-card">
-            <div class="feature-icon" style="background:rgba(244,63,94,0.12); color:var(--rose);">🔒</div>
-            <h3>Cloisonnement total</h3>
-            <p>Chaque entreprise ne voit que ses propres données — aucune fuite possible entre comptes.</p>
-        </div>
-        <div class="feature-card">
-            <div class="feature-icon" style="background:rgba(147,51,234,0.14); color:#C084FC;">🎭</div>
-            <h3>Rôles & permissions</h3>
-            <p>Le vendeur ne peut jamais changer un prix catalogue ni supprimer un produit.</p>
-        </div>
-    </div>
-</section>
+    </section>
 
-<section class="wrap" style="padding: 10px 0 70px;">
-    <div class="capability-strip">
-        <div class="capability-item">
-            <div class="capability-value">3</div>
-            <div class="capability-label">devises gérées</div>
+    <section class="section reveal">
+        <div class="wrap benefits-wrap">
+            <div>
+                <span class="section-kicker">Pourquoi InvoiceApp</span>
+                <h2 style="font-size:30px;font-weight:800;margin-bottom:20px;">Pensé pour les équipes qui n'ont pas de temps à perdre</h2>
+                <div class="benefit-list">
+                    <div class="benefit-item">
+                        <div class="benefit-check">✓</div>
+                        <div><h3>Interface intuitive</h3><p>Prise en main immédiate, sans formation ni documentation à lire.</p></div>
+                    </div>
+                    <div class="benefit-item">
+                        <div class="benefit-check">✓</div>
+                        <div><h3>Vos données, isolées</h3><p>Chaque entreprise dispose de son propre espace, totalement séparé des autres.</p></div>
+                    </div>
+                    <div class="benefit-item">
+                        <div class="benefit-check">✓</div>
+                        <div><h3>Rapide au quotidien</h3><p>Moins de saisie manuelle, plus de temps pour votre cœur de métier.</p></div>
+                    </div>
+                    <div class="benefit-item">
+                        <div class="benefit-check">✓</div>
+                        <div><h3>Toujours modifiable</h3><p>Modifiez vos informations d'entreprise à tout moment depuis les paramètres.</p></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="benefit-visual">
+                <div class="bv-row">
+                    <div class="bv-icon" style="background:rgba(16,185,129,0.15);">✅</div>
+                    <div class="bv-text"><b>Approvisionnement enregistré</b><span>Stock mis à jour automatiquement</span></div>
+                </div>
+                <div class="bv-row">
+                    <div class="bv-icon" style="background:rgba(99,102,241,0.15);">🧾</div>
+                    <div class="bv-text"><b>Facture #INV-0242 générée</b><span>Envoyée au client en PDF</span></div>
+                </div>
+                <div class="bv-row">
+                    <div class="bv-icon" style="background:rgba(56,189,248,0.15);">👤</div>
+                    <div class="bv-text"><b>Nouveau vendeur ajouté</b><span>Accès à son espace dédié activé</span></div>
+                </div>
+                <div class="bv-row">
+                    <div class="bv-icon" style="background:rgba(245,158,11,0.15);">💵</div>
+                    <div class="bv-text"><b>Versement de 150 000 FCFA reçu</b><span>Solde de facture mis à jour</span></div>
+                </div>
+            </div>
         </div>
-        <div class="capability-item">
-            <div class="capability-value">2</div>
-            <div class="capability-label">espaces séparés — admin & vendeur</div>
-        </div>
-        <div class="capability-item">
-            <div class="capability-value">100%</div>
-            <div class="capability-label">factures numérotées, sans doublon</div>
-        </div>
-        <div class="capability-item">
-            <div class="capability-value">0</div>
-            <div class="capability-label">accès croisé entre entreprises</div>
+    </section>
+
+    <div class="stats-band reveal">
+        <div class="wrap stats-grid">
+            <div class="stat-item"><h3>500+</h3><p>Entreprises actives</p></div>
+            <div class="stat-item"><h3>50k+</h3><p>Factures créées</p></div>
+            <div class="stat-item"><h3>99.9%</h3><p>Disponibilité</p></div>
+            <div class="stat-item"><h3>24/7</h3><p>Accès à vos données</p></div>
         </div>
     </div>
-</section>
 
-<section class="wrap" style="padding-bottom: 90px;">
-    <div class="cta-section">
-        <h2>Prêt à équiper votre équipe terrain ?</h2>
-        <p>Créez votre espace entreprise en quelques minutes, chargez votre premier vendeur, et voyez la première facture arriver.</p>
-        <a href="{% url 'register' %}" class="btn btn-primary btn-lg">Créer mon compte entreprise</a>
-    </div>
-</section>
+    <section class="section reveal" id="testimonials">
+        <div class="wrap">
+            <div class="section-head">
+                <span class="section-kicker">Avis clients</span>
+                <h2>Ils gèrent déjà leur activité avec InvoiceApp</h2>
+            </div>
 
-<footer>
-    <div class="wrap footer-inner">
-        <div class="logo">📦 Grosstock</div>
-        <div class="links">
-            <a href="{% url 'login' %}">Se connecter</a>
-            <a href="{% url 'register' %}">S'inscrire</a>
-            <a href="{% url 'vendor_login' %}">Espace vendeur</a>
+            <div class="testimonials-grid">
+                <div class="testimonial-card">
+                    <div class="testimonial-stars">★★★★★</div>
+                    <p class="quote">"Depuis qu'on a arrêté le tableur Excel, on ne perd plus de temps à recompter le stock à la main. Tout se met à jour tout seul."</p>
+                    <div class="testimonial-author">
+                        <div class="ta-avatar" style="background:#6366F1;">A</div>
+                        <div><div class="ta-name">Aïcha K.</div><div class="ta-role">Gérante, commerce de détail</div></div>
+                    </div>
+                </div>
+                <div class="testimonial-card">
+                    <div class="testimonial-stars">★★★★★</div>
+                    <p class="quote">"Nos vendeurs terrain enregistrent leurs ventes directement depuis leur téléphone. Le suivi des règlements est devenu simple."</p>
+                    <div class="testimonial-author">
+                        <div class="ta-avatar" style="background:#10B981;">M</div>
+                        <div><div class="ta-name">Moussa D.</div><div class="ta-role">Responsable distribution</div></div>
+                    </div>
+                </div>
+                <div class="testimonial-card">
+                    <div class="testimonial-stars">★★★★★</div>
+                    <p class="quote">"La facturation multi-devises nous a fait gagner un temps fou pour nos clients à l'international."</p>
+                    <div class="testimonial-author">
+                        <div class="ta-avatar" style="background:#F59E0B;">S</div>
+                        <div><div class="ta-name">Sophie L.</div><div class="ta-role">Fondatrice, import/export</div></div>
+                    </div>
+                </div>
+            </div>
         </div>
-        <div class="links">© 2026 Grosstock</div>
-    </div>
-</footer>
+    </section>
 
+    <div class="cta-final reveal">
+        <div class="glow glow-emerald" style="width:260px;height:260px;bottom:-120px;left:-80px;opacity:0.25;"></div>
+        <h2>Prêt à simplifier votre gestion ?</h2>
+        <p>Créez votre compte en quelques minutes. Aucune carte bancaire requise pour démarrer.</p>
+        <div class="cta-buttons">
+            <a href="{% url 'register' %}" class="btn btn-primary btn-lg">Créer mon compte gratuitement</a>
+            <a href="{% url 'login' %}" class="btn btn-ghost btn-lg">J'ai déjà un compte</a>
+        </div>
+    </div>
+
+    <footer>
+        <div class="wrap">
+            <div class="footer-grid">
+                <div class="footer-brand">
+                    <div class="brand"><div class="brand-mark">📦</div> InvoiceApp</div>
+                    <p>La plateforme de gestion commerciale pensée pour les PME et leurs équipes terrain.</p>
+                </div>
+                <div class="footer-col">
+                    <h4>Produit</h4>
+                    <a href="#features">Fonctionnalités</a>
+                    <a href="#how-it-works">Comment ça marche</a>
+                    <a href="{% url 'register' %}">Essai gratuit</a>
+                </div>
+                <div class="footer-col">
+                    <h4>Accès</h4>
+                    <a href="{% url 'login' %}">Connexion entreprise</a>
+                    <a href="{% url 'vendor_login' %}">Connexion vendeur</a>
+                    <a href="{% url 'register' %}">Créer un compte</a>
+                </div>
+                <div class="footer-col">
+                    <h4>Ressources</h4>
+                    <a href="#">Centre d'aide</a>
+                    <a href="#">Contact</a>
+                    <a href="#">Statut du service</a>
+                </div>
+            </div>
+
+            <div class="footer-bottom">
+                <span>&copy; 2026 InvoiceApp. Tous droits réservés.</span>
+                <div class="legal-links">
+                    <a href="#">Conditions d'utilisation</a>
+                    <a href="#">Confidentialité</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        const burgerBtn = document.getElementById('burgerBtn');
+        const mobileNav = document.getElementById('mobileNav');
+        burgerBtn.addEventListener('click', () => mobileNav.classList.toggle('open'));
+        mobileNav.querySelectorAll('a').forEach(link => {
+            link.addEventListener('click', () => mobileNav.classList.remove('open'));
+        });
+
+        const revealEls = document.querySelectorAll('.reveal');
+        if ('IntersectionObserver' in window) {
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('in-view');
+                        observer.unobserve(entry.target);
+                    }
+                });
+            }, { threshold: 0.12 });
+            revealEls.forEach(el => observer.observe(el));
+        } else {
+            revealEls.forEach(el => el.classList.add('in-view'));
+        }
+    </script>
 </body>
 </html>

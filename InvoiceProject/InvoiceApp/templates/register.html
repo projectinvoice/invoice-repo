@@ -3,14 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Inscription - Plateforme de Gestion de Stock</title>
+    <title>Inscription — Plateforme de Gestion de Stock</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 
         :root {
@@ -19,6 +13,7 @@
             --border: rgba(99, 102, 241, 0.15);
             --indigo: #6366F1;
             --indigo-light: #818CF8;
+            --emerald: #10B981;
             --rose: #F43F5E;
             --text-primary: #E2E8F0;
             --text-secondary: #94A3B8;
@@ -27,268 +22,448 @@
             --radius-sm: 10px;
             --shadow: 0 4px 24px rgba(0,0,0,0.4);
         }
+
         * { margin: 0; padding: 0; box-sizing: border-box; }
+
         body {
             font-family: 'Inter', sans-serif;
             background: var(--bg-base);
             color: var(--text-primary);
             min-height: 100vh;
-            display: flex; align-items: center; justify-content: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             padding: 20px;
         }
+
         .container {
             background: var(--bg-card);
             border: 1px solid var(--border);
             border-radius: var(--radius);
-            padding: 40px;
-            max-width: 450px;
+            padding: 36px;
+            max-width: 460px;
             width: 100%;
             box-shadow: var(--shadow);
         }
 
-        h1 {
-            text-align: center;
-            color: #333;
-            margin-bottom: 30px;
-            font-size: 28px;
+        .header { text-align: center; margin-bottom: 24px; }
+        .logo-mark {
+            width: 48px; height: 48px; margin: 0 auto 14px;
+            background: linear-gradient(135deg, var(--indigo), #9333EA);
+            border-radius: 14px; display: flex; align-items: center; justify-content: center;
+            font-size: 22px; font-weight: 800; color: white;
+        }
+        h1 { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
+        .subtitle { font-size: 13px; color: var(--text-secondary); }
+
+        /* ── Barre de progression ── */
+        .progress-wrap { margin-bottom: 28px; }
+        .progress-label {
+            display: flex; justify-content: space-between; align-items: center;
+            font-size: 12px; color: var(--text-muted); margin-bottom: 8px;
+        }
+        .progress-track {
+            width: 100%; height: 6px; background: rgba(255,255,255,0.08);
+            border-radius: 999px; overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%; background: linear-gradient(90deg, var(--indigo), var(--indigo-light));
+            border-radius: 999px; transition: width 0.3s ease;
+            width: 14.28%;
         }
 
-        .form-group {
-            margin-bottom: 20px;
+        /* ── Étapes ── */
+        .step-viewport { overflow: hidden; position: relative; }
+        .step {
+            display: none;
+            animation: fadeSlide 0.3s ease;
+        }
+        .step.active { display: block; }
+        @keyframes fadeSlide {
+            from { opacity: 0; transform: translateX(16px); }
+            to { opacity: 1; transform: translateX(0); }
         }
 
+        .step-icon { font-size: 28px; margin-bottom: 10px; }
+        .step-title { font-size: 17px; font-weight: 700; margin-bottom: 4px; }
+        .step-hint { font-size: 13px; color: var(--text-secondary); margin-bottom: 20px; }
+        .optional-badge {
+            display: inline-block; font-size: 10px; font-weight: 700;
+            text-transform: uppercase; letter-spacing: 0.06em;
+            color: var(--text-muted); background: rgba(255,255,255,0.06);
+            padding: 2px 8px; border-radius: 999px; margin-left: 8px; vertical-align: middle;
+        }
+
+        .form-group { margin-bottom: 16px; }
         label {
-            display: block;
-            margin-bottom: 8px;
-            color: #555;
-            font-weight: 500;
-            font-size: 14px;
+            display: block; margin-bottom: 8px; color: var(--text-secondary);
+            font-weight: 600; font-size: 13px;
         }
+        .required { color: var(--rose); }
 
-        input,
-        textarea {
+        input, select, textarea {
             width: 100%;
-            padding: 12px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 12px 14px;
             font-size: 14px;
-            font-family: inherit;
-            transition: border-color 0.3s;
-        }
-
-        input:focus,
-        textarea:focus {
+            font-family: 'Inter', sans-serif;
+            color: var(--text-primary);
             outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        input::placeholder, textarea::placeholder { color: var(--text-muted); }
+        input:focus, select:focus, textarea:focus {
+            border-color: var(--indigo);
+            box-shadow: 0 0 0 3px rgba(99,102,241,0.15);
+        }
+        textarea { resize: vertical; min-height: 80px; }
+        select { cursor: pointer; }
+        select option { background: var(--bg-card); color: var(--text-primary); }
+
+        input[type="file"] {
+            padding: 10px 14px;
+            color: var(--text-secondary);
+        }
+        input[type="file"]::file-selector-button {
+            background: rgba(99,102,241,0.15);
+            color: var(--indigo-light);
+            border: none;
+            border-radius: 8px;
+            padding: 7px 12px;
+            font-family: 'Inter', sans-serif;
+            font-weight: 600;
+            font-size: 12px;
+            margin-right: 10px;
+            cursor: pointer;
         }
 
-        textarea {
-            resize: vertical;
-            min-height: 80px;
+        .logo-preview {
+            width: 56px; height: 56px; border-radius: 12px; object-fit: contain;
+            background: rgba(255,255,255,0.06); border: 1px solid var(--border);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 22px; margin-bottom: 12px;
         }
 
-        .required {
-            color: #e74c3c;
+        .step-error {
+            display: none;
+            background: rgba(244,63,94,0.12);
+            color: #FECACA;
+            border: 1px solid rgba(244,63,94,0.3);
+            border-radius: 10px;
+            padding: 10px 12px;
+            font-size: 12.5px;
+            margin-top: 12px;
         }
+        .step-error.show { display: block; }
 
-        .form-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
+        /* ── Navigation ── */
+        .nav-row {
+            display: flex; gap: 10px; margin-top: 26px; flex-wrap: wrap;
         }
-
-        .form-row .form-group {
-            margin-bottom: 0;
-        }
-
-        .full-width {
-            grid-column: 1 / -1;
-        }
-
-        .password-container {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-        }
-
-        .password-container .form-group {
-            margin-bottom: 0;
-        }
-
-        .btn-group {
-            display: flex;
-            gap: 10px;
-            margin-top: 30px;
-        }
-
         button {
             flex: 1;
-            padding: 12px;
+            min-width: 100px;
+            padding: 12px 16px;
             border: none;
-            border-radius: 5px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-
-        .btn-submit {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-        }
-
-        .btn-submit:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
-        }
-
-        .btn-submit:active {
-            transform: translateY(0);
-        }
-
-        .btn-reset {
-            background: #ecf0f1;
-            color: #333;
-        }
-
-        .btn-reset:hover {
-            background: #bdc3c7;
-        }
-
-        .message {
-            margin-top: 20px;
-            padding: 15px;
-            border-radius: 5px;
+            border-radius: 10px;
             font-size: 14px;
-            display: none;
+            font-weight: 600;
+            font-family: 'Inter', sans-serif;
+            cursor: pointer;
+            transition: all 0.2s;
         }
+        .btn-primary { background: var(--indigo); color: white; }
+        .btn-primary:hover { background: #5254CC; transform: translateY(-1px); }
+        .btn-ghost {
+            background: rgba(255,255,255,0.06); color: var(--text-secondary);
+            border: 1px solid var(--border); flex: 0 0 auto;
+        }
+        .btn-ghost:hover { background: rgba(255,255,255,0.1); color: var(--text-primary); }
+        .btn-skip {
+            background: transparent; color: var(--text-muted);
+            border: 1px dashed var(--border); flex: 0 0 auto;
+        }
+        .btn-skip:hover { color: var(--text-secondary); border-color: var(--text-muted); }
+        button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
 
-        .message.success {
-            background: #d4edda;
-            border: 1px solid #c3e6cb;
-            color: #155724;
+        /* ── Message final ── */
+        .message {
+            margin-top: 18px; padding: 12px 14px; border-radius: 10px;
+            font-size: 13.5px; display: none;
         }
-
-        .message.error {
-            background: #f8d7da;
-            border: 1px solid #f5c6cb;
-            color: #721c24;
-        }
-
-        .message.show {
-            display: block;
-        }
-
-        .info-text {
-            font-size: 13px;
-            color: #777;
-            margin-top: 5px;
-        }
+        .message.show { display: block; }
+        .message.success { background: rgba(16,185,129,0.15); color: #A7F3D0; }
+        .message.error { background: rgba(244,63,94,0.15); color: #FECACA; }
 
         .login-link {
-            text-align: center;
-            margin-top: 20px;
-            font-size: 14px;
-            color: #666;
+            text-align: center; margin-top: 22px; font-size: 13.5px; color: var(--text-secondary);
         }
+        .login-link a { color: var(--indigo-light); text-decoration: none; font-weight: 600; }
+        .login-link a:hover { text-decoration: underline; }
 
-        .login-link a {
-            color: #667eea;
-            text-decoration: none;
-            font-weight: 600;
-        }
-
-        .login-link a:hover {
-            text-decoration: underline;
+        /* ── Responsive ── */
+        @media (max-width: 480px) {
+            .container { padding: 24px 20px; border-radius: 14px; }
+            h1 { font-size: 18px; }
+            .step-title { font-size: 16px; }
+            .nav-row { flex-direction: column; }
+            .nav-row button { width: 100%; }
+            .btn-ghost, .btn-skip { order: 2; }
+            .btn-primary { order: 1; }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Inscription Entreprise</h1>
+        <div class="header">
+            <div class="logo-mark">📦</div>
+            <h1>Créer votre compte entreprise</h1>
+            <div class="subtitle">Quelques étapes rapides pour démarrer</div>
+        </div>
 
-        <form id="registerForm" enctype="multipart/form-data">
+        <div class="progress-wrap">
+            <div class="progress-label">
+                <span id="stepCounter">Étape 1 sur 7</span>
+                <span id="stepPercent">14%</span>
+            </div>
+            <div class="progress-track">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+        </div>
+
+        <form id="registerForm" enctype="multipart/form-data" novalidate>
             {% csrf_token %}
 
-            <!-- Nom de l'entreprise -->
-            <div class="form-group">
-                <label for="company_name">Nom de l'entreprise <span class="required">*</span></label>
-                <input type="text" id="company_name" name="company_name" required placeholder="Entrez le nom de votre entreprise">
-            </div>
+            <div class="step-viewport">
 
-            <!-- Email -->
-            <div class="form-group">
-                <label for="email">Email <span class="required">*</span></label>
-                <input type="email" id="email" name="email" required placeholder="utilisateur@exemple.com">
-                <p class="info-text">Sera utilisé pour se connecter</p>
-            </div>
-
-            <!-- Mots de passe -->
-            <div class="password-container">
-                <div class="form-group">
-                    <label for="password">Mot de passe <span class="required">*</span></label>
-                    <input type="password" id="password" name="password" required placeholder="Entrez un mot de passe">
+                <!-- Étape 1 : Nom de l'entreprise -->
+                <div class="step active" data-step-id="company_name">
+                    <div class="step-icon">🏢</div>
+                    <div class="step-title">Le nom de votre entreprise</div>
+                    <div class="step-hint">Il apparaîtra sur vos factures et documents</div>
+                    <div class="form-group">
+                        <label for="company_name">Nom de l'entreprise <span class="required">*</span></label>
+                        <input type="text" id="company_name" name="company_name" required placeholder="Ex : Atlas Distribution" autofocus>
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label for="password_confirm">Confirmer le mot de passe <span class="required">*</span></label>
-                    <input type="password" id="password_confirm" name="password_confirm" required placeholder="Confirmez le mot de passe">
+
+                <!-- Étape 2 : Email -->
+                <div class="step" data-step-id="email">
+                    <div class="step-icon">✉️</div>
+                    <div class="step-title">Votre adresse email</div>
+                    <div class="step-hint">Utilisée pour vous connecter à votre compte</div>
+                    <div class="form-group">
+                        <label for="email">Email <span class="required">*</span></label>
+                        <input type="email" id="email" name="email" required placeholder="utilisateur@exemple.com">
+                    </div>
                 </div>
+
+                <!-- Étape 3 : Mot de passe -->
+                <div class="step" data-step-id="password">
+                    <div class="step-icon">🔒</div>
+                    <div class="step-title">Choisissez un mot de passe</div>
+                    <div class="step-hint">Au moins 8 caractères recommandés</div>
+                    <div class="form-group">
+                        <label for="password">Mot de passe <span class="required">*</span></label>
+                        <input type="password" id="password" name="password" required placeholder="Entrez un mot de passe">
+                    </div>
+                    <div class="form-group">
+                        <label for="password_confirm">Confirmer le mot de passe <span class="required">*</span></label>
+                        <input type="password" id="password_confirm" name="password_confirm" required placeholder="Confirmez le mot de passe">
+                    </div>
+                    <div class="step-error" id="passwordError">Les mots de passe ne correspondent pas.</div>
+                </div>
+
+                <!-- Étape 4 : Téléphone (optionnel) -->
+                <div class="step" data-step-id="phone">
+                    <div class="step-icon">📞</div>
+                    <div class="step-title">Votre téléphone <span class="optional-badge">Optionnel</span></div>
+                    <div class="step-hint">Vous pourrez l'ajouter ou le modifier plus tard dans les paramètres</div>
+                    <div class="form-group">
+                        <label for="phone">Téléphone</label>
+                        <input type="tel" id="phone" name="phone" placeholder="Entrez votre numéro de téléphone">
+                    </div>
+                </div>
+
+                <!-- Étape 5 : Devise -->
+                <div class="step" data-step-id="default_currency">
+                    <div class="step-icon">💱</div>
+                    <div class="step-title">Devise de votre entreprise <span class="optional-badge">Optionnel</span></div>
+                    <div class="step-hint">Utilisée automatiquement pour vos produits, approvisionnements et ventes. Modifiable à tout moment dans les paramètres.</div>
+                    <div class="form-group">
+                        <label for="default_currency">Devise</label>
+                        <select id="default_currency" name="default_currency">
+                            <option value="EUR" selected>Euro (€)</option>
+                            <option value="USD">Dollar US ($)</option>
+                            <option value="XOF">Franc CFA (FCFA)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Étape 6 : Logo (optionnel) -->
+                <div class="step" data-step-id="logo">
+                    <div class="step-icon">🖼️</div>
+                    <div class="step-title">Logo de l'entreprise <span class="optional-badge">Optionnel</span></div>
+                    <div class="step-hint">Affiché sur vos factures. Vous pourrez l'ajouter plus tard dans les paramètres.</div>
+                    <div id="logoPreview" class="logo-preview">🏢</div>
+                    <div class="form-group">
+                        <label for="logo">Logo</label>
+                        <input type="file" id="logo" name="logo" accept="image/*">
+                    </div>
+                </div>
+
+                <!-- Étape 7 : Adresse (optionnel) -->
+                <div class="step" data-step-id="address">
+                    <div class="step-icon">📍</div>
+                    <div class="step-title">Adresse <span class="optional-badge">Optionnel</span></div>
+                    <div class="step-hint">Vous pourrez la renseigner plus tard dans les paramètres</div>
+                    <div class="form-group">
+                        <label for="address">Adresse</label>
+                        <textarea id="address" name="address" placeholder="Entrez l'adresse de votre entreprise"></textarea>
+                    </div>
+                </div>
+
             </div>
 
-            <!-- Téléphone -->
-            <div class="form-group">
-                <label for="phone">Téléphone</label>
-                <input type="tel" id="phone" name="phone" placeholder="Entrez votre numéro de téléphone">
-                <p class="info-text">Optionnel</p>
-            </div>
-
-            <!-- Devise -->
-            <div class="form-group">
-                <label for="default_currency">Devise de votre entreprise</label>
-                <select id="default_currency" name="default_currency">
-                    <option value="EUR" selected>Euro (€)</option>
-                    <option value="USD">Dollar US ($)</option>
-                    <option value="XOF">Franc CFA (FCFA)</option>
-                </select>
-                <p class="info-text">Choisie une seule fois : elle sera utilisée automatiquement pour vos produits, approvisionnements et ventes.</p>
-            </div>
-
-            <!-- Logo -->
-            <div class="form-group">
-                <label for="logo">Logo de l'entreprise</label>
-                <input type="file" id="logo" name="logo" accept="image/*">
-                <p class="info-text">Optionnel. Taille max recommandée 2MB.</p>
-            </div>
-
-            <!-- Adresse -->
-            <div class="form-group">
-                <label for="address">Adresse</label>
-                <textarea id="address" name="address" placeholder="Entrez l'adresse de votre entreprise"></textarea>
-                <p class="info-text">Optionnel</p>
-            </div>
-
-            <!-- Message d'erreur/succès -->
             <div id="message" class="message"></div>
 
-            <!-- Boutons -->
-            <div class="btn-group">
-                <button type="submit" class="btn-submit">S'inscrire</button>
-                <button type="reset" class="btn-reset">Réinitialiser</button>
+            <div class="nav-row" id="navRow">
+                <button type="button" class="btn-ghost" id="backBtn" style="display:none;">← Précédent</button>
+                <button type="button" class="btn-skip" id="skipBtn" style="display:none;">Passer</button>
+                <button type="button" class="btn-primary" id="nextBtn">Suivant →</button>
+                <button type="submit" class="btn-primary" id="submitBtn" style="display:none;">Créer mon compte</button>
             </div>
 
             <div class="login-link">
-                Vous avez déjà un compte? <a href="{% url 'login' %}">Se connecter</a>
+                Vous avez déjà un compte ? <a href="{% url 'login' %}">Se connecter</a>
             </div>
         </form>
     </div>
-<!-- JavaScript pour gérer la soumission du formulaire -->
+
     <script>
         const form = document.getElementById('registerForm');
+        const steps = Array.from(document.querySelectorAll('.step'));
+        const optionalStepIds = ['phone', 'default_currency', 'logo', 'address'];
         const messageDiv = document.getElementById('message');
+
+        const backBtn = document.getElementById('backBtn');
+        const skipBtn = document.getElementById('skipBtn');
+        const nextBtn = document.getElementById('nextBtn');
+        const submitBtn = document.getElementById('submitBtn');
+        const stepCounter = document.getElementById('stepCounter');
+        const stepPercent = document.getElementById('stepPercent');
+        const progressFill = document.getElementById('progressFill');
+        const passwordError = document.getElementById('passwordError');
+
+        let currentStep = 0;
+
+        function updateUI() {
+            steps.forEach((step, i) => step.classList.toggle('active', i === currentStep));
+
+            const total = steps.length;
+            stepCounter.textContent = `Étape ${currentStep + 1} sur ${total}`;
+            const pct = Math.round(((currentStep + 1) / total) * 100);
+            stepPercent.textContent = pct + '%';
+            progressFill.style.width = pct + '%';
+
+            backBtn.style.display = currentStep === 0 ? 'none' : 'inline-flex';
+
+            const isOptional = optionalStepIds.includes(steps[currentStep].dataset.stepId);
+            const isLastStep = currentStep === total - 1;
+
+            skipBtn.style.display = isOptional && !isLastStep ? 'inline-flex' : 'none';
+
+            if (isLastStep) {
+                nextBtn.style.display = 'none';
+                submitBtn.style.display = 'inline-flex';
+                submitBtn.textContent = isOptional ? 'Créer mon compte' : 'Créer mon compte';
+            } else {
+                nextBtn.style.display = 'inline-flex';
+                submitBtn.style.display = 'none';
+                nextBtn.textContent = isOptional ? 'Suivant →' : 'Suivant →';
+            }
+
+            passwordError.classList.remove('show');
+            messageDiv.classList.remove('show');
+        }
+
+        function validateCurrentStep() {
+            const step = steps[currentStep];
+            const requiredInputs = step.querySelectorAll('input[required], select[required]');
+            for (const input of requiredInputs) {
+                if (!input.checkValidity()) {
+                    input.reportValidity();
+                    return false;
+                }
+            }
+            if (step.dataset.stepId === 'password') {
+                const pwd = document.getElementById('password').value;
+                const confirm = document.getElementById('password_confirm').value;
+                if (pwd !== confirm) {
+                    passwordError.classList.add('show');
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        function goNext() {
+            if (!validateCurrentStep()) return;
+            if (currentStep < steps.length - 1) {
+                currentStep++;
+                updateUI();
+            }
+        }
+
+        function goSkip() {
+            if (currentStep < steps.length - 1) {
+                currentStep++;
+                updateUI();
+            }
+        }
+
+        function goBack() {
+            if (currentStep > 0) {
+                currentStep--;
+                updateUI();
+            }
+        }
+
+        nextBtn.addEventListener('click', goNext);
+        skipBtn.addEventListener('click', goSkip);
+        backBtn.addEventListener('click', goBack);
+
+        // Aperçu instantané du logo
+        document.getElementById('logo').addEventListener('change', function() {
+            const file = this.files[0];
+            const preview = document.getElementById('logoPreview');
+            if (!file) {
+                preview.textContent = '🏢';
+                return;
+            }
+            const reader = new FileReader();
+            reader.onload = e => {
+                preview.innerHTML = `<img src="${e.target.result}" alt="Aperçu du logo" style="width:100%;height:100%;object-fit:contain;border-radius:12px;">`;
+            };
+            reader.readAsDataURL(file);
+        });
+
+        // Empêche la touche Entrée de soumettre prématurément sur une étape non finale
+        form.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && steps[currentStep] !== steps[steps.length - 1]) {
+                e.preventDefault();
+                goNext();
+            }
+        });
 
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
+            if (!validateCurrentStep()) return;
+
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Création en cours...';
 
             const formData = new FormData(form);
 
@@ -306,17 +481,23 @@
                 messageDiv.classList.add('show');
 
                 if (data.success) {
-                    form.reset();
                     setTimeout(() => {
                         window.location.href = '{% url "login" %}';
-                    }, 2000);
+                    }, 1800);
+                } else {
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Créer mon compte';
                 }
             } catch (error) {
                 messageDiv.classList.remove('success');
                 messageDiv.classList.add('error', 'show');
                 messageDiv.textContent = 'Erreur lors de l\'inscription. Veuillez réessayer.';
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Créer mon compte';
             }
         });
+
+        updateUI();
     </script>
 </body>
 </html>
