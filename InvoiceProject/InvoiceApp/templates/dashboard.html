@@ -509,7 +509,7 @@
 
         <div class="nav-section-label">Entreprise</div>
         <a href="{% url 'company_settings' %}" class="nav-item">
-        <span class="nav-icon">⚙️</span> Paramètres
+            <span class="nav-icon">⚙️</span> Paramètres
         </a>
     </nav>
 
@@ -534,11 +534,11 @@
             <div class="topbar-title">Tableau de bord</div>
             <div class="topbar-sub">Vue d'ensemble — <span id="current-date"></span></div>
         </div>
-        <!--<div class="topbar-actions">
+        <div class="topbar-actions">
             <a href="{% url 'list_agents' %}" class="btn btn-primary">+ Ajouter un agent</a>
             <a href="{% url 'change_password' %}" class="btn btn-ghost">🔐 Mot de passe</a>
             <a href="{% url 'delete_account' %}" class="btn btn-ghost btn-danger">🗑️</a>
-        </div>-->
+        </div>
     </header>
 
     <!-- CONTENT -->
@@ -620,7 +620,7 @@
                 <div class="chart-header">
                     <div>
                         <div class="chart-title">Répartition des ventes</div>
-                        <div class="chart-subtitle">Par catégorie de produit</div>
+                        <div class="chart-subtitle">Par produit</div>
                     </div>
                 </div>
                 <div class="chart-canvas-wrap">
@@ -662,17 +662,8 @@
 <!-- ══════════════════════════════════ SCRIPTS ══════════════════════════════════ -->
 <script>
 // ─────────────────────────────────────────────────────────────────────────────
-// DONNÉES DEPUIS DJANGO (à renseigner dans la vue Django correspondante)
-// Dans views.py, passer ces variables dans le contexte :
-//
-//   context['ca_monthly_labels']   = json.dumps(['Jan','Fév','Mar',...])
-//   context['ca_monthly_data']     = json.dumps([12000, 18000, ...])
-//   context['sales_categories']    = json.dumps(['Prod A', 'Prod B', ...])
-//   context['sales_cat_values']    = json.dumps([40, 25, 20, 15])
-//   context['agents_names']        = json.dumps(['Alice', 'Bob', ...])
-//   context['agents_sales']        = json.dumps([45, 30, ...])
-//   context['agents_ca']           = json.dumps([850000, 600000, ...])
-//   context['agents_roles']        = json.dumps(['Commercial', 'Technicien', ...])
+// DONNÉES DEPUIS DJANGO — calculées dans InvoiceApp/views.py (fonction dashboard)
+// à partir des ventes réelles de l'entreprise connectée.
 // ─────────────────────────────────────────────────────────────────────────────
 
 // Injection Django (fallback sur données démo si vide)
@@ -684,6 +675,7 @@ const AG_NAMES   = {{ agents_names|default:'["Alice M.","Bob K.","Clara D.","Dav
 const AG_SALES   = {{ agents_sales|default:'[52,41,38,29,24]'|safe }};
 const AG_CA      = {{ agents_ca|default:'[1200000,980000,870000,640000,510000]'|safe }};
 const AG_ROLES   = {{ agents_roles|default:'["Commercial","Technicien","Commercial","Livreur","Commercial"]'|safe }};
+const CURRENCY_SYMBOL = "{{ currency_symbol|default:'EUR'|escapejs }}";
 
 // ─── Palette ───
 const COLORS = ['#6366F1','#10B981','#F59E0B','#38BDF8','#F43F5E','#A855F7','#14B8A6'];
@@ -707,7 +699,7 @@ const caChart = new Chart(caCtx, {
     data: {
         labels: CA_LABELS,
         datasets: [{
-            label: 'CA (FCFA)',
+            label: 'CA (' + CURRENCY_SYMBOL + ')',
             data: CA_DATA,
             borderColor: '#6366F1',
             backgroundColor: caGrad,
@@ -732,7 +724,7 @@ const caChart = new Chart(caCtx, {
                 borderWidth: 1,
                 padding: 12,
                 callbacks: {
-                    label: ctx => ' ' + ctx.parsed.y.toLocaleString('fr-FR') + ' FCFA'
+                    label: ctx => ' ' + ctx.parsed.y.toLocaleString('fr-FR') + ' ' + CURRENCY_SYMBOL
                 }
             }
         },
@@ -773,7 +765,13 @@ new Chart(donutCtx, {
                 backgroundColor: '#0F1629',
                 borderColor: 'rgba(99,102,241,0.4)',
                 borderWidth: 1,
-                callbacks: { label: ctx => ' ' + ctx.label + ' : ' + ctx.parsed + '%' }
+                callbacks: {
+                    label: ctx => {
+                        const total = ctx.dataset.data.reduce((a, b) => a + b, 0);
+                        const pct = total ? Math.round((ctx.parsed / total) * 100) : 0;
+                        return ' ' + ctx.label + ' : ' + pct + '%';
+                    }
+                }
             }
         }
     }
@@ -854,35 +852,15 @@ new Chart(agCtx, {
 // ════════════ SWITCH PÉRIODE CA ════════════
 // Connecter ici à une API Django pour charger les données dynamiquement
 function updateCAChart(period) {
-    // Exemple : fetch('/api/dashboard/ca/?period=' + period)
-    //   .then(r => r.json())
-    //   .then(data => {
-    //     caChart.data.labels = data.labels;
-    //     caChart.data.datasets[0].data = data.values;
-    //     caChart.update();
-    //   });
-    console.log('Période sélectionnée :', period);
-    // Remplacer par un appel API réel — voir commentaire ci-dessus
+    fetch(`{% url 'api_dashboard_ca' %}?period=${encodeURIComponent(period)}`, { credentials: 'same-origin' })
+        .then(response => response.json())
+        .then(data => {
+            caChart.data.labels = data.labels;
+            caChart.data.datasets[0].data = data.values;
+            caChart.update();
+        })
+        .catch(error => console.error('Erreur chargement CA:', error));
 }
-
-// ════════════ API ENDPOINT (optionnel) ════════════
-// Pour connecter les graphiques à votre base de données en temps réel,
-// créer dans views.py :
-//
-//   from django.http import JsonResponse
-//
-//   def api_dashboard_ca(request):
-//       period = request.GET.get('period', 'year')
-//       # ... votre logique de requête
-//       return JsonResponse({'labels': [...], 'values': [...]})
-//
-//   def api_dashboard_agents(request):
-//       agents = Agent.objects.annotate(total_sales=Sum('sales__amount'))...
-//       return JsonResponse({'names': [...], 'sales': [...], 'ca': [...]})
-//
-// Puis dans urls.py :
-//   path('api/dashboard/ca/', views.api_dashboard_ca),
-//   path('api/dashboard/agents/', views.api_dashboard_agents),
 </script>
 
 </body>
