@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Paramètres de l'entreprise — {{ company_name }}</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+        :root {
+            --bg-base: #0F1629;
+            --bg-card: #1A2238;
+            --bg-card-hover: #1F2A44;
+            --border: rgba(99, 102, 241, 0.15);
+            --indigo: #6366F1;
+            --indigo-light: #818CF8;
+            --emerald: #10B981;
+            --amber: #F59E0B;
+            --rose: #F43F5E;
+            --sky: #38BDF8;
+            --text-primary: #E2E8F0;
+            --text-secondary: #94A3B8;
+            --text-muted: #64748B;
+            --radius: 16px;
+            --radius-sm: 10px;
+            --shadow: 0 4px 24px rgba(0,0,0,0.4);
+        }
+
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-base);
+            color: var(--text-primary);
+            min-height: 100vh;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .sidebar {
+            position: fixed; left: 0; top: 0; bottom: 0;
+            width: 240px; background: var(--bg-card);
+            border-right: 1px solid var(--border);
+            display: flex; flex-direction: column; z-index: 100;
+        }
+
+        .sidebar-logo {
+            padding: 24px 20px 20px; border-bottom: 1px solid var(--border);
+            display: flex; align-items: center; gap: 12px;
+        }
+
+        .logo-mark {
+            width: 36px; height: 36px; background: linear-gradient(135deg, var(--indigo), #9333EA);
+            border-radius: 10px; display: flex; align-items: center; justify-content: center;
+            font-size: 18px; font-weight: 800; color: white; flex-shrink: 0;
+        }
+
+        .logo-text { font-size: 15px; font-weight: 700; color: var(--text-primary); }
+
+        .sidebar-nav { flex: 1; padding: 16px 12px; overflow-y: auto; }
+
+        .nav-section-label {
+            font-size: 10px; font-weight: 600; color: var(--text-muted);
+            text-transform: uppercase; letter-spacing: 0.12em; padding: 12px 8px 6px;
+        }
+
+        .nav-item {
+            display: flex; align-items: center; gap: 10px; padding: 9px 12px;
+            border-radius: var(--radius-sm); color: var(--text-secondary);
+            text-decoration: none; font-weight: 500; font-size: 13.5px;
+            transition: all 0.18s; margin-bottom: 2px;
+        }
+
+        .nav-item:hover, .nav-item.active {
+            background: rgba(99, 102, 241, 0.12); color: var(--indigo-light);
+        }
+        .nav-item.active { font-weight: 600; }
+        .nav-item .nav-icon { font-size: 16px; width: 20px; text-align: center; }
+
+        .sidebar-footer { padding: 16px 12px; border-top: 1px solid var(--border); }
+
+        .user-block {
+            display: flex; align-items: center; gap: 10px; padding: 10px;
+            border-radius: var(--radius-sm); background: rgba(255,255,255,0.04);
+        }
+
+        .user-avatar {
+            width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, var(--emerald), #059669);
+            display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; color: white; flex-shrink: 0;
+        }
+        .user-name { font-weight: 600; font-size: 13px; }
+        .user-role { font-size: 11px; color: var(--text-muted); }
+
+        .logout-btn {
+            margin-top: 10px; display: block; text-align: center; padding: 8px;
+            background: rgba(244, 63, 94, 0.1); color: var(--rose);
+            border-radius: var(--radius-sm); text-decoration: none; font-size: 13px; font-weight: 500;
+        }
+        .logout-btn:hover { background: rgba(244, 63, 94, 0.2); }
+
+        .main { margin-left: 240px; min-height: 100vh; display: flex; flex-direction: column; }
+
+        .topbar {
+            background: var(--bg-card); border-bottom: 1px solid var(--border);
+            padding: 14px 32px; display: flex; align-items: center; justify-content: space-between;
+            position: sticky; top: 0; z-index: 50;
+        }
+
+        .topbar-title { font-size: 17px; font-weight: 700; }
+        .topbar-sub { font-size: 12px; color: var(--text-muted); margin-top: 1px; }
+        .topbar-actions { display: flex; gap: 10px; align-items: center; }
+
+        .btn {
+            display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px;
+            border-radius: var(--radius-sm); font-size: 13px; font-weight: 600;
+            cursor: pointer; text-decoration: none; border: none; transition: all 0.2s;
+            font-family: 'Inter', sans-serif;
+        }
+        .btn-primary { background: var(--indigo); color: white; }
+        .btn-primary:hover { background: #5254CC; transform: translateY(-1px); }
+        .btn-ghost {
+            background: rgba(255,255,255,0.06); color: var(--text-secondary);
+            border: 1px solid var(--border);
+        }
+        .btn-ghost:hover { background: rgba(255,255,255,0.1); color: var(--text-primary); }
+
+        .content { padding: 28px 32px; flex: 1; max-width: 720px; }
+
+        .settings-card {
+            background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius);
+            box-shadow: var(--shadow); padding: 28px; margin-bottom: 20px;
+        }
+        .settings-card h3 { font-size: 15px; font-weight: 700; margin-bottom: 4px; }
+        .settings-card .settings-sub { color: var(--text-secondary); font-size: 12px; margin-bottom: 20px; }
+
+        .logo-preview {
+            width: 64px; height: 64px; border-radius: 14px; object-fit: contain;
+            background: rgba(255,255,255,0.06); border: 1px solid var(--border);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 24px; font-weight: 800; color: var(--indigo-light);
+            flex-shrink: 0;
+        }
+        .logo-row { display: flex; align-items: center; gap: 16px; margin-bottom: 20px; }
+
+        .form-label { display: block; margin-bottom: 6px; color: var(--text-secondary); font-size: 13px; font-weight: 600; }
+        .form-control, .form-select, textarea {
+            width: 100%; background: rgba(255,255,255,0.04); border: 1px solid var(--border);
+            border-radius: 10px; padding: 10px 12px; color: var(--text-primary);
+            font-family: 'Inter', sans-serif; outline: none;
+        }
+        .form-control:focus, .form-select:focus, textarea:focus {
+            border-color: var(--indigo); box-shadow: 0 0 0 3px rgba(99,102,241,0.15);
+        }
+        .mb-3 { margin-bottom: 14px; }
+        .row { display: flex; gap: 12px; flex-wrap: wrap; }
+        .col-md-6 { flex: 1; min-width: 220px; }
+        .d-flex { display: flex; gap: 10px; flex-wrap: wrap; }
+        .info-text { font-size: 11px; color: var(--text-muted); margin-top: 6px; }
+        .alert { padding: 10px 12px; border-radius: 10px; margin-top: 12px; }
+        .alert-success { background: rgba(16,185,129,0.15); color: #A7F3D0; }
+        .alert-danger { background: rgba(244,63,94,0.15); color: #FECACA; }
+
+        .danger-zone {
+            border-color: rgba(244, 63, 94, 0.35);
+        }
+        .danger-zone h3 { color: var(--rose); }
+        .btn-danger {
+            background: rgba(244, 63, 94, 0.15);
+            color: var(--rose);
+            border: 1px solid rgba(244, 63, 94, 0.35);
+        }
+        .btn-danger:hover { background: rgba(244, 63, 94, 0.28); }
+
+        @media (max-width: 900px) {
+            .sidebar { display: none; }
+            .main { margin-left: 0; }
+            .topbar { padding: 14px 20px; }
+            .content { padding: 20px; }
+        }
+
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.7);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 24px;
+        }
+        .modal-overlay.show { display: flex; }
+        .modal-content {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 28px;
+            max-width: 480px;
+            width: 100%;
+            max-height: 85vh;
+            overflow-y: auto;
+            box-shadow: var(--shadow);
+            animation: slideIn 0.25s ease;
+        }
+        @keyframes slideIn {
+            from { transform: translateY(-20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        .close-btn {
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            color: var(--text-muted);
+            cursor: pointer;
+        }
+        .close-btn:hover { color: var(--text-primary); }
+    </style>
+</head>
+<body>
+
+<div class="sidebar">
+    <div class="sidebar-logo">
+        {% if company_logo_url %}
+            <img src="{{ company_logo_url }}" alt="Logo" style="width:36px;height:36px;object-fit:contain;border-radius:10px;background:#fff;padding:4px;">
+        {% else %}
+            <div class="logo-mark">{{ company_name|first|upper }}</div>
+        {% endif %}
+        <div class="logo-text">{{ company_name }}</div>
+    </div>
+
+    <nav class="sidebar-nav">
+        <div class="nav-section-label">Navigation</div>
+        <a href="{% url 'dashboard' %}" class="nav-item"><span class="nav-icon">📊</span> Tableau de bord</a>
+        <a href="{% url 'list_products' %}" class="nav-item"><span class="nav-icon">📦</span> Produits</a>
+        <a href="{% url 'list_clients' %}" class="nav-item"><span class="nav-icon">🤝</span> Clients</a>
+        <a href="{% url 'list_sales' %}" class="nav-item"><span class="nav-icon">💵</span> Ventes</a>
+        <a href="{% url 'list_supplies' %}" class="nav-item"><span class="nav-icon">📥</span> Approvisionnements</a>
+        <a href="{% url 'list_invoices' %}" class="nav-item"><span class="nav-icon">📄</span> Factures</a>
+        <a href="{% url 'company_settings' %}" class="nav-item active"><span class="nav-icon">⚙️</span> Paramètres</a>
+    </nav>
+
+    <div class="sidebar-footer">
+        <div class="user-block">
+            <div class="user-avatar">{{ request.user.first_name|default:request.user.username|slice:':1'|upper }}</div>
+            <div>
+                <div class="user-name">{{ request.user.get_full_name|default:request.user.username }}</div>
+                <div class="user-role">Gestionnaire</div>
+            </div>
+        </div>
+        <a href="{% url 'logout' %}" class="logout-btn">Déconnexion</a>
+    </div>
+</div>
+
+<div class="main">
+    <div class="topbar">
+        <div>
+            <div class="topbar-title">Paramètres de l'entreprise</div>
+            <div class="topbar-sub">Modifiez vos informations à tout moment</div>
+        </div>
+        <div class="topbar-actions">
+            <a href="{% url 'dashboard' %}" class="btn btn-ghost">← Tableau de bord</a>
+        </div>
+    </div>
+
+    <div class="content">
+        <form id="settingsForm" enctype="multipart/form-data">
+            {% csrf_token %}
+
+            <div class="settings-card">
+                <h3>Informations générales</h3>
+                <div class="settings-sub">Nom, contact et logo de votre entreprise</div>
+
+                <div class="logo-row">
+                    {% if company_logo_url %}
+                        <img src="{{ company_logo_url }}" alt="Logo actuel" class="logo-preview" id="logoPreview" style="object-fit:contain;">
+                    {% else %}
+                        <div class="logo-preview" id="logoPreview">{{ company_name|first|upper }}</div>
+                    {% endif %}
+                    <div style="flex:1;">
+                        <label for="logo" class="form-label">Logo de l'entreprise</label>
+                        <input type="file" class="form-control" id="logo" name="logo" accept="image/*">
+                        <p class="info-text">Optionnel. Laissez vide pour conserver le logo actuel.</p>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="company_name" class="form-label">Nom de l'entreprise *</label>
+                    <input type="text" class="form-control" id="company_name" name="company_name" value="{{ request.user.company_name }}" required>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="company_email" class="form-label">Adresse email</label>
+                            <input type="email" class="form-control" id="company_email" name="company_email" value="{{ request.user.company_email|default:'' }}">
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="phone" class="form-label">Téléphone</label>
+                            <input type="tel" class="form-control" id="phone" name="phone" value="{{ request.user.phone|default:'' }}">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="address" class="form-label">Adresse</label>
+                    <textarea class="form-control" id="address" name="address" rows="3">{{ request.user.address|default:'' }}</textarea>
+                </div>
+            </div>
+
+            <div class="settings-card">
+                <h3>Devise</h3>
+                <div class="settings-sub">Utilisée automatiquement pour vos produits, approvisionnements et ventes</div>
+
+                <div class="mb-3">
+                    <label for="default_currency" class="form-label">Devise de l'entreprise *</label>
+                    <select class="form-select" id="default_currency" name="default_currency" required>
+                        <option value="EUR" {% if request.user.default_currency == 'EUR' %}selected{% endif %}>Euro (€)</option>
+                        <option value="USD" {% if request.user.default_currency == 'USD' %}selected{% endif %}>Dollar US ($)</option>
+                        <option value="XOF" {% if request.user.default_currency == 'XOF' %}selected{% endif %}>Franc CFA (FCFA)</option>
+                    </select>
+                    <p class="info-text">Changer la devise ne modifie pas les montants déjà enregistrés, seulement les nouveaux.</p>
+                </div>
+            </div>
+
+            <div class="d-flex">
+                <button type="submit" class="btn btn-primary">💾 Enregistrer les modifications</button>
+                <button type="button" class="btn btn-ghost" onclick="openPasswordModal()">🔒 Changer le mot de passe</button>
+            </div>
+
+            <div id="message" style="margin-top: 15px;"></div>
+        </form>
+
+        <div class="settings-card danger-zone">
+            <h3>⚠️ Zone de danger</h3>
+            <div class="settings-sub">La suppression de votre compte est définitive et irréversible. Toutes vos données (produits, clients, ventes, approvisionnements, factures) seront perdues.</div>
+            <button type="button" class="btn btn-danger" onclick="openDeleteModal()">🗑️ Supprimer définitivement le compte</button>
+        </div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="deleteModal">
+    <div class="modal-content">
+        <span class="close-btn" onclick="closeDeleteModal()">&times;</span>
+        <h3 style="margin-bottom: 4px; color: var(--rose);">Supprimer le compte</h3>
+        <div class="settings-sub" style="margin-bottom: 20px;">Cette action est <strong>définitive</strong>. Toutes les données de l'entreprise seront supprimées et vous serez déconnecté immédiatement. Confirmez avec votre mot de passe.</div>
+
+        <form id="deleteForm">
+            {% csrf_token %}
+            <div class="mb-3">
+                <label for="delete_password" class="form-label">Mot de passe actuel *</label>
+                <input type="password" class="form-control" id="delete_password" name="password" required>
+            </div>
+
+            <div class="d-flex">
+                <button type="submit" class="btn btn-danger">🗑️ Supprimer définitivement</button>
+                <button type="button" class="btn btn-ghost" onclick="closeDeleteModal()">Annuler</button>
+            </div>
+
+            <div id="deleteMessage" style="margin-top: 15px;"></div>
+        </form>
+    </div>
+</div>
+
+<div class="modal-overlay" id="passwordModal">
+    <div class="modal-content">
+        <span class="close-btn" onclick="closePasswordModal()">&times;</span>
+        <h3 style="margin-bottom: 4px;">Changer le mot de passe</h3>
+        <div class="settings-sub" style="margin-bottom: 20px;">Votre mot de passe actuel vous sera demandé</div>
+
+        <form id="passwordForm">
+            {% csrf_token %}
+            <div class="mb-3">
+                <label for="old_password" class="form-label">Mot de passe actuel *</label>
+                <input type="password" class="form-control" id="old_password" name="old_password" required>
+            </div>
+            <div class="mb-3">
+                <label for="new_password" class="form-label">Nouveau mot de passe *</label>
+                <input type="password" class="form-control" id="new_password" name="new_password" required>
+            </div>
+            <div class="mb-3">
+                <label for="confirm_password" class="form-label">Confirmer le nouveau mot de passe *</label>
+                <input type="password" class="form-control" id="confirm_password" name="confirm_password" required>
+            </div>
+
+            <div class="d-flex">
+                <button type="submit" class="btn btn-primary">💾 Modifier le mot de passe</button>
+                <button type="button" class="btn btn-ghost" onclick="closePasswordModal()">Annuler</button>
+            </div>
+
+            <div id="passwordMessage" style="margin-top: 15px;"></div>
+        </form>
+    </div>
+</div>
+
+<script>
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    const csrfToken = getCookie('csrftoken');
+
+    document.getElementById('logo').addEventListener('change', function() {
+        const file = this.files[0];
+        if (!file) return;
+        const preview = document.getElementById('logoPreview');
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            preview.outerHTML = `<img src="${e.target.result}" alt="Aperçu du logo" class="logo-preview" id="logoPreview">`;
+        };
+        reader.readAsDataURL(file);
+    });
+
+    function openPasswordModal() {
+        document.getElementById('passwordModal').classList.add('show');
+    }
+
+    function closePasswordModal() {
+        document.getElementById('passwordModal').classList.remove('show');
+        document.getElementById('passwordForm').reset();
+        document.getElementById('passwordMessage').innerHTML = '';
+    }
+
+    document.getElementById('passwordForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+
+        const formData = new FormData(this);
+        const msgDiv = document.getElementById('passwordMessage');
+
+        try {
+            const response = await fetch('{% url "change_password" %}', {
+                method: 'POST',
+                body: formData,
+                headers: { 'X-CSRFToken': csrfToken },
+                credentials: 'same-origin'
+            });
+
+            if (!response.ok) {
+                const text = await response.text();
+                console.error('Server error:', response.status, text);
+                msgDiv.innerHTML = '<div class="alert alert-danger">Erreur serveur: ' + response.status + '</div>';
+                return;
+            }
+
+            const data = await response.json();
+            if (data.success) {
+                msgDiv.innerHTML = '<div class="alert alert-success" role="alert">' + data.message + '</div>';
+                setTimeout(() => closePasswordModal(), 1200);
+            } else {
+                msgDiv.innerHTML = '<div class="alert alert-danger" role="alert">' + data.error + '</div>';
+            }
+        } catch (error) {
+            console.error(error);
+            msgDiv.innerHTML = '<div class="alert alert-danger">Erreur serveur</div>';
+        }
+    });
+
+    function openDeleteModal() {
+        document.getElementById('deleteModal').classList.add('show');
+    }
+
+    function closeDeleteModal() {
+        document.getElementById('deleteModal').classList.remove('show');
+        document.getElementById('deleteForm').reset();
+        document.getElementById('deleteMessage').innerHTML = '';
+    }
+
+    document.getElementById('deleteForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+
+        const formData = new FormData(this);
+        const msgDiv = document.getElementById('deleteMessage');
+        const submitBtn = this.querySelector('button[type="submit"]');
+        submitBtn.disabled = true;
+
+        try {
+            const response = await fetch('{% url "delete_account" %}', {
+                method: 'POST',
+                body: formData,
+                headers: { 'X-CSRFToken': csrfToken },
+                credentials: 'same-origin'
+            });
+
+            if (!response.ok) {
+                const text = await response.text();
+                console.error('Server error:', response.status, text);
+                msgDiv.innerHTML = '<div class="alert alert-danger">Erreur serveur: ' + response.status + '</div>';
+                submitBtn.disabled = false;
+                return;
+            }
+
+            const data = await response.json();
+            if (data.success) {
+                msgDiv.innerHTML = '<div class="alert alert-success" role="alert">Compte supprimé. Redirection...</div>';
+                setTimeout(() => { window.location.href = '{% url "landing" %}'; }, 1200);
+            } else {
+                msgDiv.innerHTML = '<div class="alert alert-danger" role="alert">' + data.error + '</div>';
+                submitBtn.disabled = false;
+            }
+        } catch (error) {
+            console.error(error);
+            msgDiv.innerHTML = '<div class="alert alert-danger">Erreur serveur</div>';
+            submitBtn.disabled = false;
+        }
+    });
+
+    document.getElementById('settingsForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+
+        const formData = new FormData(this);
+        const msgDiv = document.getElementById('message');
+
+        try {
+            const response = await fetch('{% url "company_settings" %}', {
+                method: 'POST',
+                body: formData,
+                headers: { 'X-CSRFToken': csrfToken },
+                credentials: 'same-origin'
+            });
+
+            if (!response.ok) {
+                const text = await response.text();
+                console.error('Server error:', response.status, text);
+                msgDiv.innerHTML = '<div class="alert alert-danger">Erreur serveur: ' + response.status + '</div>';
+                return;
+            }
+
+            const data = await response.json();
+            if (data.success) {
+                msgDiv.innerHTML = '<div class="alert alert-success" role="alert">' + data.message + '</div>';
+                setTimeout(() => location.reload(), 1200);
+            } else {
+                msgDiv.innerHTML = '<div class="alert alert-danger" role="alert">' + data.error + '</div>';
+            }
+        } catch (error) {
+            console.error(error);
+            msgDiv.innerHTML = '<div class="alert alert-danger">Erreur serveur</div>';
+        }
+    });
+</script>
+
+</body>
+</html>

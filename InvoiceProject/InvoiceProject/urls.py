@@ -81,6 +81,7 @@ urlpatterns = [
     path('stock-loads/', invoice_views.list_stock_loads, name='list_stock_loads'),
     path('add-stock-load/', invoice_views.add_stock_load, name='add_stock_load'),
     path('add-stock-return/', invoice_views.add_stock_return, name='add_stock_return'),
+    path('company-settings/', invoice_views.company_settings, name='company_settings'),
 
 ]
 
