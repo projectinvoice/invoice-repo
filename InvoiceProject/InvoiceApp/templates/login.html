@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Connexion - Plateforme de Gestion de Stock</title>
+    <title>Connexion — Plateforme de Gestion de Stock</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 
@@ -21,149 +21,139 @@
             --radius-sm: 10px;
             --shadow: 0 4px 24px rgba(0,0,0,0.4);
         }
+
         * { margin: 0; padding: 0; box-sizing: border-box; }
+
         body {
             font-family: 'Inter', sans-serif;
             background: var(--bg-base);
             color: var(--text-primary);
             min-height: 100vh;
-            display: flex; align-items: center; justify-content: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             padding: 20px;
         }
+
         .container {
             background: var(--bg-card);
             border: 1px solid var(--border);
             border-radius: var(--radius);
             padding: 40px;
-            max-width: 380px;
+            max-width: 400px;
             width: 100%;
             box-shadow: var(--shadow);
         }
 
-        h1 {
-            text-align: center;
-            color: #333;
-            margin-bottom: 30px;
-            font-size: 28px;
+        .header { text-align: center; margin-bottom: 28px; }
+        .logo-mark {
+            width: 48px; height: 48px; margin: 0 auto 14px;
+            background: linear-gradient(135deg, var(--indigo), #9333EA);
+            border-radius: 14px; display: flex; align-items: center; justify-content: center;
+            font-size: 22px; font-weight: 800; color: white;
         }
+        h1 { font-size: 20px; font-weight: 700; margin-bottom: 4px; color: var(--text-primary); }
+        .subtitle { font-size: 13px; color: var(--text-secondary); }
 
-        .form-group {
-            margin-bottom: 20px;
-        }
-
+        .form-group { margin-bottom: 18px; }
         label {
-            display: block;
-            margin-bottom: 8px;
-            color: #555;
-            font-weight: 500;
-            font-size: 14px;
+            display: block; margin-bottom: 8px; color: var(--text-secondary);
+            font-weight: 600; font-size: 13px;
         }
+        .required { color: var(--rose); }
+
+        .input-wrap { position: relative; }
 
         input {
             width: 100%;
-            padding: 12px;
-            border: 10px;
-            border-radius: 5px;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 12px 14px;
             font-size: 14px;
-            font-family: inherit;
-            transition: border-color 0.3s;
-        }
-
-        input:focus {
+            font-family: 'Inter', sans-serif;
+            color: var(--text-primary);
             outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        input::placeholder { color: var(--text-muted); }
+        input:focus {
+            border-color: var(--indigo);
+            box-shadow: 0 0 0 3px rgba(99,102,241,0.15);
         }
 
-        .required {
-            color: #e74c3c;
+        #password { padding-right: 44px; }
+        .toggle-password {
+            position: absolute;
+            right: 4px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            font-size: 16px;
+            cursor: pointer;
+            padding: 8px 10px;
+            flex: none;
         }
+        .toggle-password:hover { color: var(--text-secondary); }
 
         .btn-group {
             display: flex;
             gap: 10px;
-            margin-top: 30px;
+            margin-top: 24px;
         }
 
         button {
             flex: 1;
-            padding: 12px;
+            padding: 12px 16px;
             border: none;
-            border-radius: 5px;
-            font-size: 16px;
+            border-radius: 10px;
+            font-size: 14px;
             font-weight: 600;
+            font-family: 'Inter', sans-serif;
             cursor: pointer;
-            transition: all 0.3s;
+            transition: all 0.2s;
         }
 
-        .btn-submit {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-        }
-
-        .btn-submit:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
-        }
-
-        .btn-submit:active {
-            transform: translateY(0);
-        }
-
-        .btn-reset {
-            background: #ecf0f1;
-            color: #333;
-        }
-
-        .btn-reset:hover {
-            background: #bdc3c7;
-        }
+        .btn-submit { background: var(--indigo); color: white; }
+        .btn-submit:hover { background: #5254CC; transform: translateY(-1px); }
+        .btn-submit:active { transform: translateY(0); }
+        .btn-submit:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
 
         .message {
-            margin-top: 20px;
-            padding: 15px;
-            border-radius: 5px;
-            font-size: 14px;
+            margin-top: 18px;
+            padding: 12px 14px;
+            border-radius: 10px;
+            font-size: 13.5px;
             display: none;
         }
-
-        .message.success {
-            background: #d4edda;
-            border: 1px solid #c3e6cb;
-            color: #155724;
-        }
-
-        .message.error {
-            background: #f8d7da;
-            border: 1px solid #f5c6cb;
-            color: #721c24;
-        }
-
-        .message.show {
-            display: block;
-        }
+        .message.show { display: block; }
+        .message.success { background: rgba(16,185,129,0.15); color: #A7F3D0; }
+        .message.error { background: rgba(244,63,94,0.15); color: #FECACA; }
 
         .register-link {
             text-align: center;
             margin-top: 20px;
-            font-size: 14px;
-            color: #666;
+            font-size: 13.5px;
+            color: var(--text-secondary);
         }
+        .register-link a { color: var(--indigo-light); text-decoration: none; font-weight: 600; }
+        .register-link a:hover { text-decoration: underline; }
 
-        .register-link a {
-            color: #667eea;
-            text-decoration: none;
-            font-weight: 600;
-        }
-
-        .register-link a:hover {
-            text-decoration: underline;
+        @media (max-width: 420px) {
+            .container { padding: 28px 22px; border-radius: 14px; }
+            h1 { font-size: 18px; }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Connexion</h1>
+        <div class="header">
+            <div class="logo-mark">📦</div>
+            <h1>Connexion</h1>
+            <div class="subtitle">Accédez à votre espace de gestion</div>
+        </div>
 
         <form id="loginForm">
             {% csrf_token %}
@@ -171,13 +161,16 @@
             <!-- Email -->
             <div class="form-group">
                 <label for="email">Email <span class="required">*</span></label>
-                <input type="email" id="email" name="email" required placeholder="utilisateur@exemple.com">
+                <input type="email" id="email" name="email" required placeholder="utilisateur@exemple.com" autofocus>
             </div>
 
             <!-- Mot de passe -->
             <div class="form-group">
                 <label for="password">Mot de passe <span class="required">*</span></label>
-                <input type="password" id="password" name="password" required placeholder="Entrez votre mot de passe">
+                <div class="input-wrap">
+                    <input type="password" id="password" name="password" required placeholder="Entrez votre mot de passe">
+                    <button type="button" class="toggle-password" id="togglePassword" aria-label="Afficher le mot de passe">👁️</button>
+                </div>
             </div>
 
             <!-- Message d'erreur/succès -->
@@ -185,12 +178,11 @@
 
             <!-- Boutons -->
             <div class="btn-group">
-                <button type="submit" class="btn-submit">Se connecter</button>
-                <button type="reset" class="btn-reset">Réinitialiser</button>
+                <button type="submit" class="btn-submit" id="submitBtn">Se connecter</button>
             </div>
 
             <div class="register-link">
-                Pas encore de compte? <a href="{% url 'register' %}">créez-en un</a>
+                Pas encore de compte ? <a href="{% url 'register' %}">Créez-en un</a>
             </div>
 
             <div class="register-link">
@@ -202,9 +194,20 @@
     <script>
         const form = document.getElementById('loginForm');
         const messageDiv = document.getElementById('message');
+        const submitBtn = document.getElementById('submitBtn');
+
+        document.getElementById('togglePassword').addEventListener('click', function() {
+            const pwd = document.getElementById('password');
+            const isHidden = pwd.type === 'password';
+            pwd.type = isHidden ? 'text' : 'password';
+            this.textContent = isHidden ? '🙈' : '👁️';
+        });
 
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
+
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Connexion...';
 
             const formData = new FormData(form);
 
@@ -222,15 +225,19 @@
                 messageDiv.classList.add('show');
 
                 if (data.success) {
-                    form.reset();
                     setTimeout(() => {
                         window.location.href = data.redirect || '/dashboard/';
-                    }, 1500);
+                    }, 1000);
+                } else {
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Se connecter';
                 }
             } catch (error) {
                 messageDiv.classList.remove('success');
                 messageDiv.classList.add('error', 'show');
                 messageDiv.textContent = 'Erreur lors de la connexion. Veuillez réessayer.';
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Se connecter';
             }
         });
     </script>
