@@ -506,6 +506,11 @@
         <a href="{% url 'list_payment_types' %}" class="nav-item">
             <span class="nav-icon">🏷️</span> Types de paiement
         </a>
+
+        <div class="nav-section-label">Entreprise</div>
+        <a href="{% url 'company_settings' %}" class="nav-item">
+        <span class="nav-icon">⚙️</span> Paramètres
+        </a>
     </nav>
 
     <div class="sidebar-footer">
@@ -529,11 +534,11 @@
             <div class="topbar-title">Tableau de bord</div>
             <div class="topbar-sub">Vue d'ensemble — <span id="current-date"></span></div>
         </div>
-        <div class="topbar-actions">
+        <!--<div class="topbar-actions">
             <a href="{% url 'list_agents' %}" class="btn btn-primary">+ Ajouter un agent</a>
             <a href="{% url 'change_password' %}" class="btn btn-ghost">🔐 Mot de passe</a>
             <a href="{% url 'delete_account' %}" class="btn btn-ghost btn-danger">🗑️</a>
-        </div>
+        </div>-->
     </header>
 
     <!-- CONTENT -->
