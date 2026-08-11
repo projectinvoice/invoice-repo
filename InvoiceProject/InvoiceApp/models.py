@@ -67,6 +67,7 @@ class AgentRole(models.Model):
         verbose_name = "Rôle d'agent"
         verbose_name_plural = "Rôles d'agents"
         unique_together = ('company', 'name')
+        ordering = ['-created_at']
 
 # Modèle pour les agents (sous-utilisateurs ajoutés par l'entreprise)
 class Agent(models.Model):
@@ -75,7 +76,6 @@ class Agent(models.Model):
     email = models.EmailField(blank=True, verbose_name="Email")
     phone = models.CharField(max_length=20, blank=True, verbose_name="Téléphone")
     role = models.ForeignKey(AgentRole, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Rôle")
-    engine = models.ForeignKey('Engine', on_delete=models.SET_NULL, null=True, blank=True, related_name='assigned_agents', verbose_name="Engin attribué")
     pin_hash = models.CharField(max_length=128, blank=True, verbose_name="PIN (haché)")
     is_active = models.BooleanField(default=True, verbose_name="Accès actif")
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="Date de création")
@@ -94,6 +94,7 @@ class Agent(models.Model):
     class Meta:
         verbose_name = "Agent"
         verbose_name_plural = "Agents"
+        ordering = ['-created_at']
 
 # Modèle pour les engins/équipements
 class Engine(models.Model):
@@ -114,6 +115,7 @@ class Engine(models.Model):
     class Meta:
         verbose_name = "Engin"
         verbose_name_plural = "Engins"
+        ordering = ['-created_at']
 
 # Modèle pour les produits
 class Product(models.Model):
@@ -145,6 +147,7 @@ class Product(models.Model):
     class Meta:
         verbose_name = "Produit"
         verbose_name_plural = "Produits"
+        ordering = ['-created_at']
 
 # Modèle pour les clients
 class Client(models.Model):
@@ -162,6 +165,7 @@ class Client(models.Model):
     class Meta:
         verbose_name = "Client"
         verbose_name_plural = "Clients"
+        ordering = ['-created_at']
 
 # Modèle pour les types de paiement
 class PaymentType(models.Model):
@@ -177,6 +181,7 @@ class PaymentType(models.Model):
         verbose_name = "Type de paiement"
         verbose_name_plural = "Types de paiement"
         unique_together = ('company', 'name')
+        ordering = ['-created_at']
 
 # Modèle pour les modes de paiement
 class PaymentMethod(models.Model):
@@ -193,6 +198,7 @@ class PaymentMethod(models.Model):
     class Meta:
         verbose_name = "Mode de paiement"
         verbose_name_plural = "Modes de paiement"
+        ordering = ['-created_at']
 
 # Modèle pour les fournisseurs
 class Supplier(models.Model):
@@ -209,6 +215,7 @@ class Supplier(models.Model):
     class Meta:
         verbose_name = "Fournisseur"
         verbose_name_plural = "Fournisseurs"
+        ordering = ['-created_at']
 
 # Modèle pour les approvisionnements (achats de stock)
 class Supply(models.Model):
@@ -255,6 +262,7 @@ class Supply(models.Model):
     class Meta:
         verbose_name = "Approvisionnement"
         verbose_name_plural = "Approvisionnements"
+        ordering = ['-date']
 
 
 class SupplyItem(models.Model):
@@ -332,6 +340,7 @@ class Sale(models.Model):
     class Meta:
         verbose_name = "Vente"
         verbose_name_plural = "Ventes"
+        ordering = ['-date']
 
 
 class SaleItem(models.Model):
@@ -409,6 +418,7 @@ class Invoice(models.Model):
         verbose_name = "Facture"
         verbose_name_plural = "Factures"
         unique_together = ('company', 'invoice_number')
+        ordering = ['-issued_date']
 
 
 # Historique des versements d'une facture (comptant, avance, ou remboursement de crédit)
@@ -472,7 +482,6 @@ class AgentStock(models.Model):
 class StockLoad(models.Model):
     company = models.ForeignKey(User, on_delete=models.CASCADE, related_name='stock_loads', verbose_name="Entreprise")
     agent = models.ForeignKey(Agent, on_delete=models.CASCADE, related_name='stock_loads', verbose_name="Agent")
-    engine = models.ForeignKey(Engine, on_delete=models.SET_NULL, null=True, blank=True, related_name='stock_loads', verbose_name="Engin utilisé pour cette tournée")
     note = models.CharField(max_length=255, blank=True, verbose_name="Note (ex: destination, tournée)")
     date = models.DateTimeField(auto_now_add=True, verbose_name="Date de chargement")
 

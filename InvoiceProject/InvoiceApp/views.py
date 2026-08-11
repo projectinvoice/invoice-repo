@@ -8,6 +8,8 @@ from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_http_methods
 from django.http import JsonResponse, HttpResponse
 from django.db import transaction
+from django.db.models import Sum, Count
+from django.db.models.functions import TruncMonth
 from django.utils import timezone
 
 from io import BytesIO
@@ -102,10 +104,75 @@ def login_view(request):
 
     return render(request, 'login.html')
 
+MONTH_LABELS_FR = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun', 'Jul', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc']
+
+
+def _monthly_revenue(user, year):
+    """Retourne (labels, valeurs) du chiffre d'affaires mensuel pour l'année donnée."""
+    rows = (
+        Sale.objects.filter(company=user, date__year=year)
+        .annotate(month=TruncMonth('date'))
+        .values('month')
+        .annotate(total=Sum('total_price'))
+    )
+    totals_by_month = {row['month'].month: float(row['total'] or 0) for row in rows if row['month']}
+    data = [totals_by_month.get(m, 0) for m in range(1, 13)]
+    return MONTH_LABELS_FR, data
+
+
+def _sales_breakdown_by_product(user, limit=4):
+    """Retourne (labels, valeurs) de la répartition des ventes par produit (top N + 'Autres')."""
+    rows = list(
+        SaleItem.objects.filter(sale__company=user)
+        .values('product__name')
+        .annotate(total=Sum('total_price'))
+        .order_by('-total')
+    )
+    if not rows:
+        return [], []
+
+    top_rows = rows[:limit]
+    rest_rows = rows[limit:]
+    labels = [row['product__name'] or 'Produit supprimé' for row in top_rows]
+    values = [float(row['total'] or 0) for row in top_rows]
+
+    if rest_rows:
+        rest_total = sum(float(row['total'] or 0) for row in rest_rows)
+        labels.append('Autres')
+        values.append(rest_total)
+
+    return labels, values
+
+
+def _agents_performance(user):
+    """Retourne (noms, nb_ventes, ca, rôles) des agents ayant vendu ce mois-ci, triés par CA décroissant."""
+    now = timezone.now()
+    rows = (
+        Sale.objects.filter(company=user, agent__isnull=False, date__year=now.year, date__month=now.month)
+        .values('agent__id', 'agent__name', 'agent__role__name')
+        .annotate(sales_count=Count('id'), total_ca=Sum('total_price'))
+        .order_by('-total_ca')
+    )
+    names = [row['agent__name'] for row in rows]
+    sales = [row['sales_count'] for row in rows]
+    ca = [float(row['total_ca'] or 0) for row in rows]
+    roles = [row['agent__role__name'] or '' for row in rows]
+    return names, sales, ca, roles
+
+
 @require_http_methods(["GET"])
 @login_required
 def dashboard(request):
     user = request.user
+    now = timezone.now()
+
+    ca_labels, ca_data = _monthly_revenue(user, now.year)
+    cat_labels, cat_values = _sales_breakdown_by_product(user)
+    agent_names, agent_sales, agent_ca, agent_roles = _agents_performance(user)
+
+    currency_symbols = {'EUR': '€', 'USD': '$', 'XOF': 'FCFA'}
+    currency_symbol = currency_symbols.get(user.default_currency, user.default_currency)
+
     context = {
         'company_name': user.company_name,
         'company_logo_url': user.logo.url if user.logo else None,
@@ -120,8 +187,67 @@ def dashboard(request):
         'sales_count': user.sales.count(),
         'supplies_count': user.supplies.count(),
         'invoices_count': user.invoices.count(),
+        'currency_symbol': currency_symbol,
+        'ca_monthly_labels': json.dumps(ca_labels),
+        'ca_monthly_data': json.dumps(ca_data),
+        'sales_categories': json.dumps(cat_labels),
+        'sales_cat_values': json.dumps(cat_values),
+        'agents_names': json.dumps(agent_names),
+        'agents_sales': json.dumps(agent_sales),
+        'agents_ca': json.dumps(agent_ca),
+        'agents_roles': json.dumps(agent_roles),
     }
     return render(request, 'dashboard.html', context)
+
+@require_http_methods(["GET"])
+@login_required
+def api_dashboard_ca(request):
+    """Retourne le CA mensuel en JSON pour le sélecteur de période du dashboard."""
+    period = request.GET.get('period', 'year')
+    now = timezone.now()
+    year = now.year if period == 'year' else now.year - 1
+    labels, data = _monthly_revenue(request.user, year)
+    return JsonResponse({'labels': labels, 'values': data})
+
+@require_http_methods(["GET", "POST"])
+@login_required
+def company_settings(request):
+    user = request.user
+
+    if request.method == "GET":
+        context = {
+            'company_name': user.company_name,
+            'company_logo_url': user.logo.url if user.logo else None,
+        }
+        return render(request, 'company_settings.html', context)
+
+    company_name = request.POST.get("company_name")
+    company_email = request.POST.get("company_email", "")
+    phone = request.POST.get("phone", "")
+    address = request.POST.get("address", "")
+    default_currency = request.POST.get("default_currency", user.default_currency)
+    logo = request.FILES.get("logo")
+
+    if not company_name:
+        return JsonResponse({"success": False, "error": "company_name requis"}, status=400)
+
+    if company_email and User.objects.filter(company_email=company_email).exclude(id=user.id).exists():
+        return JsonResponse({"success": False, "error": "Cet email est déjà utilisé par une autre entreprise"}, status=400)
+
+    valid_currencies = dict(CURRENCY_CHOICES).keys()
+    if default_currency not in valid_currencies:
+        default_currency = user.default_currency
+
+    user.company_name = company_name
+    user.company_email = company_email
+    user.phone = phone
+    user.address = address
+    user.default_currency = default_currency
+    if logo:
+        user.logo = logo
+    user.save()
+
+    return JsonResponse({"success": True, "message": "Informations de l'entreprise mises à jour"})
 
 @require_http_methods(["GET"])
 @login_required
@@ -145,7 +271,6 @@ def list_agents(request):
         'company_logo_url': user.logo.url if user.logo else None,
         'agents': agents,
         'roles': user.agent_roles.all(),
-        'engines': user.engines.all(),
         'agent_login_code': user.agent_login_code,
     }
     return render(request, 'agent_list.html', context)
@@ -362,7 +487,6 @@ def add_agent(request):
     email = request.POST.get("email", "")
     phone = request.POST.get("phone", "")
     role_id = request.POST.get("role_id")
-    engine_id = request.POST.get("engine_id")
     pin = request.POST.get("pin", "").strip()
 
     if not name:
@@ -380,7 +504,6 @@ def add_agent(request):
                 return JsonResponse({"success": False, "error": "Ce PIN est déjà utilisé par un autre agent"}, status=400)
 
     role = AgentRole.objects.filter(id=role_id, company=request.user).first() if role_id else None
-    engine = Engine.objects.filter(id=engine_id, company=request.user).first() if engine_id else None
 
     if agent_id:
         # Édition
@@ -390,7 +513,6 @@ def add_agent(request):
             agent.email = email
             agent.phone = phone
             agent.role = role
-            agent.engine = engine
             if pin:
                 agent.set_pin(pin)
             agent.save()
@@ -399,7 +521,7 @@ def add_agent(request):
             return JsonResponse({"success": False, "error": "Agent non trouvé"}, status=404)
     else:
         # Création
-        agent = Agent(company=request.user, name=name, email=email, phone=phone, role=role, engine=engine)
+        agent = Agent(company=request.user, name=name, email=email, phone=phone, role=role)
         if pin:
             agent.set_pin(pin)
         agent.save()
@@ -1447,17 +1569,15 @@ def vendor_add_payment(request):
 def list_stock_loads(request):
     user = request.user
     agents = user.agents.all()
-    engines = user.engines.all()
     products = user.products.all()
     agent_stocks = AgentStock.objects.filter(agent__company=user).select_related('agent', 'product').filter(quantity__gt=0).order_by('agent__name', 'product__name')
-    loads = StockLoad.objects.filter(company=user).select_related('agent', 'engine').prefetch_related('items__product').order_by('-date')[:30]
+    loads = StockLoad.objects.filter(company=user).select_related('agent').prefetch_related('items__product').order_by('-date')[:30]
     returns = StockReturn.objects.filter(company=user).select_related('agent').prefetch_related('items__product').order_by('-date')[:30]
 
     context = {
         'company_name': user.company_name,
         'company_logo_url': user.logo.url if user.logo else None,
         'agents': agents,
-        'engines': engines,
         'products': products,
         'agent_stocks': agent_stocks,
         'loads': loads,
@@ -1471,22 +1591,12 @@ def list_stock_loads(request):
 def add_stock_load(request):
     user = request.user
     agent_id = request.POST.get("agent_id")
-    engine_id = request.POST.get("engine_id")
     note = request.POST.get("note", "")
     items_payload = request.POST.get("items")
 
     agent = Agent.objects.filter(id=agent_id, company=user).first()
     if not agent:
         return JsonResponse({"success": False, "error": "Agent introuvable"}, status=404)
-
-    # Engin utilisé pour cette tournée : celui choisi explicitement, sinon l'engin par défaut de l'agent
-    engine = None
-    if engine_id:
-        engine = Engine.objects.filter(id=engine_id, company=user).first()
-        if not engine:
-            return JsonResponse({"success": False, "error": "Engin introuvable"}, status=404)
-    else:
-        engine = agent.engine
 
     if not items_payload:
         return JsonResponse({"success": False, "error": "Au moins un produit est requis"}, status=400)
@@ -1528,7 +1638,7 @@ def add_stock_load(request):
         stock_preview[product.id] = available - quantity
 
     with transaction.atomic():
-        load = StockLoad.objects.create(company=user, agent=agent, engine=engine, note=note)
+        load = StockLoad.objects.create(company=user, agent=agent, note=note)
 
         for product, quantity, unit_price in items:
             product.refresh_from_db(fields=['stock_quantity'])

@@ -27,6 +27,8 @@ urlpatterns = [
     path('login/', invoice_views.login_view, name='login'),
     path('logout/', invoice_views.logout_view, name='logout'),
     path('dashboard/', invoice_views.dashboard, name='dashboard'),
+    path('api/dashboard/ca/', invoice_views.api_dashboard_ca, name='api_dashboard_ca'),
+    path('company-settings/', invoice_views.company_settings, name='company_settings'),
     path('manage-agent-roles/', invoice_views.manage_agent_roles, name='manage_agent_roles'),
     
     # List views for all entities
