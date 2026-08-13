@@ -125,3 +125,25 @@ MEDIA_ROOT = BASE_DIR / 'media'
 
 # Configuration de l'authentification
 LOGIN_URL = '/login/'
+
+# ── EMAIL ──────────────────────────────────────────────────────────────────
+# Mode développement : les emails s'affichent dans le terminal au lieu d'être
+# vraiment envoyés. Utile pour tester la récupération de mot de passe sans
+# configurer de vrai service d'envoi.
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+DEFAULT_FROM_EMAIL = 'InvoiceApp <no-reply@invoiceapp.local>'
+
+# Pour la production, remplacer par un vrai service SMTP, par exemple avec Gmail :
+#
+#   EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+#   EMAIL_HOST = 'smtp.gmail.com'
+#   EMAIL_PORT = 587
+#   EMAIL_USE_TLS = True
+#   EMAIL_HOST_USER = 'tonadresse@gmail.com'
+#   EMAIL_HOST_PASSWORD = 'un-mot-de-passe-application-genere-par-google'  # PAS ton mot de passe normal
+#   DEFAULT_FROM_EMAIL = 'InvoiceApp <tonadresse@gmail.com>'
+#
+# Ou avec un service d'envoi transactionnel (Brevo, Mailgun, SendGrid...), qui
+# fournit ses propres EMAIL_HOST / EMAIL_HOST_USER / EMAIL_HOST_PASSWORD.
+# Dans tous les cas, ne jamais mettre ces identifiants en dur dans ce fichier :
+# les charger depuis des variables d'environnement avant la mise en production.
