@@ -11,6 +11,11 @@ from django.db import transaction
 from django.db.models import Sum, Count
 from django.db.models.functions import TruncMonth
 from django.utils import timezone
+from django.contrib.auth.tokens import default_token_generator
+from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
+from django.utils.encoding import force_bytes, force_str
+from django.core.mail import send_mail
+from django.template.loader import render_to_string
 
 from io import BytesIO
 from reportlab.lib.pagesizes import A4
@@ -103,6 +108,77 @@ def login_view(request):
         return JsonResponse({"success": True, "message": "Connecté", "redirect": '/dashboard/'} )
 
     return render(request, 'login.html')
+
+
+@require_http_methods(["GET", "POST"])
+def forgot_password(request):
+    """Étape 1 : l'entreprise indique son email pour recevoir un lien de réinitialisation."""
+    if request.method == "POST":
+        email = (request.POST.get("email") or "").strip()
+
+        if not email:
+            return JsonResponse({"success": False, "error": "Email requis"}, status=400)
+
+        # On cherche par username OU company_email, car les deux sont fixés à l'email à l'inscription
+        user = User.objects.filter(username=email).first() or User.objects.filter(company_email=email).first()
+
+        # Sécurité : on répond toujours pareil, qu'un compte existe ou non avec cet email,
+        # pour ne jamais laisser un attaquant deviner quels emails sont enregistrés.
+        generic_message = "Si un compte existe avec cet email, un lien de réinitialisation vient d'être envoyé."
+
+        if user:
+            uid = urlsafe_base64_encode(force_bytes(user.pk))
+            token = default_token_generator.make_token(user)
+            reset_path = request.build_absolute_uri(f"/reset-password/{uid}/{token}/")
+
+            subject = "Réinitialisation de votre mot de passe — InvoiceApp"
+            message = (
+                f"Bonjour {user.company_name},\n\n"
+                f"Une demande de réinitialisation de mot de passe a été faite pour votre compte.\n"
+                f"Cliquez sur ce lien pour choisir un nouveau mot de passe (valable 3 jours) :\n\n"
+                f"{reset_path}\n\n"
+                f"Si vous n'êtes pas à l'origine de cette demande, ignorez simplement cet email — "
+                f"votre mot de passe actuel reste inchangé.\n"
+            )
+            try:
+                send_mail(subject, message, None, [user.username], fail_silently=False)
+            except Exception:
+                # On ne révèle jamais une erreur d'envoi côté client (fuite d'info), on log seulement.
+                return JsonResponse({"success": True, "message": generic_message})
+
+        return JsonResponse({"success": True, "message": generic_message})
+
+    return render(request, 'forgot_password.html')
+
+
+@require_http_methods(["GET", "POST"])
+def reset_password_confirm(request, uidb64, token):
+    """Étape 2 : l'entreprise clique le lien reçu par email et choisit un nouveau mot de passe."""
+    try:
+        uid = force_str(urlsafe_base64_decode(uidb64))
+        user = User.objects.filter(pk=uid).first()
+    except (TypeError, ValueError, OverflowError):
+        user = None
+
+    token_valid = user is not None and default_token_generator.check_token(user, token)
+
+    if request.method == "POST":
+        if not token_valid:
+            return JsonResponse({"success": False, "error": "Ce lien de réinitialisation est invalide ou a expiré"}, status=400)
+
+        new_password = request.POST.get("new_password")
+        confirm_password = request.POST.get("confirm_password")
+
+        if not new_password or len(new_password) < 8:
+            return JsonResponse({"success": False, "error": "Le mot de passe doit contenir au moins 8 caractères"}, status=400)
+        if new_password != confirm_password:
+            return JsonResponse({"success": False, "error": "Les mots de passe ne correspondent pas"}, status=400)
+
+        user.set_password(new_password)
+        user.save()
+        return JsonResponse({"success": True, "message": "Mot de passe réinitialisé, tu peux te connecter"})
+
+    return render(request, 'reset_password_confirm.html', {'token_valid': token_valid})
 
 MONTH_LABELS_FR = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun', 'Jul', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc']
 
