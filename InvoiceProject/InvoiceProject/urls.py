@@ -25,6 +25,8 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('register/', invoice_views.register_company, name='register'),
     path('login/', invoice_views.login_view, name='login'),
+    path('forgot-password/', invoice_views.forgot_password, name='forgot_password'),
+    path('reset-password/<str:uidb64>/<str:token>/', invoice_views.reset_password_confirm, name='reset_password_confirm'),
     path('logout/', invoice_views.logout_view, name='logout'),
     path('dashboard/', invoice_views.dashboard, name='dashboard'),
     path('api/dashboard/ca/', invoice_views.api_dashboard_ca, name='api_dashboard_ca'),
