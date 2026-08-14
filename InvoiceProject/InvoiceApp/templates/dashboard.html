@@ -4,6 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tableau de bord — {{ company_name }}</title>
+    <script>
+        // Applique le thème sauvegardé avant le rendu, pour éviter un flash visuel
+        (function() {
+            const saved = localStorage.getItem('theme');
+            if (saved === 'light') document.documentElement.setAttribute('data-theme', 'light');
+        })();
+    </script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
@@ -26,7 +33,33 @@
             --radius: 16px;
             --radius-sm: 10px;
             --shadow: 0 4px 24px rgba(0,0,0,0.4);
+            --overlay-1: rgba(255,255,255,0.04);
+            --overlay-2: rgba(255,255,255,0.06);
+            --overlay-3: rgba(255,255,255,0.1);
+            --overlay-4: rgba(255,255,255,0.07);
+            --chart-grid: rgba(255,255,255,0.04);
+            --tooltip-bg: #0F1629;
         }
+
+        [data-theme="light"] {
+            --bg-base: #F1F5F9;
+            --bg-card: #FFFFFF;
+            --bg-card-hover: #F8FAFC;
+            --border: rgba(99, 102, 241, 0.18);
+            --border-hover: rgba(99, 102, 241, 0.4);
+            --text-primary: #0F172A;
+            --text-secondary: #475569;
+            --text-muted: #94A3B8;
+            --shadow: 0 4px 24px rgba(15,23,42,0.08);
+            --overlay-1: rgba(15,23,42,0.04);
+            --overlay-2: rgba(15,23,42,0.05);
+            --overlay-3: rgba(15,23,42,0.08);
+            --overlay-4: rgba(15,23,42,0.07);
+            --chart-grid: rgba(15,23,42,0.07);
+            --tooltip-bg: #1E293B;
+        }
+
+        body { transition: background-color 0.25s ease, color 0.25s ease; }
 
         *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -116,6 +149,37 @@
 
         .nav-item .nav-icon { font-size: 16px; width: 20px; text-align: center; }
 
+        /* Grisé quand l'abonnement (essai + paiement) est expiré */
+        .locked-link {
+            pointer-events: none !important;
+            opacity: 0.4 !important;
+            filter: grayscale(40%);
+            cursor: not-allowed !important;
+        }
+
+        .subscription-banner {
+            display: flex; align-items: center; justify-content: space-between; gap: 16px;
+            flex-wrap: wrap;
+            padding: 14px 20px;
+            border-radius: var(--radius-sm);
+            margin-bottom: 22px;
+            font-size: 13.5px;
+        }
+        .subscription-banner.trial {
+            background: rgba(245, 158, 11, 0.12);
+            border: 1px solid rgba(245, 158, 11, 0.35);
+            color: #FDE68A;
+        }
+        .subscription-banner.expired {
+            background: rgba(244, 63, 94, 0.12);
+            border: 1px solid rgba(244, 63, 94, 0.4);
+            color: #FECACA;
+        }
+        .subscription-banner strong { font-weight: 700; }
+        .subscription-banner .btn {
+            flex-shrink: 0;
+        }
+
         .nav-badge {
             margin-left: auto;
             background: rgba(99, 102, 241, 0.2);
@@ -137,7 +201,7 @@
             gap: 10px;
             padding: 10px;
             border-radius: var(--radius-sm);
-            background: rgba(255,255,255,0.04);
+            background: var(--overlay-1);
         }
 
         .user-avatar {
@@ -210,11 +274,17 @@
         }
         .btn-primary:hover { background: #5254CC; transform: translateY(-1px); }
         .btn-ghost {
-            background: rgba(255,255,255,0.06);
+            background: var(--overlay-2);
             color: var(--text-secondary);
             border: 1px solid var(--border);
         }
-        .btn-ghost:hover { background: rgba(255,255,255,0.1); color: var(--text-primary); }
+        .btn-ghost:hover { background: var(--overlay-3); color: var(--text-primary); }
+
+        .theme-toggle-btn {
+            width: 38px; height: 38px; padding: 0;
+            display: inline-flex; align-items: center; justify-content: center;
+            font-size: 16px; flex: none;
+        }
 
         .content { padding: 28px 32px; flex: 1; }
 
@@ -329,7 +399,7 @@
         }
 
         .chart-period-select {
-            background: rgba(255,255,255,0.06);
+            background: var(--overlay-2);
             border: 1px solid var(--border);
             color: var(--text-secondary);
             font-size: 12px;
@@ -363,7 +433,7 @@
             align-items: center;
             gap: 12px;
             padding: 10px 0;
-            border-bottom: 1px solid rgba(255,255,255,0.04);
+            border-bottom: 1px solid var(--overlay-1);
         }
         .agent-row:last-child { border-bottom: none; }
 
@@ -379,7 +449,7 @@
 
         .agent-bar-wrap { width: 100px; flex-shrink: 0; }
         .agent-bar-bg {
-            height: 6px; background: rgba(255,255,255,0.07);
+            height: 6px; background: var(--overlay-4);
             border-radius: 3px; overflow: hidden;
         }
         .agent-bar-fill {
@@ -464,53 +534,61 @@
         </a>
 
         <div class="nav-section-label">Gestion</div>
-        <a href="{% url 'list_agents' %}" class="nav-item">
+        <a href="{% url 'list_agents' %}" class="nav-item {% if subscription_blocked %}locked-link{% endif %}">
             <span class="nav-icon">👥</span> Agents
             <span class="nav-badge">{{ agents_count }}</span>
         </a>
-        <a href="{% url 'manage_agent_roles' %}" class="nav-item">
+        <a href="{% url 'manage_agent_roles' %}" class="nav-item {% if subscription_blocked %}locked-link{% endif %}">
             <span class="nav-icon">🎭</span> Rôles
         </a>
-        <a href="{% url 'list_engines' %}" class="nav-item">
+        <a href="{% url 'list_engines' %}" class="nav-item {% if subscription_blocked %}locked-link{% endif %}">
             <span class="nav-icon">⚙️</span> Engins
         </a>
-        <a href="{% url 'list_stock_loads' %}" class="nav-item">
+        <a href="{% url 'list_stock_loads' %}" class="nav-item {% if subscription_blocked %}locked-link{% endif %}">
             <span class="nav-icon">🚚</span> Stock Vendeurs
         </a>
-        <a href="{% url 'list_products' %}" class="nav-item">
+        <a href="{% url 'list_products' %}" class="nav-item {% if subscription_blocked %}locked-link{% endif %}">
             <span class="nav-icon">📦</span> Produits
             <span class="nav-badge">{{ products_count }}</span>
         </a>
 
         <div class="nav-section-label">Commerce</div>
-        <a href="{% url 'list_clients' %}" class="nav-item">
+        <a href="{% url 'list_clients' %}" class="nav-item {% if subscription_blocked %}locked-link{% endif %}">
             <span class="nav-icon">🤝</span> Clients
         </a>
-        <a href="{% url 'list_suppliers' %}" class="nav-item">
+        <a href="{% url 'list_suppliers' %}" class="nav-item {% if subscription_blocked %}locked-link{% endif %}">
             <span class="nav-icon">🏭</span> Fournisseurs
         </a>
-        <a href="{% url 'list_sales' %}" class="nav-item">
+        <a href="{% url 'list_sales' %}" class="nav-item {% if subscription_blocked %}locked-link{% endif %}">
             <span class="nav-icon">💹</span> Ventes
         </a>
-        <a href="{% url 'list_supplies' %}" class="nav-item">
+        <a href="{% url 'list_supplies' %}" class="nav-item {% if subscription_blocked %}locked-link{% endif %}">
             <span class="nav-icon">🛒</span> Appros
         </a>
-        <a href="{% url 'list_invoices' %}" class="nav-item">
+        <a href="{% url 'list_invoices' %}" class="nav-item {% if subscription_blocked %}locked-link{% endif %}">
             <span class="nav-icon">🧾</span> Factures
         </a>
 
         <div class="nav-section-label">Finance</div>
-        <a href="{% url 'list_payment_methods' %}" class="nav-item">
+        <a href="{% url 'list_payment_methods' %}" class="nav-item {% if subscription_blocked %}locked-link{% endif %}">
             <span class="nav-icon">💳</span> Modes de paiement
         </a>
-        <a href="{% url 'list_payment_types' %}" class="nav-item">
+        <a href="{% url 'list_payment_types' %}" class="nav-item {% if subscription_blocked %}locked-link{% endif %}">
             <span class="nav-icon">🏷️</span> Types de paiement
         </a>
 
         <div class="nav-section-label">Entreprise</div>
-        <a href="{% url 'company_settings' %}" class="nav-item">
+        <a href="{% url 'company_settings' %}" class="nav-item {% if subscription_blocked %}locked-link{% endif %}">
             <span class="nav-icon">⚙️</span> Paramètres
         </a>
+        <a href="{% url 'subscription' %}" class="nav-item">
+            <span class="nav-icon">💳</span> Abonnement
+        </a>
+        {% if request.user.is_staff %}
+        <a href="{% url 'promo_codes_admin' %}" class="nav-item">
+            <span class="nav-icon">🎟️</span> Codes promo
+        </a>
+        {% endif %}
     </nav>
 
     <div class="sidebar-footer">
@@ -535,60 +613,80 @@
             <div class="topbar-sub">Vue d'ensemble — <span id="current-date"></span></div>
         </div>
         <div class="topbar-actions">
-            <a href="{% url 'list_agents' %}" class="btn btn-primary">+ Ajouter un agent</a>
-            <a href="{% url 'change_password' %}" class="btn btn-ghost">🔐 Mot de passe</a>
-            <a href="{% url 'delete_account' %}" class="btn btn-ghost btn-danger">🗑️</a>
+            <button type="button" class="btn btn-ghost theme-toggle-btn" id="themeToggleBtn" aria-label="Changer de thème">
+                <span id="themeToggleIcon">☀️</span>
+            </button>
+            <a href="{% url 'list_agents' %}" class="btn btn-primary {% if subscription_blocked %}locked-link{% endif %}">+ Ajouter un agent</a>
+            <a href="{% url 'change_password' %}" class="btn btn-ghost {% if subscription_blocked %}locked-link{% endif %}">🔐 Mot de passe</a>
+            <a href="{% url 'delete_account' %}" class="btn btn-ghost btn-danger {% if subscription_blocked %}locked-link{% endif %}">🗑️</a>
         </div>
     </header>
 
     <!-- CONTENT -->
     <main class="content">
 
+        {% if subscription_status == 'trial' %}
+        <div class="subscription-banner trial">
+            <div>⏳ Essai gratuit : il vous reste <strong>{{ subscription_days_left }} jour{{ subscription_days_left|pluralize }}</strong> avant le début de la facturation ({{ subscription.get_plan_display }} — {{ subscription_plan_price|floatformat:0 }} FCFA).</div>
+            <a href="{% url 'subscription' %}" class="btn btn-ghost">Gérer mon abonnement</a>
+        </div>
+        {% elif subscription_status == 'promo' %}
+        <div class="subscription-banner trial">
+            <div>🎟️ Accès offert par code promo : il vous reste <strong>{{ subscription_days_left }} jour{{ subscription_days_left|pluralize }}</strong> avant de devoir choisir un plan.</div>
+            <a href="{% url 'subscription' %}" class="btn btn-ghost">Gérer mon abonnement</a>
+        </div>
+        {% elif subscription_status == 'expired' %}
+        <div class="subscription-banner expired">
+            <div>🔒 Votre période d'accès gratuit est terminée. Abonnez-vous pour retrouver l'accès complet à toutes les fonctionnalités.</div>
+            <a href="{% url 'subscription' %}" class="btn btn-primary">S'abonner maintenant</a>
+        </div>
+        {% endif %}
+
         <!-- KPI CARDS -->
         <div class="kpi-grid">
-            <a href="{% url 'list_agents' %}" class="kpi-card">
+            <a href="{% url 'list_agents' %}" class="kpi-card {% if subscription_blocked %}locked-link{% endif %}">
                 <div class="kpi-icon" style="background:rgba(99,102,241,0.12);">👥</div>
                 <div class="kpi-label">Agents</div>
                 <div class="kpi-value">{{ agents_count }}</div>
                 <div class="kpi-sub">Agents actifs</div>
             </a>
-            <a href="{% url 'list_products' %}" class="kpi-card">
+            <a href="{% url 'list_products' %}" class="kpi-card {% if subscription_blocked %}locked-link{% endif %}">
                 <div class="kpi-icon" style="background:rgba(16,185,129,0.12);">📦</div>
                 <div class="kpi-label">Produits</div>
                 <div class="kpi-value">{{ products_count }}</div>
                 <div class="kpi-sub">En stock</div>
             </a>
-            <a href="{% url 'list_clients' %}" class="kpi-card">
+            <a href="{% url 'list_clients' %}" class="kpi-card {% if subscription_blocked %}locked-link{% endif %}">
                 <div class="kpi-icon" style="background:rgba(56,189,248,0.12);">🤝</div>
                 <div class="kpi-label">Clients</div>
                 <div class="kpi-value">{{ clients_count }}</div>
                 <div class="kpi-sub">Enregistrés</div>
             </a>
-            <a href="{% url 'list_sales' %}" class="kpi-card">
+            <a href="{% url 'list_sales' %}" class="kpi-card {% if subscription_blocked %}locked-link{% endif %}">
                 <div class="kpi-icon" style="background:rgba(245,158,11,0.12);">💹</div>
                 <div class="kpi-label">Ventes</div>
                 <div class="kpi-value">{{ sales_count }}</div>
                 <div class="kpi-sub">Transactions</div>
             </a>
-            <a href="{% url 'list_invoices' %}" class="kpi-card">
+            <a href="{% url 'list_invoices' %}" class="kpi-card {% if subscription_blocked %}locked-link{% endif %}">
                 <div class="kpi-icon" style="background:rgba(244,63,94,0.12);">🧾</div>
                 <div class="kpi-label">Factures</div>
                 <div class="kpi-value">{{ invoices_count }}</div>
                 <div class="kpi-sub">Émises</div>
             </a>
-            <a href="{% url 'list_suppliers' %}" class="kpi-card">
+            <a href="{% url 'list_suppliers' %}" class="kpi-card {% if subscription_blocked %}locked-link{% endif %}">
                 <div class="kpi-icon" style="background:rgba(168,85,247,0.12);">🏭</div>
                 <div class="kpi-label">Fournisseurs</div>
                 <div class="kpi-value">{{ suppliers_count }}</div>
                 <div class="kpi-sub">Partenaires</div>
             </a>
-            <a href="{% url 'list_supplies' %}" class="kpi-card">
+            <a href="{% url 'list_supplies' %}" class="kpi-card {% if subscription_blocked %}locked-link{% endif %}">
                 <div class="kpi-icon" style="background:rgba(20,184,166,0.12);">🛒</div>
                 <div class="kpi-label">Appros</div>
                 <div class="kpi-value">{{ supplies_count }}</div>
                 <div class="kpi-sub">Achats stock</div>
             </a>
-            <a href="{% url 'list_engines' %}" class="kpi-card">
+            <a href="{% url 'list_engines' %}" class="kpi-card {% if subscription_blocked %}locked-link{% endif %}">
                 <div class="kpi-icon" style="background:rgba(251,191,36,0.12);">⚙️</div>
                 <div class="kpi-label">Engins</div>
                 <div class="kpi-value">{{ engines_count }}</div>
@@ -680,11 +778,16 @@ const CURRENCY_SYMBOL = "{{ currency_symbol|default:'EUR'|escapejs }}";
 // ─── Palette ───
 const COLORS = ['#6366F1','#10B981','#F59E0B','#38BDF8','#F43F5E','#A855F7','#14B8A6'];
 
+// ─── Lecture des variables CSS (pour adapter Chart.js au thème actif) ───
+function cssVar(name) {
+    return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+}
+
 // ─── Date courante ───
 document.getElementById('current-date').textContent = new Date().toLocaleDateString('fr-FR', {weekday:'long', day:'numeric', month:'long', year:'numeric'});
 
 // ─── Defaults Chart.js ───
-Chart.defaults.color = '#94A3B8';
+Chart.defaults.color = cssVar('--text-secondary');
 Chart.defaults.font.family = 'Inter, sans-serif';
 Chart.defaults.font.size = 12;
 
@@ -708,7 +811,7 @@ const caChart = new Chart(caCtx, {
             borderWidth: 2.5,
             pointRadius: 4,
             pointBackgroundColor: '#6366F1',
-            pointBorderColor: '#1A2238',
+            pointBorderColor: cssVar('--bg-card'),
             pointBorderWidth: 2,
             pointHoverRadius: 6,
         }]
@@ -719,7 +822,7 @@ const caChart = new Chart(caCtx, {
         plugins: {
             legend: { display: false },
             tooltip: {
-                backgroundColor: '#0F1629',
+                backgroundColor: cssVar('--tooltip-bg'),
                 borderColor: 'rgba(99,102,241,0.4)',
                 borderWidth: 1,
                 padding: 12,
@@ -729,9 +832,9 @@ const caChart = new Chart(caCtx, {
             }
         },
         scales: {
-            x: { grid: { color: 'rgba(255,255,255,0.04)' }, border: { display: false } },
+            x: { grid: { color: cssVar('--chart-grid') }, border: { display: false } },
             y: {
-                grid: { color: 'rgba(255,255,255,0.04)' },
+                grid: { color: cssVar('--chart-grid') },
                 border: { display: false },
                 ticks: { callback: v => (v/1000) + 'k' }
             }
@@ -741,14 +844,14 @@ const caChart = new Chart(caCtx, {
 
 // ════════════ DONUT RÉPARTITION ════════════
 const donutCtx = document.getElementById('donutChart').getContext('2d');
-new Chart(donutCtx, {
+const donutChart = new Chart(donutCtx, {
     type: 'doughnut',
     data: {
         labels: CAT_LABELS,
         datasets: [{
             data: CAT_DATA,
             backgroundColor: COLORS,
-            borderColor: '#1A2238',
+            borderColor: cssVar('--bg-card'),
             borderWidth: 3,
             hoverOffset: 6,
         }]
@@ -762,7 +865,7 @@ new Chart(donutCtx, {
                 labels: { padding: 16, usePointStyle: true, pointStyleWidth: 8 }
             },
             tooltip: {
-                backgroundColor: '#0F1629',
+                backgroundColor: cssVar('--tooltip-bg'),
                 borderColor: 'rgba(99,102,241,0.4)',
                 borderWidth: 1,
                 callbacks: {
@@ -779,7 +882,7 @@ new Chart(donutCtx, {
 
 // ════════════ BARRES AGENTS ════════════
 const agCtx = document.getElementById('agentsBarChart').getContext('2d');
-new Chart(agCtx, {
+const agentsBarChart = new Chart(agCtx, {
     type: 'bar',
     data: {
         labels: AG_NAMES,
@@ -799,14 +902,14 @@ new Chart(agCtx, {
         plugins: {
             legend: { display: false },
             tooltip: {
-                backgroundColor: '#0F1629',
+                backgroundColor: cssVar('--tooltip-bg'),
                 borderColor: 'rgba(99,102,241,0.4)',
                 borderWidth: 1,
                 callbacks: { label: ctx => ' ' + ctx.parsed.x + ' vente(s)' }
             }
         },
         scales: {
-            x: { grid: { color: 'rgba(255,255,255,0.04)' }, border: { display: false } },
+            x: { grid: { color: cssVar('--chart-grid') }, border: { display: false } },
             y: { grid: { display: false }, border: { display: false } }
         }
     }
@@ -861,6 +964,52 @@ function updateCAChart(period) {
         })
         .catch(error => console.error('Erreur chargement CA:', error));
 }
+
+// ════════════ THÈME CLAIR / SOMBRE ════════════
+function applyChartTheme() {
+    const cardBg = cssVar('--bg-card');
+    const gridColor = cssVar('--chart-grid');
+    const tooltipBg = cssVar('--tooltip-bg');
+    const textColor = cssVar('--text-secondary');
+
+    Chart.defaults.color = textColor;
+
+    caChart.data.datasets[0].pointBorderColor = cardBg;
+    caChart.options.plugins.tooltip.backgroundColor = tooltipBg;
+    caChart.options.scales.x.grid.color = gridColor;
+    caChart.options.scales.y.grid.color = gridColor;
+    caChart.update();
+
+    donutChart.data.datasets[0].borderColor = cardBg;
+    donutChart.options.plugins.tooltip.backgroundColor = tooltipBg;
+    donutChart.update();
+
+    agentsBarChart.options.plugins.tooltip.backgroundColor = tooltipBg;
+    agentsBarChart.options.scales.x.grid.color = gridColor;
+    agentsBarChart.update();
+}
+
+function setTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('theme', theme);
+    const icon = document.getElementById('themeToggleIcon');
+    if (icon) icon.textContent = theme === 'light' ? '🌙' : '☀️';
+    applyChartTheme();
+}
+
+function toggleTheme() {
+    const current = document.documentElement.getAttribute('data-theme') || 'dark';
+    setTheme(current === 'light' ? 'dark' : 'light');
+}
+
+document.getElementById('themeToggleBtn').addEventListener('click', toggleTheme);
+
+// Synchronise l'icône avec le thème déjà appliqué au chargement (voir script inline dans <head>)
+(function initThemeIcon() {
+    const current = document.documentElement.getAttribute('data-theme') || 'dark';
+    const icon = document.getElementById('themeToggleIcon');
+    if (icon) icon.textContent = current === 'light' ? '🌙' : '☀️';
+})();
 </script>
 
 </body>

@@ -101,6 +101,26 @@
         }
         .required { color: var(--rose); }
 
+        .plan-choice-group { display: flex; flex-direction: column; gap: 12px; }
+        .plan-choice { position: relative; cursor: pointer; display: block; }
+        .plan-choice input { position: absolute; opacity: 0; width: 0; height: 0; }
+        .plan-choice-card {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 16px 18px; border: 1px solid var(--border); border-radius: var(--radius-sm);
+            background: rgba(255,255,255,0.03); transition: all .15s ease;
+        }
+        .plan-choice input:checked + .plan-choice-card {
+            border-color: var(--indigo); background: rgba(99, 102, 241, 0.12);
+            box-shadow: 0 0 0 1px var(--indigo);
+        }
+        .plan-choice-title { font-weight: 600; color: var(--text-primary); display: flex; align-items: center; gap: 8px; }
+        .plan-choice-badge {
+            font-size: 11px; font-weight: 700; color: var(--emerald);
+            background: rgba(16, 185, 129, 0.15); padding: 2px 8px; border-radius: 999px;
+        }
+        .plan-choice-price { font-weight: 700; color: var(--indigo-light); font-size: 15px; }
+        .plan-choice-period { font-weight: 400; color: var(--text-secondary); font-size: 12px; margin-left: 2px; }
+
         input, select, textarea {
             width: 100%;
             background: rgba(255,255,255,0.04);
@@ -299,6 +319,33 @@
                             <option value="USD">Dollar US ($)</option>
                             <option value="XOF">Franc CFA (FCFA)</option>
                         </select>
+                    </div>
+                </div>
+
+                <!-- Étape 5bis : Plan d'abonnement -->
+                <div class="step" data-step-id="subscription_plan">
+                    <div class="step-icon">💳</div>
+                    <div class="step-title">Choisissez votre plan</div>
+                    <div class="step-hint">7 jours d'essai gratuit sur tous les plans. Vous ne serez débité qu'après cette période.</div>
+                    <div class="form-group plan-choice-group">
+                        <label class="plan-choice">
+                            <input type="radio" name="subscription_plan" value="monthly" checked>
+                            <span class="plan-choice-card">
+                                <span class="plan-choice-title">Mensuel</span>
+                                <span class="plan-choice-price">6 000 FCFA<span class="plan-choice-period">/mois</span></span>
+                            </span>
+                        </label>
+                        <label class="plan-choice">
+                            <input type="radio" name="subscription_plan" value="annual">
+                            <span class="plan-choice-card">
+                                <span class="plan-choice-title">Annuel <span class="plan-choice-badge">Économisez</span></span>
+                                <span class="plan-choice-price">50 000 FCFA<span class="plan-choice-period">/an</span></span>
+                            </span>
+                        </label>
+                    </div>
+                    <div class="form-group" style="margin-top:16px;">
+                        <label for="promo_code">Code promo <span class="optional-badge">Optionnel</span></label>
+                        <input type="text" id="promo_code" name="promo_code" placeholder="Ex: A3F9-K2QZ">
                     </div>
                 </div>
 
