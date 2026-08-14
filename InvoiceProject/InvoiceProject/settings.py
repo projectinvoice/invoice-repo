@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
+import os
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -50,6 +51,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'InvoiceApp.middleware.SubscriptionAccessMiddleware',
 ]
 
 ROOT_URLCONF = 'InvoiceProject.urls'
@@ -64,6 +66,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'InvoiceApp.context_processors.subscription_context',
             ],
         },
     },
@@ -125,3 +128,25 @@ MEDIA_ROOT = BASE_DIR / 'media'
 
 # Configuration de l'authentification
 LOGIN_URL = '/login/'
+
+# ═══════════════════════════════════════════════════════════════
+# Configuration MoneyFusion / FusionPay (paiement des abonnements)
+# ═══════════════════════════════════════════════════════════════
+# Récupérez votre URL d'API unique depuis votre tableau de bord MoneyFusion
+# (créez une "application" sur https://moneyfusion.net pour l'obtenir). Ne mettez
+# jamais cette URL en dur en production : utilisez une variable d'environnement.
+MONEYFUSION_API_URL = os.environ.get('MONEYFUSION_API_URL', '')
+
+# URL de vérification du statut d'un paiement (GET, {token} remplacé par le tokenPay
+# renvoyé à l'initialisation). ⚠️ À confirmer/ajuster auprès du support MoneyFusion ou
+# de docs.moneyfusion.net : le format ci-dessous est celui observé dans l'écosystème
+# FusionPay au moment de l'écriture de ce code, mais n'a pas pu être vérifié par un
+# appel réel (voir README_ABONNEMENT.md).
+MONEYFUSION_STATUS_CHECK_TEMPLATE = os.environ.get(
+    'MONEYFUSION_STATUS_CHECK_TEMPLATE',
+    'https://www.pay.moneyfusion.net/paiementNotif/{token}',
+)
+
+# URL publique de base de votre site, utilisée pour construire webhook_url et
+# return_url envoyés à MoneyFusion. À changer en production (ex: https://monapp.com).
+SITE_BASE_URL = os.environ.get('SITE_BASE_URL', 'http://127.0.0.1:8000')

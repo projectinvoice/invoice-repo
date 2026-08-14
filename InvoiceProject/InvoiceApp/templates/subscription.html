@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Abonnement — {{ request.user.company_name }}</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+        :root {
+            --bg-base: #0F1629;
+            --bg-card: #1A2238;
+            --border: rgba(99, 102, 241, 0.15);
+            --indigo: #6366F1;
+            --indigo-light: #818CF8;
+            --emerald: #10B981;
+            --amber: #F59E0B;
+            --rose: #F43F5E;
+            --text-primary: #E2E8F0;
+            --text-secondary: #94A3B8;
+            --text-muted: #64748B;
+            --radius: 16px;
+            --radius-sm: 10px;
+            --shadow: 0 4px 24px rgba(0,0,0,0.4);
+        }
+
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-base);
+            color: var(--text-primary);
+            min-height: 100vh;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .topbar {
+            background: var(--bg-card);
+            border-bottom: 1px solid var(--border);
+            padding: 16px 32px;
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .topbar-title { font-size: 17px; font-weight: 700; }
+        .topbar-sub { font-size: 12px; color: var(--text-muted); margin-top: 1px; }
+
+        .btn {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 9px 18px; border-radius: var(--radius-sm);
+            font-size: 13px; font-weight: 600; cursor: pointer;
+            text-decoration: none; border: none;
+            transition: all 0.2s; font-family: 'Inter', sans-serif;
+        }
+        .btn-primary { background: var(--indigo); color: white; }
+        .btn-primary:hover { background: #5254CC; transform: translateY(-1px); }
+        .btn-primary:disabled { opacity: .6; cursor: not-allowed; transform: none; }
+        .btn-ghost {
+            background: rgba(255,255,255,0.06);
+            color: var(--text-secondary);
+            border: 1px solid var(--border);
+        }
+        .btn-ghost:hover { background: rgba(255,255,255,0.1); color: var(--text-primary); }
+
+        .content { padding: 32px; max-width: 900px; margin: 0 auto; }
+
+        .status-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 22px 24px;
+            margin-bottom: 28px;
+            display: flex; align-items: center; justify-content: space-between; gap: 16px;
+            flex-wrap: wrap;
+        }
+        .status-card.trial { border-color: rgba(245, 158, 11, 0.35); }
+        .status-card.promo { border-color: rgba(129, 140, 248, 0.4); background: rgba(99, 102, 241, 0.06); }
+        .status-card.active { border-color: rgba(16, 185, 129, 0.35); }
+        .status-card.expired { border-color: rgba(244, 63, 94, 0.4); background: rgba(244, 63, 94, 0.06); }
+
+        .form-card {
+            background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius);
+            padding: 22px 24px; margin-bottom: 28px;
+        }
+
+        .status-label { font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--text-muted); margin-bottom: 4px; }
+        .status-value { font-size: 18px; font-weight: 700; }
+        .status-value.trial { color: var(--amber); }
+        .status-value.active { color: var(--emerald); }
+        .status-value.expired { color: var(--rose); }
+        .status-detail { font-size: 13px; color: var(--text-secondary); margin-top: 4px; }
+
+        .section-title { font-size: 15px; font-weight: 700; margin-bottom: 14px; }
+
+        .plans-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 32px; }
+        @media (max-width: 640px) { .plans-grid { grid-template-columns: 1fr; } }
+
+        .plan-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 22px;
+            display: flex; flex-direction: column; gap: 14px;
+        }
+        .plan-card.current { border-color: var(--indigo); box-shadow: 0 0 0 1px var(--indigo); }
+        .plan-name { font-size: 15px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+        .plan-badge {
+            font-size: 11px; font-weight: 700; color: var(--indigo-light);
+            background: rgba(99,102,241,0.15); padding: 2px 8px; border-radius: 999px;
+        }
+        .plan-price { font-size: 26px; font-weight: 800; }
+        .plan-price span { font-size: 13px; font-weight: 500; color: var(--text-secondary); }
+
+        .history-table { width: 100%; border-collapse: collapse; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+        .history-table th, .history-table td { padding: 10px 14px; text-align: left; font-size: 13px; border-bottom: 1px solid var(--border); }
+        .history-table th { color: var(--text-muted); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: .06em; }
+        .pill { padding: 3px 10px; border-radius: 999px; font-size: 11.5px; font-weight: 600; }
+        .pill-success { background: rgba(16,185,129,0.15); color: #A7F3D0; }
+        .pill-pending { background: rgba(245,158,11,0.15); color: #FDE68A; }
+        .pill-failed { background: rgba(244,63,94,0.15); color: #FECACA; }
+
+        .message { margin-top: 14px; padding: 10px 14px; border-radius: var(--radius-sm); font-size: 13px; display: none; }
+        .message.show { display: block; }
+        .message.error { background: rgba(244,63,94,0.15); color: #FECACA; }
+        .message.success { background: rgba(16,185,129,0.15); color: #A7F3D0; }
+
+        .empty-state { text-align: center; padding: 20px; color: var(--text-muted); font-size: 13px; }
+    </style>
+</head>
+<body>
+
+<div class="topbar">
+    <div>
+        <div class="topbar-title">💳 Abonnement</div>
+        <div class="topbar-sub">{{ request.user.company_name }}</div>
+    </div>
+    <a href="{% url 'dashboard' %}" class="btn btn-ghost">← Tableau de bord</a>
+</div>
+
+<div class="content">
+
+    {% if subscription %}
+        <div class="status-card {{ subscription.status }}">
+            <div>
+                <div class="status-label">Statut actuel</div>
+                {% if subscription.status == 'trial' %}
+                    <div class="status-value trial">Essai gratuit en cours</div>
+                    <div class="status-detail">Il vous reste {{ subscription_days_left }} jour{{ subscription_days_left|pluralize }} avant le début de la facturation ({{ subscription.get_plan_display }}).</div>
+                {% elif subscription.status == 'promo' %}
+                    <div class="status-value trial">Accès offert par code promo</div>
+                    <div class="status-detail">Il vous reste {{ subscription_days_left }} jour{{ subscription_days_left|pluralize }} d'accès offert (jusqu'au {{ subscription_expiry_date|date:"d/m/Y" }}).</div>
+                {% elif subscription.status == 'active' %}
+                    <div class="status-value active">Abonnement actif</div>
+                    <div class="status-detail">Plan {{ subscription.get_plan_display }} — valide jusqu'au {{ subscription.active_until|date:"d/m/Y" }}.</div>
+                {% else %}
+                    <div class="status-value expired">Abonnement expiré</div>
+                    <div class="status-detail">Votre essai gratuit est terminé. Choisissez un plan ci-dessous, ou utilisez un code promo si vous en avez un.</div>
+                {% endif %}
+            </div>
+        </div>
+    {% endif %}
+
+    <div class="form-card">
+        <div class="section-title">Vous avez un code promo ?</div>
+        <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:flex-start;">
+            <input type="text" id="promoCodeInput" placeholder="Ex: A3F9-K2QZ" style="flex:1; min-width:200px; background: rgba(255,255,255,0.04); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px 14px; color: var(--text-primary); font-family: 'Inter', sans-serif; font-size: 13px; outline: none;">
+            <button type="button" class="btn btn-primary" id="applyPromoBtn">Appliquer le code</button>
+        </div>
+        <div id="promoMessage" class="message"></div>
+    </div>
+
+    {% if not moneyfusion_configured %}
+        <div class="message error show">Le paiement en ligne MoneyFusion n'est pas encore configuré sur ce serveur. Contactez l'administrateur de la plateforme.</div>
+    {% endif %}
+
+    <div class="section-title">Choisissez votre plan</div>
+    <div class="plans-grid">
+        {% for plan in plans %}
+            <div class="plan-card {% if subscription.plan == plan.code %}current{% endif %}">
+                <div class="plan-name">
+                    {{ plan.label }}
+                    {% if subscription.plan == plan.code %}<span class="plan-badge">Plan actuel</span>{% endif %}
+                </div>
+                <div class="plan-price">{{ plan.price|floatformat:0 }} FCFA <span>/ {% if plan.code == 'monthly' %}mois{% else %}an{% endif %}</span></div>
+                <button type="button" class="btn btn-primary pay-btn" data-plan="{{ plan.code }}" {% if not moneyfusion_configured %}disabled{% endif %}>
+                    Payer avec MoneyFusion
+                </button>
+            </div>
+        {% endfor %}
+    </div>
+
+    <div id="message" class="message"></div>
+
+    <div class="section-title">Historique des paiements</div>
+    <table class="history-table">
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Plan</th>
+                <th>Montant</th>
+                <th>Statut</th>
+                <th>Moyen</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for payment in recent_payments %}
+            <tr>
+                <td>{{ payment.created_at|date:"d/m/Y H:i" }}</td>
+                <td>{{ payment.get_plan_display }}</td>
+                <td>{{ payment.amount|floatformat:0 }} FCFA</td>
+                <td>
+                    {% if payment.status == 'success' %}<span class="pill pill-success">Réussi</span>
+                    {% elif payment.status == 'pending' %}<span class="pill pill-pending">En attente</span>
+                    {% else %}<span class="pill pill-failed">Échoué</span>{% endif %}
+                </td>
+                <td>{{ payment.payment_method|default:"-" }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="5"><div class="empty-state">Aucun paiement pour l'instant</div></td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    {% if promo_redemptions %}
+    <div class="section-title" style="margin-top:28px;">Codes promo utilisés</div>
+    <table class="history-table">
+        <thead>
+            <tr>
+                <th>Code</th>
+                <th>Utilisé le</th>
+                <th>Accès offert jusqu'au</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for redemption in promo_redemptions %}
+            <tr>
+                <td>{{ redemption.promo_code.code }}</td>
+                <td>{{ redemption.redeemed_at|date:"d/m/Y H:i" }}</td>
+                <td>{{ redemption.expires_at|date:"d/m/Y" }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% endif %}
+
+</div>
+
+<script>
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+    const csrfToken = getCookie('csrftoken');
+    const messageDiv = document.getElementById('message');
+
+    document.querySelectorAll('.pay-btn').forEach(btn => {
+        btn.addEventListener('click', async () => {
+            const plan = btn.dataset.plan;
+            btn.disabled = true;
+            const originalText = btn.textContent;
+            btn.textContent = 'Redirection vers MoneyFusion...';
+            messageDiv.classList.remove('show', 'error', 'success');
+
+            const formData = new FormData();
+            formData.append('plan', plan);
+
+            try {
+                const response = await fetch('{% url "initiate_subscription_payment" %}', {
+                    method: 'POST',
+                    body: formData,
+                    headers: { 'X-CSRFToken': csrfToken },
+                    credentials: 'same-origin',
+                });
+                const data = await response.json();
+
+                if (data.success && data.payment_url) {
+                    window.location.href = data.payment_url;
+                    return;
+                }
+                messageDiv.textContent = data.error || "Une erreur est survenue.";
+                messageDiv.classList.add('show', 'error');
+            } catch (error) {
+                messageDiv.textContent = "Erreur réseau. Réessayez.";
+                messageDiv.classList.add('show', 'error');
+            }
+
+            btn.disabled = false;
+            btn.textContent = originalText;
+        });
+    });
+
+    const applyPromoBtn = document.getElementById('applyPromoBtn');
+    const promoCodeInput = document.getElementById('promoCodeInput');
+    const promoMessage = document.getElementById('promoMessage');
+
+    applyPromoBtn.addEventListener('click', async () => {
+        const code = promoCodeInput.value.trim();
+        if (!code) {
+            promoMessage.textContent = "Veuillez saisir un code.";
+            promoMessage.classList.add('show', 'error');
+            promoMessage.classList.remove('success');
+            return;
+        }
+
+        applyPromoBtn.disabled = true;
+        const originalText = applyPromoBtn.textContent;
+        applyPromoBtn.textContent = 'Vérification...';
+        promoMessage.classList.remove('show', 'error', 'success');
+
+        const formData = new FormData();
+        formData.append('code', code);
+
+        try {
+            const response = await fetch('{% url "apply_promo_code" %}', {
+                method: 'POST',
+                body: formData,
+                headers: { 'X-CSRFToken': csrfToken },
+                credentials: 'same-origin',
+            });
+            const data = await response.json();
+
+            if (data.success) {
+                promoMessage.textContent = data.message;
+                promoMessage.classList.add('show', 'success');
+                setTimeout(() => location.reload(), 1200);
+            } else {
+                promoMessage.textContent = data.error || "Code invalide.";
+                promoMessage.classList.add('show', 'error');
+            }
+        } catch (error) {
+            promoMessage.textContent = "Erreur réseau. Réessayez.";
+            promoMessage.classList.add('show', 'error');
+        }
+
+        applyPromoBtn.disabled = false;
+        applyPromoBtn.textContent = originalText;
+    });
+</script>
+
+</body>
+</html>

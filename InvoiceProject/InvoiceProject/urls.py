@@ -30,6 +30,18 @@ urlpatterns = [
     path('api/dashboard/ca/', invoice_views.api_dashboard_ca, name='api_dashboard_ca'),
     path('company-settings/', invoice_views.company_settings, name='company_settings'),
     path('manage-agent-roles/', invoice_views.manage_agent_roles, name='manage_agent_roles'),
+
+    # Abonnement & paiement MoneyFusion
+    path('subscription/', invoice_views.subscription_page, name='subscription'),
+    path('subscription/pay/', invoice_views.initiate_subscription_payment, name='initiate_subscription_payment'),
+    path('subscription/webhook/', invoice_views.moneyfusion_webhook, name='moneyfusion_webhook'),
+    path('subscription/return/', invoice_views.moneyfusion_return, name='moneyfusion_return'),
+    path('subscription/promo-code/', invoice_views.apply_promo_code, name='apply_promo_code'),
+
+    # Gestion des codes promo (réservé au staff)
+    path('admin-tools/promo-codes/', invoice_views.promo_codes_admin, name='promo_codes_admin'),
+    path('admin-tools/promo-codes/create/', invoice_views.create_promo_code, name='create_promo_code'),
+    path('admin-tools/promo-codes/<int:promo_id>/toggle/', invoice_views.toggle_promo_code, name='toggle_promo_code'),
     
     # List views for all entities
     path('list-agents/', invoice_views.list_agents, name='list_agents'),
