@@ -27,6 +27,10 @@ attention avant chacune de ces comandes , il faut s'assurer que l'environnement 
 
 ## Ce qui a été ajouté
 
+# Système d'abonnement — Guide de mise en route
+
+## Ce qui a été ajouté
+
 1. **Modèles** (`InvoiceApp/models.py`)
    - `Subscription` : 1 par entreprise, plan (`monthly`/`annual`), `trial_end_date` (7 jours après
      l'inscription), `active_until` (mis à jour à chaque paiement réussi). Statut calculé automatiquement :
@@ -142,6 +146,24 @@ code promo, ou abonnement payé) est encore actif au moment de l'utilisation, la
 Vous pouvez aussi gérer les codes depuis l'admin Django classique (`/admin/InvoiceApp/promocode/`),
 qui offre les mêmes informations (utilisations, statut, historique par entreprise).
 
+## Configuration (.env)
+
+Un fichier `.env.example` est fourni à la racine du projet, avec toutes les variables utilisées
+(MoneyFusion, email, `SITE_BASE_URL`, etc.) et leur description. Pour démarrer :
+
+```bash
+cp .env.example .env
+```
+
+Puis remplissez les valeurs réelles dans `.env`. Ce fichier est chargé automatiquement au démarrage de
+Django (via `python-dotenv`, maintenant dans `requirements.txt`) et **n'est jamais versionné** (déjà
+exclu par `.gitignore`) — chaque environnement (dev, serveur de prod) a le sien avec ses propres
+valeurs.
+
+⚠️ Un fichier `.env` avec des valeurs par défaut (sans secret réel) est aussi inclus dans cette archive
+pour que le projet fonctionne immédiatement en développement local — pensez à le remplacer par vos
+vraies valeurs avant la mise en production.
+
 ## Notes importantes
 
 - Les entreprises déjà existantes en base (créées avant cette mise à jour) n'ont pas de `Subscription`.
@@ -155,7 +177,39 @@ qui offre les mêmes informations (utilisations, statut, historique par entrepri
 - Chaque `SubscriptionPayment` garde deux identifiants : `transaction_id` (généré par notre application,
   pour notre suivi interne) et `provider_token` (le `tokenPay` renvoyé par MoneyFusion, utilisé pour la
   vérification de statut et le rapprochement webhook).
-- Le montant envoyé à CinetPay doit être un **multiple de 5** — c'est déjà le cas ici (6000 et 50000).
-- Le vendeur (accès via code entreprise + PIN, `/vendeur/...`) est également bloqué automatiquement si
-  l'abonnement de son entreprise est expiré (seul `/vendeur/` — le tableau de bord vendeur — reste
-  accessible).
+
+## Récupération de mot de passe par email
+
+Une entreprise qui a oublié son mot de passe peut le réinitialiser depuis la page de connexion :
+
+1. **Connexion → "Mot de passe oublié ?"** (`/mot-de-passe-oublie/`) : elle saisit son email.
+2. Si un compte existe avec cet email, un lien à usage unique est envoyé (valable 24h par défaut,
+   réglable via `PASSWORD_RESET_TIMEOUT`). La réponse affichée est **toujours la même**, que l'email
+   existe ou non, pour ne pas permettre à quelqu'un de deviner quels emails sont enregistrés.
+3. Le lien mène vers `/reinitialiser-mot-de-passe/<uid>/<token>/`, qui vérifie que le lien est valide
+   et n'a pas déjà été utilisé, avant de permettre de choisir un nouveau mot de passe (8 caractères
+   minimum).
+
+La sécurité du token repose sur `django.contrib.auth.tokens.default_token_generator`, le même
+mécanisme standard et éprouvé utilisé par Django lui-même — le lien devient automatiquement invalide
+dès que le mot de passe est changé ou que le délai expire.
+
+### Configuration email à faire avant la mise en production
+
+Par défaut, les emails s'affichent seulement dans la console du serveur (pratique pour tester en
+développement, mais **aucun email n'est réellement envoyé**). Pour un envoi réel, configurez un
+serveur SMTP via variables d'environnement, par exemple avec Gmail :
+
+```bash
+export EMAIL_BACKEND="django.core.mail.backends.smtp.EmailBackend"
+export EMAIL_HOST="smtp.gmail.com"
+export EMAIL_PORT="587"
+export EMAIL_USE_TLS="True"
+export EMAIL_HOST_USER="votre-adresse@gmail.com"
+export EMAIL_HOST_PASSWORD="votre-mot-de-passe-application"   # pas votre mot de passe Gmail normal
+export DEFAULT_FROM_EMAIL="no-reply@votre-domaine.com"
+```
+
+Pour Gmail, il faut générer un **mot de passe d'application** (pas votre mot de passe habituel) depuis
+les paramètres de sécurité du compte Google. En production, un service dédié (SendGrid, Mailgun,
+Brevo, Amazon SES...) est recommandé plutôt qu'une boîte Gmail classique, pour la délivrabilité.
