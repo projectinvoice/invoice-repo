@@ -12,9 +12,14 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 
 import os
 from pathlib import Path
+from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+# Charge les variables définies dans le fichier .env à la racine du projet
+# (créé côté serveur, jamais versionné — voir .env.example pour le modèle).
+load_dotenv(BASE_DIR / '.env')
 
 
 # Quick-start development settings - unsuitable for production
@@ -150,3 +155,24 @@ MONEYFUSION_STATUS_CHECK_TEMPLATE = os.environ.get(
 # URL publique de base de votre site, utilisée pour construire webhook_url et
 # return_url envoyés à MoneyFusion. À changer en production (ex: https://monapp.com).
 SITE_BASE_URL = os.environ.get('SITE_BASE_URL', 'http://127.0.0.1:8000')
+
+# ═══════════════════════════════════════════════════════════════
+# Configuration email (envoi des liens de réinitialisation de mot de passe)
+# ═══════════════════════════════════════════════════════════════
+# Par défaut (développement) : les emails sont affichés dans la console au lieu
+# d'être réellement envoyés. En production, configurez un vrai serveur SMTP via
+# les variables d'environnement ci-dessous (ex: Gmail, SendGrid, Mailgun, etc.).
+EMAIL_BACKEND = os.environ.get(
+    'EMAIL_BACKEND',
+    'django.core.mail.backends.console.EmailBackend',
+)
+EMAIL_HOST = os.environ.get('EMAIL_HOST', '')
+EMAIL_PORT = int(os.environ.get('EMAIL_PORT', '587'))
+EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', 'True') == 'True'
+EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')
+EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
+DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'no-reply@votre-domaine.com')
+
+# Durée de validité d'un lien de réinitialisation de mot de passe (en secondes).
+# 86400 = 24 heures.
+PASSWORD_RESET_TIMEOUT = int(os.environ.get('PASSWORD_RESET_TIMEOUT', '86400'))

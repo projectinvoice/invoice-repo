@@ -18,6 +18,10 @@ from django.db import transaction
 from django.db.models import Sum, Count
 from django.db.models.functions import TruncMonth
 from django.utils import timezone
+from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
+from django.utils.encoding import force_bytes, force_str
+from django.contrib.auth.tokens import default_token_generator
+from django.core.mail import send_mail
 
 from io import BytesIO
 from reportlab.lib.pagesizes import A4
@@ -142,6 +146,82 @@ def login_view(request):
         return JsonResponse({"success": True, "message": "Connecté", "redirect": '/dashboard/'} )
 
     return render(request, 'login.html')
+
+
+# ═══════════════════════════════════════════════════════════════
+# Récupération de mot de passe oublié (par email)
+# ═══════════════════════════════════════════════════════════════
+
+@require_http_methods(["GET", "POST"])
+def forgot_password(request):
+    """Demande de réinitialisation : envoie un email avec un lien à usage unique si le
+    compte existe. La réponse est identique que l'email existe ou non, pour ne pas
+    révéler quelles adresses sont enregistrées sur la plateforme."""
+    if request.method == "GET":
+        return render(request, 'forgot_password.html')
+
+    email = (request.POST.get("email") or "").strip()
+    if not email:
+        return JsonResponse({"success": False, "error": "Veuillez saisir votre adresse email."}, status=400)
+
+    generic_message = "Si un compte existe avec cette adresse, un email de réinitialisation vient d'être envoyé."
+    user = User.objects.filter(email__iexact=email).first()
+
+    if user is not None:
+        uid = urlsafe_base64_encode(force_bytes(user.pk))
+        token = default_token_generator.make_token(user)
+        reset_link = settings.SITE_BASE_URL.rstrip('/') + reverse('reset_password_confirm', kwargs={'uidb64': uid, 'token': token})
+
+        subject = "Réinitialisation de votre mot de passe"
+        message = (
+            f"Bonjour {user.company_name},\n\n"
+            f"Vous avez demandé la réinitialisation du mot de passe de votre compte.\n"
+            f"Cliquez sur le lien ci-dessous pour choisir un nouveau mot de passe "
+            f"(valable {settings.PASSWORD_RESET_TIMEOUT // 3600} heures) :\n\n"
+            f"{reset_link}\n\n"
+            f"Si vous n'êtes pas à l'origine de cette demande, ignorez simplement cet email : "
+            f"votre mot de passe actuel restera inchangé.\n"
+        )
+        try:
+            send_mail(subject, message, settings.DEFAULT_FROM_EMAIL, [email], fail_silently=False)
+        except Exception:
+            # On ne révèle jamais un éventuel échec technique à l'utilisateur (évite l'énumération
+            # de comptes), mais on ne bloque pas non plus la réponse générique.
+            pass
+
+    return JsonResponse({"success": True, "message": generic_message})
+
+
+@require_http_methods(["GET", "POST"])
+def reset_password_confirm(request, uidb64, token):
+    """Page atteinte via le lien reçu par email : vérifie le token puis permet de
+    définir un nouveau mot de passe."""
+    try:
+        uid = force_str(urlsafe_base64_decode(uidb64))
+        user = User.objects.get(pk=uid)
+    except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+        user = None
+
+    token_valid = user is not None and default_token_generator.check_token(user, token)
+
+    if request.method == "GET":
+        return render(request, 'reset_password_confirm.html', {'token_valid': token_valid})
+
+    if not token_valid:
+        return JsonResponse({"success": False, "error": "Ce lien de réinitialisation est invalide ou a expiré."}, status=400)
+
+    new_password = request.POST.get("new_password")
+    confirm_password = request.POST.get("confirm_password")
+    if not new_password:
+        return JsonResponse({"success": False, "error": "Veuillez saisir un nouveau mot de passe."}, status=400)
+    if new_password != confirm_password:
+        return JsonResponse({"success": False, "error": "Les mots de passe ne correspondent pas."}, status=400)
+    if len(new_password) < 8:
+        return JsonResponse({"success": False, "error": "Le mot de passe doit contenir au moins 8 caractères."}, status=400)
+
+    user.set_password(new_password)
+    user.save()
+    return JsonResponse({"success": True, "message": "Mot de passe réinitialisé. Vous pouvez maintenant vous connecter."})
 
 
 # ═══════════════════════════════════════════════════════════════
