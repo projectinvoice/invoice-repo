@@ -11,9 +11,15 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
 from pathlib import Path
+import os
+from dotenv import load_dotenv 
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+# Charge les variables du fichier .env (identifiants sensibles), qui ne doit
+# JAMAIS être partagé ni mis sur GitHub — voir .env.example pour le modèle.
+load_dotenv(BASE_DIR / '.env')
 
 
 # Quick-start development settings - unsuitable for production
@@ -127,23 +133,17 @@ MEDIA_ROOT = BASE_DIR / 'media'
 LOGIN_URL = '/login/'
 
 # ── EMAIL ──────────────────────────────────────────────────────────────────
-# Mode développement : les emails s'affichent dans le terminal au lieu d'être
-# vraiment envoyés. Utile pour tester la récupération de mot de passe sans
-# configurer de vrai service d'envoi.
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
-DEFAULT_FROM_EMAIL = 'InvoiceApp <no-reply@invoiceapp.local>'
+# Envoi réel via Gmail SMTP. Les identifiants sont lus depuis le fichier .env
+# (jamais écrits en dur ici) — voir .env.example pour savoir quoi y mettre.
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')
+EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
+DEFAULT_FROM_EMAIL = f'InvoiceApp <{EMAIL_HOST_USER}>'
 
-# Pour la production, remplacer par un vrai service SMTP, par exemple avec Gmail :
-#
-#   EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-#   EMAIL_HOST = 'smtp.gmail.com'
-#   EMAIL_PORT = 587
-#   EMAIL_USE_TLS = True
-#   EMAIL_HOST_USER = 'tonadresse@gmail.com'
-#   EMAIL_HOST_PASSWORD = 'un-mot-de-passe-application-genere-par-google'  # PAS ton mot de passe normal
-#   DEFAULT_FROM_EMAIL = 'InvoiceApp <tonadresse@gmail.com>'
-#
-# Ou avec un service d'envoi transactionnel (Brevo, Mailgun, SendGrid...), qui
-# fournit ses propres EMAIL_HOST / EMAIL_HOST_USER / EMAIL_HOST_PASSWORD.
-# Dans tous les cas, ne jamais mettre ces identifiants en dur dans ce fichier :
-# les charger depuis des variables d'environnement avant la mise en production.
+# Si .env n'est pas configuré, on retombe sur le mode console (affichage dans
+# le terminal) pour ne jamais planter le serveur par manque d'identifiants.
+if not EMAIL_HOST_USER or not EMAIL_HOST_PASSWORD:
+    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
