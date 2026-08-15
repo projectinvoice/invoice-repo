@@ -339,6 +339,39 @@
             font-family: 'Inter', sans-serif;
         }
 
+        .chart-period-controls {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .chart-date-input {
+            background: rgba(255,255,255,0.06);
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+            font-size: 12px;
+            padding: 5px 8px;
+            border-radius: 8px;
+            font-family: 'Inter', sans-serif;
+            color-scheme: dark;
+        }
+
+        .chart-date-sep { color: var(--text-muted); font-size: 12px; }
+
+        .btn-apply-period {
+            background: var(--indigo, #6366F1);
+            color: #fff;
+            border: none;
+            font-size: 12px;
+            font-weight: 600;
+            padding: 6px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-family: 'Inter', sans-serif;
+        }
+        .btn-apply-period:hover { background: #5254CC; }
+
         .chart-canvas-wrap { position: relative; }
 
         /* ── AGENTS PERFORMANCE ── */
@@ -534,11 +567,6 @@
             <div class="topbar-title">Tableau de bord</div>
             <div class="topbar-sub">Vue d'ensemble — <span id="current-date"></span></div>
         </div>
-        <div class="topbar-actions">
-            <a href="{% url 'list_agents' %}" class="btn btn-primary">+ Ajouter un agent</a>
-            <a href="{% url 'change_password' %}" class="btn btn-ghost">🔐 Mot de passe</a>
-            <a href="{% url 'delete_account' %}" class="btn btn-ghost btn-danger">🗑️</a>
-        </div>
     </header>
 
     <!-- CONTENT -->
@@ -598,17 +626,19 @@
 
         <!-- CHARTS ROW 1 -->
         <div class="charts-grid">
-            <!-- CA MENSUEL -->
+            <!-- CA PAR PÉRIODE -->
             <div class="chart-card">
                 <div class="chart-header">
                     <div>
-                        <div class="chart-title">Chiffre d'affaires mensuel</div>
-                        <div class="chart-subtitle">Évolution des ventes sur l'année</div>
+                        <div class="chart-title">Chiffre d'affaires par période</div>
+                        <div class="chart-subtitle">Évolution sur la période sélectionnée</div>
                     </div>
-                    <select class="chart-period-select" id="ca-period" onchange="updateCAChart(this.value)">
-                        <option value="year">Cette année</option>
-                        <option value="last_year">Année précédente</option>
-                    </select>
+                    <div class="chart-period-controls">
+                        <input type="date" class="chart-date-input" id="ca-start-date" value="{{ ca_period_start }}">
+                        <span class="chart-date-sep">→</span>
+                        <input type="date" class="chart-date-input" id="ca-end-date" value="{{ ca_period_end }}">
+                        <button type="button" class="btn-apply-period" onclick="updateCAChart()">Appliquer</button>
+                    </div>
                 </div>
                 <div class="chart-canvas-wrap">
                     <canvas id="caChart" height="220"></canvas>
@@ -642,16 +672,16 @@
                 <canvas id="agentsBarChart" height="240"></canvas>
             </div>
 
-            <!-- LISTE AGENTS AVEC BARRES -->
+            <!-- LISTE TOP PRODUITS VENDUS -->
             <div class="agent-perf-card">
                 <div class="chart-header">
                     <div>
-                        <div class="chart-title">Top agents</div>
+                        <div class="chart-title">Top produits vendus</div>
                         <div class="chart-subtitle">Classement par CA généré</div>
                     </div>
                 </div>
-                <div class="agent-list" id="agent-list-render">
-                    <!-- Rempli par JS depuis Django context ou API -->
+                <div class="agent-list" id="product-list-render">
+                    <!-- Rempli par JS depuis Django context -->
                 </div>
             </div>
         </div>
@@ -667,10 +697,13 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 // Injection Django (fallback sur données démo si vide)
-const CA_LABELS  = {{ ca_monthly_labels|default:'["Jan","Fév","Mar","Avr","Mai","Jun","Jul","Aoû","Sep","Oct","Nov","Déc"]'|safe }};
-const CA_DATA    = {{ ca_monthly_data|default:'[820000,950000,1100000,870000,1350000,1200000,980000,1050000,1400000,1250000,1600000,1800000]'|safe }};
+const CA_LABELS  = {{ ca_period_labels|default:'["01/08","02/08","03/08","04/08","05/08"]'|safe }};
+const CA_DATA    = {{ ca_period_data|default:'[82000,95000,110000,87000,135000]'|safe }};
 const CAT_LABELS = {{ sales_categories|default:'["Produit A","Produit B","Produit C","Autres"]'|safe }};
 const CAT_DATA   = {{ sales_cat_values|default:'[38,27,22,13]'|safe }};
+const TP_NAMES   = {{ top_product_names|default:'["Produit A","Produit B","Produit C","Produit D","Produit E"]'|safe }};
+const TP_QTY     = {{ top_product_qty|default:'[52,41,38,29,24]'|safe }};
+const TP_CA      = {{ top_product_ca|default:'[1200000,980000,870000,640000,510000]'|safe }};
 const AG_NAMES   = {{ agents_names|default:'["Alice M.","Bob K.","Clara D.","David P.","Emma S."]'|safe }};
 const AG_SALES   = {{ agents_sales|default:'[52,41,38,29,24]'|safe }};
 const AG_CA      = {{ agents_ca|default:'[1200000,980000,870000,640000,510000]'|safe }};
@@ -812,32 +845,31 @@ new Chart(agCtx, {
     }
 });
 
-// ════════════ LISTE TOP AGENTS ════════════
-(function renderAgentList() {
-    const el = document.getElementById('agent-list-render');
-    if (!AG_NAMES.length) { el.innerHTML = '<p style="color:#64748B;font-size:13px;padding:16px 0">Aucun agent disponible</p>'; return; }
+// ════════════ LISTE TOP PRODUITS VENDUS ════════════
+(function renderProductList() {
+    const el = document.getElementById('product-list-render');
+    if (!TP_NAMES.length) { el.innerHTML = '<p style="color:#64748B;font-size:13px;padding:16px 0">Aucun produit vendu pour le moment</p>'; return; }
 
-    const maxCA = Math.max(...AG_CA);
-    const sortedIdx = AG_CA.map((v,i) => i).sort((a,b) => AG_CA[b]-AG_CA[a]);
+    const maxCA = Math.max(...TP_CA);
+    const sortedIdx = TP_CA.map((v,i) => i).sort((a,b) => TP_CA[b]-TP_CA[a]);
 
     el.innerHTML = sortedIdx.map((i, rank) => {
-        const pct = Math.round((AG_CA[i] / maxCA) * 100);
+        const pct = maxCA ? Math.round((TP_CA[i] / maxCA) * 100) : 0;
         const color = COLORS[rank % COLORS.length];
-        const caStr = AG_CA[i].toLocaleString('fr-FR');
-        const initials = AG_NAMES[i].split(/[\s.]+/).filter(Boolean).map(w=>w[0]).join('').slice(0,2).toUpperCase();
+        const initials = TP_NAMES[i].split(/[\s.]+/).filter(Boolean).map(w=>w[0]).join('').slice(0,2).toUpperCase();
         return `
         <div class="agent-row">
             <div class="agent-avatar" style="background:${color}22;color:${color};">${initials}</div>
             <div class="agent-info">
-                <div class="agent-name">${AG_NAMES[i]}</div>
-                <div class="agent-role">${AG_ROLES[i] || ''}</div>
+                <div class="agent-name">${TP_NAMES[i]}</div>
+                <div class="agent-role">${TP_QTY[i]} vendu(s)</div>
             </div>
             <div class="agent-bar-wrap">
                 <div class="agent-bar-bg">
                     <div class="agent-bar-fill" data-pct="${pct}" style="background:${color};"></div>
                 </div>
             </div>
-            <div class="agent-value" style="color:${color};">${(AG_CA[i]/1000).toFixed(0)}k</div>
+            <div class="agent-value" style="color:${color};">${(TP_CA[i]/1000).toFixed(0)}k</div>
         </div>`;
     }).join('');
 
@@ -849,12 +881,19 @@ new Chart(agCtx, {
     });
 })();
 
-// ════════════ SWITCH PÉRIODE CA ════════════
-// Connecter ici à une API Django pour charger les données dynamiquement
-function updateCAChart(period) {
-    fetch(`{% url 'api_dashboard_ca' %}?period=${encodeURIComponent(period)}`, { credentials: 'same-origin' })
+// ════════════ CA PAR PÉRIODE (dates précises) ════════════
+function updateCAChart() {
+    const start = document.getElementById('ca-start-date').value;
+    const end = document.getElementById('ca-end-date').value;
+
+    if (!start || !end) return;
+
+    const params = new URLSearchParams({ start, end });
+
+    fetch(`{% url 'api_dashboard_ca' %}?${params.toString()}`, { credentials: 'same-origin' })
         .then(response => response.json())
         .then(data => {
+            if (data.error) { console.error(data.error); return; }
             caChart.data.labels = data.labels;
             caChart.data.datasets[0].data = data.values;
             caChart.update();

@@ -1,4 +1,6 @@
 import json
+import logging
+from datetime import datetime, timedelta
 from decimal import Decimal, InvalidOperation
 from functools import wraps
 
@@ -9,7 +11,7 @@ from django.views.decorators.http import require_http_methods
 from django.http import JsonResponse, HttpResponse
 from django.db import transaction
 from django.db.models import Sum, Count
-from django.db.models.functions import TruncMonth
+from django.db.models.functions import TruncMonth, TruncDay
 from django.utils import timezone
 from django.contrib.auth.tokens import default_token_generator
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
@@ -49,6 +51,8 @@ from .models import (
     StockReturn,
     StockReturnItem,
 )
+
+logger = logging.getLogger(__name__)
 
 def landing(request):
     """Landing page - visible to all visitors"""
@@ -143,7 +147,9 @@ def forgot_password(request):
             try:
                 send_mail(subject, message, None, [user.username], fail_silently=False)
             except Exception:
-                # On ne révèle jamais une erreur d'envoi côté client (fuite d'info), on log seulement.
+                # On ne révèle jamais une erreur d'envoi côté client (fuite d'info), mais on log réellement
+                # côté serveur pour pouvoir diagnostiquer (ex: identifiants SMTP invalides).
+                logger.exception("Échec de l'envoi de l'email de réinitialisation de mot de passe à %s", user.username)
                 return JsonResponse({"success": True, "message": generic_message})
 
         return JsonResponse({"success": True, "message": generic_message})
@@ -180,20 +186,89 @@ def reset_password_confirm(request, uidb64, token):
 
     return render(request, 'reset_password_confirm.html', {'token_valid': token_valid})
 
+
+@require_http_methods(["GET", "POST"])
+def forgot_company_code(request):
+    """Permet à une entreprise qui a perdu son code vendeur (agent_login_code)
+    de se le faire renvoyer par email, en indiquant l'email de son compte."""
+    if request.method == "POST":
+        email = (request.POST.get("email") or "").strip()
+
+        if not email:
+            return JsonResponse({"success": False, "error": "Email requis"}, status=400)
+
+        # Même logique de recherche que pour forgot_password : username OU company_email
+        user = User.objects.filter(username=email).first() or User.objects.filter(company_email=email).first()
+
+        # Sécurité : réponse identique qu'un compte existe ou non avec cet email,
+        # pour ne jamais laisser deviner quels emails sont enregistrés.
+        generic_message = "Si un compte existe avec cet email, son code entreprise vient de lui être envoyé."
+
+        if user:
+            subject = "Ton code entreprise — InvoiceApp"
+            message = (
+                f"Bonjour {user.company_name},\n\n"
+                f"Voici le code entreprise à utiliser par tes vendeurs pour se connecter à l'espace vendeur :\n\n"
+                f"    {user.agent_login_code}\n\n"
+                f"Si tu n'es pas à l'origine de cette demande, ignorez simplement cet email.\n"
+            )
+            try:
+                send_mail(subject, message, None, [user.username], fail_silently=False)
+            except Exception:
+                # On ne révèle jamais une erreur d'envoi côté client (fuite d'info), mais on log réellement
+                # côté serveur pour pouvoir diagnostiquer (ex: identifiants SMTP invalides).
+                logger.exception("Échec de l'envoi de l'email du code entreprise à %s", user.username)
+                return JsonResponse({"success": True, "message": generic_message})
+
+        return JsonResponse({"success": True, "message": generic_message})
+
+    return render(request, 'forgot_company_code.html')
+
+
 MONTH_LABELS_FR = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun', 'Jul', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc']
 
 
-def _monthly_revenue(user, year):
-    """Retourne (labels, valeurs) du chiffre d'affaires mensuel pour l'année donnée."""
-    rows = (
-        Sale.objects.filter(company=user, date__year=year)
-        .annotate(month=TruncMonth('date'))
-        .values('month')
-        .annotate(total=Sum('total_price'))
-    )
-    totals_by_month = {row['month'].month: float(row['total'] or 0) for row in rows if row['month']}
-    data = [totals_by_month.get(m, 0) for m in range(1, 13)]
-    return MONTH_LABELS_FR, data
+def _revenue_by_period(user, start_date, end_date):
+    """Retourne (labels, valeurs) du chiffre d'affaires sur une période précise (dates incluses).
+    Regroupe par jour si la période fait 60 jours ou moins, sinon par mois pour rester lisible."""
+    if start_date > end_date:
+        start_date, end_date = end_date, start_date
+
+    delta_days = (end_date - start_date).days
+
+    if delta_days <= 60:
+        rows = (
+            Sale.objects.filter(company=user, date__date__gte=start_date, date__date__lte=end_date)
+            .annotate(period=TruncDay('date'))
+            .values('period')
+            .annotate(total=Sum('total_price'))
+        )
+        totals = {row['period'].date(): float(row['total'] or 0) for row in rows if row['period']}
+        labels, data = [], []
+        current = start_date
+        while current <= end_date:
+            labels.append(current.strftime('%d/%m'))
+            data.append(totals.get(current, 0))
+            current += timedelta(days=1)
+    else:
+        rows = (
+            Sale.objects.filter(company=user, date__date__gte=start_date, date__date__lte=end_date)
+            .annotate(period=TruncMonth('date'))
+            .values('period')
+            .annotate(total=Sum('total_price'))
+        )
+        totals = {(row['period'].year, row['period'].month): float(row['total'] or 0) for row in rows if row['period']}
+        labels, data = [], []
+        y, m = start_date.year, start_date.month
+        while (y, m) <= (end_date.year, end_date.month):
+            labels.append(f"{MONTH_LABELS_FR[m - 1]} {y}")
+            data.append(totals.get((y, m), 0))
+            m += 1
+            if m > 12:
+                m = 1
+                y += 1
+
+    return labels, data
 
 
 def _sales_breakdown_by_product(user, limit=4):
@@ -220,6 +295,20 @@ def _sales_breakdown_by_product(user, limit=4):
     return labels, values
 
 
+def _top_products(user, limit=5):
+    """Retourne (noms, quantités vendues, ca) des produits les plus vendus, triés par CA décroissant."""
+    rows = list(
+        SaleItem.objects.filter(sale__company=user)
+        .values('product__name')
+        .annotate(qty=Sum('quantity'), total=Sum('total_price'))
+        .order_by('-total')[:limit]
+    )
+    names = [row['product__name'] or 'Produit supprimé' for row in rows]
+    quantities = [row['qty'] or 0 for row in rows]
+    ca = [float(row['total'] or 0) for row in rows]
+    return names, quantities, ca
+
+
 def _agents_performance(user):
     """Retourne (noms, nb_ventes, ca, rôles) des agents ayant vendu ce mois-ci, triés par CA décroissant."""
     now = timezone.now()
@@ -242,8 +331,13 @@ def dashboard(request):
     user = request.user
     now = timezone.now()
 
-    ca_labels, ca_data = _monthly_revenue(user, now.year)
+    # Période par défaut au premier chargement : du 1er du mois en cours à aujourd'hui
+    period_start = now.date().replace(day=1)
+    period_end = now.date()
+
+    ca_labels, ca_data = _revenue_by_period(user, period_start, period_end)
     cat_labels, cat_values = _sales_breakdown_by_product(user)
+    top_product_names, top_product_qty, top_product_ca = _top_products(user)
     agent_names, agent_sales, agent_ca, agent_roles = _agents_performance(user)
 
     currency_symbols = {'EUR': '€', 'USD': '$', 'XOF': 'FCFA'}
@@ -264,10 +358,15 @@ def dashboard(request):
         'supplies_count': user.supplies.count(),
         'invoices_count': user.invoices.count(),
         'currency_symbol': currency_symbol,
-        'ca_monthly_labels': json.dumps(ca_labels),
-        'ca_monthly_data': json.dumps(ca_data),
+        'ca_period_labels': json.dumps(ca_labels),
+        'ca_period_data': json.dumps(ca_data),
+        'ca_period_start': period_start.isoformat(),
+        'ca_period_end': period_end.isoformat(),
         'sales_categories': json.dumps(cat_labels),
         'sales_cat_values': json.dumps(cat_values),
+        'top_product_names': json.dumps(top_product_names),
+        'top_product_qty': json.dumps(top_product_qty),
+        'top_product_ca': json.dumps(top_product_ca),
         'agents_names': json.dumps(agent_names),
         'agents_sales': json.dumps(agent_sales),
         'agents_ca': json.dumps(agent_ca),
@@ -278,11 +377,18 @@ def dashboard(request):
 @require_http_methods(["GET"])
 @login_required
 def api_dashboard_ca(request):
-    """Retourne le CA mensuel en JSON pour le sélecteur de période du dashboard."""
-    period = request.GET.get('period', 'year')
+    """Retourne le CA en JSON pour une période précise (paramètres start / end au format YYYY-MM-DD)."""
+    start_str = request.GET.get('start')
+    end_str = request.GET.get('end')
     now = timezone.now()
-    year = now.year if period == 'year' else now.year - 1
-    labels, data = _monthly_revenue(request.user, year)
+
+    try:
+        start_date = datetime.strptime(start_str, '%Y-%m-%d').date() if start_str else now.date().replace(day=1)
+        end_date = datetime.strptime(end_str, '%Y-%m-%d').date() if end_str else now.date()
+    except ValueError:
+        return JsonResponse({'error': 'Format de date invalide (attendu YYYY-MM-DD)'}, status=400)
+
+    labels, data = _revenue_by_period(request.user, start_date, end_date)
     return JsonResponse({'labels': labels, 'values': data})
 
 @require_http_methods(["GET", "POST"])
