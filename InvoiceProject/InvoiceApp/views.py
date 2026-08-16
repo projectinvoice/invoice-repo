@@ -1,23 +1,27 @@
 import json
-import logging
-from datetime import datetime, timedelta
+import uuid
 from decimal import Decimal, InvalidOperation
 from functools import wraps
 
+import requests as http_requests
+
+from django.conf import settings
 from django.shortcuts import render, redirect
+from django.urls import reverse
 from django.contrib.auth import authenticate, login, logout, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
+from django.contrib.admin.views.decorators import staff_member_required
 from django.views.decorators.http import require_http_methods
+from django.views.decorators.csrf import csrf_exempt
 from django.http import JsonResponse, HttpResponse
 from django.db import transaction
 from django.db.models import Sum, Count
-from django.db.models.functions import TruncMonth, TruncDay
+from django.db.models.functions import TruncMonth
 from django.utils import timezone
-from django.contrib.auth.tokens import default_token_generator
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.encoding import force_bytes, force_str
+from django.contrib.auth.tokens import default_token_generator
 from django.core.mail import send_mail
-from django.template.loader import render_to_string
 
 from io import BytesIO
 from reportlab.lib.pagesizes import A4
@@ -50,9 +54,15 @@ from .models import (
     StockLoadItem,
     StockReturn,
     StockReturnItem,
+    Subscription,
+    SubscriptionPayment,
+    SUBSCRIPTION_PLAN_CHOICES,
+    SUBSCRIPTION_PLAN_PRICES,
+    TRIAL_DURATION_DAYS,
+    PromoCode,
+    PromoCodeRedemption,
+    redeem_promo_code,
 )
-
-logger = logging.getLogger(__name__)
 
 def landing(request):
     """Landing page - visible to all visitors"""
@@ -68,6 +78,8 @@ def register_company(request):
         phone = request.POST.get("phone", "")
         address = request.POST.get("address", "")
         default_currency = request.POST.get("default_currency", "EUR")
+        subscription_plan = request.POST.get("subscription_plan", "monthly")
+        promo_code_input = request.POST.get("promo_code", "").strip()
         logo = request.FILES.get("logo")
 
         if not company_name or not email or not password:
@@ -81,6 +93,9 @@ def register_company(request):
         if default_currency not in valid_currencies:
             default_currency = "EUR"
 
+        if subscription_plan not in dict(SUBSCRIPTION_PLAN_CHOICES).keys():
+            subscription_plan = "monthly"
+
         user = User.objects.create_user(
             username=email,
             email=email,
@@ -92,7 +107,26 @@ def register_company(request):
             default_currency=default_currency,
             logo=logo,
         )
-        return JsonResponse({"success": True, "message": "Compte créé", "user_id": user.id})
+        Subscription.objects.create(
+            company=user,
+            plan=subscription_plan,
+            trial_end_date=timezone.now() + timezone.timedelta(days=TRIAL_DURATION_DAYS),
+        )
+
+        promo_message = None
+        if promo_code_input:
+            promo_success, promo_message = redeem_promo_code(user, promo_code_input)
+            if not promo_success:
+                # On ne bloque pas la création du compte pour un code promo invalide,
+                # on informe simplement l'entreprise dans la réponse.
+                pass
+
+        return JsonResponse({
+            "success": True,
+            "message": "Compte créé",
+            "user_id": user.id,
+            "promo_message": promo_message,
+        })
 
     return render(request, 'register.html')
 
@@ -114,161 +148,354 @@ def login_view(request):
     return render(request, 'login.html')
 
 
+# ═══════════════════════════════════════════════════════════════
+# Récupération de mot de passe oublié (par email)
+# ═══════════════════════════════════════════════════════════════
+
 @require_http_methods(["GET", "POST"])
 def forgot_password(request):
-    """Étape 1 : l'entreprise indique son email pour recevoir un lien de réinitialisation."""
-    if request.method == "POST":
-        email = (request.POST.get("email") or "").strip()
+    """Demande de réinitialisation : envoie un email avec un lien à usage unique si le
+    compte existe. La réponse est identique que l'email existe ou non, pour ne pas
+    révéler quelles adresses sont enregistrées sur la plateforme."""
+    if request.method == "GET":
+        return render(request, 'forgot_password.html')
 
-        if not email:
-            return JsonResponse({"success": False, "error": "Email requis"}, status=400)
+    email = (request.POST.get("email") or "").strip()
+    if not email:
+        return JsonResponse({"success": False, "error": "Veuillez saisir votre adresse email."}, status=400)
 
-        # On cherche par username OU company_email, car les deux sont fixés à l'email à l'inscription
-        user = User.objects.filter(username=email).first() or User.objects.filter(company_email=email).first()
+    generic_message = "Si un compte existe avec cette adresse, un email de réinitialisation vient d'être envoyé."
+    user = User.objects.filter(email__iexact=email).first()
 
-        # Sécurité : on répond toujours pareil, qu'un compte existe ou non avec cet email,
-        # pour ne jamais laisser un attaquant deviner quels emails sont enregistrés.
-        generic_message = "Si un compte existe avec cet email, un lien de réinitialisation vient d'être envoyé."
+    if user is not None:
+        uid = urlsafe_base64_encode(force_bytes(user.pk))
+        token = default_token_generator.make_token(user)
+        reset_link = settings.SITE_BASE_URL.rstrip('/') + reverse('reset_password_confirm', kwargs={'uidb64': uid, 'token': token})
 
-        if user:
-            uid = urlsafe_base64_encode(force_bytes(user.pk))
-            token = default_token_generator.make_token(user)
-            reset_path = request.build_absolute_uri(f"/reset-password/{uid}/{token}/")
+        subject = "Réinitialisation de votre mot de passe"
+        message = (
+            f"Bonjour {user.company_name},\n\n"
+            f"Vous avez demandé la réinitialisation du mot de passe de votre compte.\n"
+            f"Cliquez sur le lien ci-dessous pour choisir un nouveau mot de passe "
+            f"(valable {settings.PASSWORD_RESET_TIMEOUT // 3600} heures) :\n\n"
+            f"{reset_link}\n\n"
+            f"Si vous n'êtes pas à l'origine de cette demande, ignorez simplement cet email : "
+            f"votre mot de passe actuel restera inchangé.\n"
+        )
+        try:
+            send_mail(subject, message, settings.DEFAULT_FROM_EMAIL, [email], fail_silently=False)
+        except Exception:
+            # On ne révèle jamais un éventuel échec technique à l'utilisateur (évite l'énumération
+            # de comptes), mais on ne bloque pas non plus la réponse générique.
+            pass
 
-            subject = "Réinitialisation de votre mot de passe — InvoiceApp"
-            message = (
-                f"Bonjour {user.company_name},\n\n"
-                f"Une demande de réinitialisation de mot de passe a été faite pour votre compte.\n"
-                f"Cliquez sur ce lien pour choisir un nouveau mot de passe (valable 3 jours) :\n\n"
-                f"{reset_path}\n\n"
-                f"Si vous n'êtes pas à l'origine de cette demande, ignorez simplement cet email — "
-                f"votre mot de passe actuel reste inchangé.\n"
-            )
-            try:
-                send_mail(subject, message, None, [user.username], fail_silently=False)
-            except Exception:
-                # On ne révèle jamais une erreur d'envoi côté client (fuite d'info), mais on log réellement
-                # côté serveur pour pouvoir diagnostiquer (ex: identifiants SMTP invalides).
-                logger.exception("Échec de l'envoi de l'email de réinitialisation de mot de passe à %s", user.username)
-                return JsonResponse({"success": True, "message": generic_message})
-
-        return JsonResponse({"success": True, "message": generic_message})
-
-    return render(request, 'forgot_password.html')
+    return JsonResponse({"success": True, "message": generic_message})
 
 
 @require_http_methods(["GET", "POST"])
 def reset_password_confirm(request, uidb64, token):
-    """Étape 2 : l'entreprise clique le lien reçu par email et choisit un nouveau mot de passe."""
+    """Page atteinte via le lien reçu par email : vérifie le token puis permet de
+    définir un nouveau mot de passe."""
     try:
         uid = force_str(urlsafe_base64_decode(uidb64))
-        user = User.objects.filter(pk=uid).first()
-    except (TypeError, ValueError, OverflowError):
+        user = User.objects.get(pk=uid)
+    except (TypeError, ValueError, OverflowError, User.DoesNotExist):
         user = None
 
     token_valid = user is not None and default_token_generator.check_token(user, token)
 
-    if request.method == "POST":
-        if not token_valid:
-            return JsonResponse({"success": False, "error": "Ce lien de réinitialisation est invalide ou a expiré"}, status=400)
+    if request.method == "GET":
+        return render(request, 'reset_password_confirm.html', {'token_valid': token_valid})
 
-        new_password = request.POST.get("new_password")
-        confirm_password = request.POST.get("confirm_password")
+    if not token_valid:
+        return JsonResponse({"success": False, "error": "Ce lien de réinitialisation est invalide ou a expiré."}, status=400)
 
-        if not new_password or len(new_password) < 8:
-            return JsonResponse({"success": False, "error": "Le mot de passe doit contenir au moins 8 caractères"}, status=400)
-        if new_password != confirm_password:
-            return JsonResponse({"success": False, "error": "Les mots de passe ne correspondent pas"}, status=400)
+    new_password = request.POST.get("new_password")
+    confirm_password = request.POST.get("confirm_password")
+    if not new_password:
+        return JsonResponse({"success": False, "error": "Veuillez saisir un nouveau mot de passe."}, status=400)
+    if new_password != confirm_password:
+        return JsonResponse({"success": False, "error": "Les mots de passe ne correspondent pas."}, status=400)
+    if len(new_password) < 8:
+        return JsonResponse({"success": False, "error": "Le mot de passe doit contenir au moins 8 caractères."}, status=400)
 
-        user.set_password(new_password)
-        user.save()
-        return JsonResponse({"success": True, "message": "Mot de passe réinitialisé, tu peux te connecter"})
+    user.set_password(new_password)
+    user.save()
+    return JsonResponse({"success": True, "message": "Mot de passe réinitialisé. Vous pouvez maintenant vous connecter."})
 
-    return render(request, 'reset_password_confirm.html', {'token_valid': token_valid})
+
+# ═══════════════════════════════════════════════════════════════
+# Abonnement & paiement MoneyFusion (FusionPay)
+# ═══════════════════════════════════════════════════════════════
+
+def _moneyfusion_configured():
+    return bool(settings.MONEYFUSION_API_URL)
+
+
+@require_http_methods(["GET"])
+@login_required
+def subscription_page(request):
+    """Page dédiée à l'abonnement : statut de l'essai/abonnement + paiement MoneyFusion."""
+    subscription = getattr(request.user, 'subscription', None)
+    recent_payments = SubscriptionPayment.objects.filter(company=request.user)[:10]
+    promo_redemptions = PromoCodeRedemption.objects.filter(company=request.user).select_related('promo_code')
+    context = {
+        'subscription': subscription,
+        'plans': [
+            {'code': 'monthly', 'label': 'Mensuel', 'price': SUBSCRIPTION_PLAN_PRICES['monthly']},
+            {'code': 'annual', 'label': 'Annuel', 'price': SUBSCRIPTION_PLAN_PRICES['annual']},
+        ],
+        'recent_payments': recent_payments,
+        'promo_redemptions': promo_redemptions,
+        'moneyfusion_configured': _moneyfusion_configured(),
+    }
+    return render(request, 'subscription.html', context)
+
+
+@require_http_methods(["POST"])
+@login_required
+def apply_promo_code(request):
+    """Applique un code promo saisi par l'entreprise depuis la page d'abonnement."""
+    code = request.POST.get("code", "")
+    success, message = redeem_promo_code(request.user, code)
+    if success:
+        return JsonResponse({"success": True, "message": message})
+    return JsonResponse({"success": False, "error": message}, status=400)
+
+
+# ═══════════════════════════════════════════════════════════════
+# Gestion des codes promo (réservé au staff — via /admin-tools/)
+# ═══════════════════════════════════════════════════════════════
+
+@require_http_methods(["GET"])
+@staff_member_required
+def promo_codes_admin(request):
+    """Liste des codes promo + formulaire de génération rapide (réservé au staff)."""
+    codes = PromoCode.objects.all().prefetch_related('redemptions')
+    return render(request, 'promo_codes_admin.html', {'codes': codes})
+
+
+@require_http_methods(["POST"])
+@staff_member_required
+def create_promo_code(request):
+    """Génère un nouveau code promo avec la durée choisie."""
+    try:
+        duration_days = int(request.POST.get("duration_days", "0"))
+    except (TypeError, ValueError):
+        duration_days = 0
+    if duration_days <= 0:
+        return JsonResponse({"success": False, "error": "La durée doit être un nombre de jours positif."}, status=400)
+
+    note = request.POST.get("note", "").strip()[:255]
+    custom_code = request.POST.get("code", "").strip().upper()
+
+    max_redemptions_raw = request.POST.get("max_redemptions", "").strip()
+    max_redemptions = None
+    if max_redemptions_raw:
+        try:
+            max_redemptions = int(max_redemptions_raw)
+            if max_redemptions <= 0:
+                max_redemptions = None
+        except ValueError:
+            max_redemptions = None
+
+    valid_until_raw = request.POST.get("valid_until", "").strip()
+    valid_until = None
+    if valid_until_raw:
+        # Format attendu depuis <input type="date"> : YYYY-MM-DD
+        try:
+            from datetime import datetime
+            valid_until = timezone.make_aware(datetime.strptime(valid_until_raw, "%Y-%m-%d"))
+        except ValueError:
+            valid_until = None
+
+    kwargs = {
+        'duration_days': duration_days,
+        'note': note,
+        'max_redemptions': max_redemptions,
+        'valid_until': valid_until,
+    }
+    if custom_code:
+        if PromoCode.objects.filter(code__iexact=custom_code).exists():
+            return JsonResponse({"success": False, "error": "Ce code existe déjà."}, status=400)
+        kwargs['code'] = custom_code
+
+    promo = PromoCode.objects.create(**kwargs)
+    return JsonResponse({"success": True, "code": promo.code, "id": promo.id})
+
+
+@require_http_methods(["POST"])
+@staff_member_required
+def toggle_promo_code(request, promo_id):
+    """Active/désactive un code promo (bascule)."""
+    try:
+        promo = PromoCode.objects.get(id=promo_id)
+    except PromoCode.DoesNotExist:
+        return JsonResponse({"success": False, "error": "Code promo introuvable."}, status=404)
+    promo.is_active = not promo.is_active
+    promo.save(update_fields=['is_active'])
+    return JsonResponse({"success": True, "is_active": promo.is_active})
+
+
+@require_http_methods(["POST"])
+@login_required
+def initiate_subscription_payment(request):
+    """Crée une transaction MoneyFusion pour le plan choisi et renvoie l'URL de paiement
+    vers laquelle le navigateur doit être redirigé (intégration par redirection)."""
+    if not _moneyfusion_configured():
+        return JsonResponse({
+            "success": False,
+            "error": "Le paiement en ligne n'est pas encore configuré. Contactez l'administrateur.",
+        }, status=503)
+
+    plan = request.POST.get("plan")
+    if plan not in dict(SUBSCRIPTION_PLAN_CHOICES).keys():
+        return JsonResponse({"success": False, "error": "Plan invalide"}, status=400)
+
+    subscription, _ = Subscription.objects.get_or_create(
+        company=request.user,
+        defaults={'plan': plan, 'trial_end_date': timezone.now() + timezone.timedelta(days=TRIAL_DURATION_DAYS)},
+    )
+
+    amount = int(SUBSCRIPTION_PLAN_PRICES[plan])
+    transaction_id = f"SUB-{request.user.id}-{uuid.uuid4().hex[:12]}"
+
+    payment = SubscriptionPayment.objects.create(
+        company=request.user,
+        plan=plan,
+        amount=amount,
+        transaction_id=transaction_id,
+        status='pending',
+    )
+
+    user = request.user
+    plan_label = dict(SUBSCRIPTION_PLAN_CHOICES).get(plan)
+
+    payload = {
+        "totalPrice": amount,
+        "article": [{f"Abonnement {plan_label}": amount}],
+        "numeroSend": (user.phone or "0000000000").replace(" ", ""),
+        "nomclient": user.company_name or user.email or "Client",
+        "personal_Info": [{"userId": str(user.id), "orderId": transaction_id}],
+        "return_url": settings.SITE_BASE_URL.rstrip('/') + reverse('moneyfusion_return'),
+        "webhook_url": settings.SITE_BASE_URL.rstrip('/') + reverse('moneyfusion_webhook'),
+    }
+
+    try:
+        response = http_requests.post(settings.MONEYFUSION_API_URL, json=payload, timeout=20)
+        data = response.json()
+    except (http_requests.RequestException, ValueError):
+        payment.status = 'failed'
+        payment.save(update_fields=['status', 'updated_at'])
+        return JsonResponse({"success": False, "error": "Impossible de contacter MoneyFusion. Réessayez."}, status=502)
+
+    if not data.get("statut"):
+        payment.status = 'failed'
+        payment.save(update_fields=['status', 'updated_at'])
+        return JsonResponse({"success": False, "error": data.get("message") or "Échec de l'initialisation du paiement."}, status=400)
+
+    provider_token = data.get("token", "")
+    payment.provider_token = provider_token
+    payment.save(update_fields=['provider_token', 'updated_at'])
+
+    payment_url = data.get("url")
+    return JsonResponse({"success": True, "payment_url": payment_url, "transaction_id": transaction_id})
+
+
+def _verify_and_apply_payment(payment):
+    """Vérifie une transaction auprès de MoneyFusion et applique le résultat (idempotent).
+    `payment` est déjà chargé (SubscriptionPayment) — évite une seconde requête en base."""
+    if payment is None or payment.status == 'success' or not payment.provider_token:
+        return payment  # rien à faire (déjà traité, ou pas encore de token MoneyFusion)
+
+    status_url = settings.MONEYFUSION_STATUS_CHECK_TEMPLATE.format(token=payment.provider_token)
+    try:
+        response = http_requests.get(status_url, timeout=20)
+        data = response.json()
+    except (http_requests.RequestException, ValueError):
+        return payment
+
+    result = data.get("data", {})
+    provider_status = result.get("statut")  # "paid" | "pending" | "failed" | "no paid"
+    payment.payment_method = result.get("moyen", "") or payment.payment_method
+    payment.operator_id = result.get("numeroTransaction", "") or payment.operator_id
+
+    if provider_status == "paid":
+        payment.status = 'success'
+        payment.save(update_fields=['status', 'payment_method', 'operator_id', 'updated_at'])
+        subscription = getattr(payment.company, 'subscription', None)
+        if subscription:
+            subscription.plan = payment.plan
+            subscription.save(update_fields=['plan', 'updated_at'])
+            subscription.extend_after_payment()
+    elif provider_status in ("failed", "no paid"):
+        payment.status = 'failed'
+        payment.save(update_fields=['status', 'payment_method', 'operator_id', 'updated_at'])
+    else:
+        payment.save(update_fields=['payment_method', 'operator_id', 'updated_at'])
+
+    return payment
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def moneyfusion_webhook(request):
+    """Webhook appelé par les serveurs de MoneyFusion (webhook_url fourni à l'initialisation)
+    à chaque changement de statut. Ne jamais faire confiance au contenu brut de la requête :
+    on ne l'utilise que pour retrouver la transaction, puis on revérifie via l'API MoneyFusion."""
+    try:
+        body = json.loads(request.body.decode('utf-8'))
+    except (ValueError, UnicodeDecodeError):
+        body = request.POST
+
+    provider_token = body.get("tokenPay") or body.get("token")
+    if not provider_token:
+        return HttpResponse("tokenPay manquant", status=400)
+
+    payment = SubscriptionPayment.objects.select_related('company', 'company__subscription').filter(
+        provider_token=provider_token
+    ).first()
+    if payment is None:
+        return HttpResponse("Transaction inconnue", status=404)
+
+    _verify_and_apply_payment(payment)
+    return HttpResponse("OK")
 
 
 @require_http_methods(["GET", "POST"])
-def forgot_company_code(request):
-    """Permet à une entreprise qui a perdu son code vendeur (agent_login_code)
-    de se le faire renvoyer par email, en indiquant l'email de son compte."""
-    if request.method == "POST":
-        email = (request.POST.get("email") or "").strip()
+@login_required
+def moneyfusion_return(request):
+    """Page où le client est redirigé après avoir payé (return_url — MoneyFusion y ajoute ?token=...)."""
+    provider_token = request.GET.get("token") or request.POST.get("token")
 
-        if not email:
-            return JsonResponse({"success": False, "error": "Email requis"}, status=400)
+    payment = None
+    if provider_token:
+        payment = SubscriptionPayment.objects.select_related('company', 'company__subscription').filter(
+            company=request.user, provider_token=provider_token
+        ).first()
+    if payment is None:
+        payment = SubscriptionPayment.objects.filter(company=request.user).order_by('-created_at').first()
 
-        # Même logique de recherche que pour forgot_password : username OU company_email
-        user = User.objects.filter(username=email).first() or User.objects.filter(company_email=email).first()
+    # MoneyFusion ne garantit pas l'ordre webhook/retour : on revérifie ici aussi par sécurité.
+    if payment and payment.status == 'pending':
+        payment = _verify_and_apply_payment(payment)
 
-        # Sécurité : réponse identique qu'un compte existe ou non avec cet email,
-        # pour ne jamais laisser deviner quels emails sont enregistrés.
-        generic_message = "Si un compte existe avec cet email, son code entreprise vient de lui être envoyé."
-
-        if user:
-            subject = "Ton code entreprise — InvoiceApp"
-            message = (
-                f"Bonjour {user.company_name},\n\n"
-                f"Voici le code entreprise à utiliser par tes vendeurs pour se connecter à l'espace vendeur :\n\n"
-                f"    {user.agent_login_code}\n\n"
-                f"Si tu n'es pas à l'origine de cette demande, ignorez simplement cet email.\n"
-            )
-            try:
-                send_mail(subject, message, None, [user.username], fail_silently=False)
-            except Exception:
-                # On ne révèle jamais une erreur d'envoi côté client (fuite d'info), mais on log réellement
-                # côté serveur pour pouvoir diagnostiquer (ex: identifiants SMTP invalides).
-                logger.exception("Échec de l'envoi de l'email du code entreprise à %s", user.username)
-                return JsonResponse({"success": True, "message": generic_message})
-
-        return JsonResponse({"success": True, "message": generic_message})
-
-    return render(request, 'forgot_company_code.html')
-
+    return render(request, 'subscription_return.html', {'payment': payment})
 
 MONTH_LABELS_FR = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun', 'Jul', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc']
 
 
-def _revenue_by_period(user, start_date, end_date):
-    """Retourne (labels, valeurs) du chiffre d'affaires sur une période précise (dates incluses).
-    Regroupe par jour si la période fait 60 jours ou moins, sinon par mois pour rester lisible."""
-    if start_date > end_date:
-        start_date, end_date = end_date, start_date
-
-    delta_days = (end_date - start_date).days
-
-    if delta_days <= 60:
-        rows = (
-            Sale.objects.filter(company=user, date__date__gte=start_date, date__date__lte=end_date)
-            .annotate(period=TruncDay('date'))
-            .values('period')
-            .annotate(total=Sum('total_price'))
-        )
-        totals = {row['period'].date(): float(row['total'] or 0) for row in rows if row['period']}
-        labels, data = [], []
-        current = start_date
-        while current <= end_date:
-            labels.append(current.strftime('%d/%m'))
-            data.append(totals.get(current, 0))
-            current += timedelta(days=1)
-    else:
-        rows = (
-            Sale.objects.filter(company=user, date__date__gte=start_date, date__date__lte=end_date)
-            .annotate(period=TruncMonth('date'))
-            .values('period')
-            .annotate(total=Sum('total_price'))
-        )
-        totals = {(row['period'].year, row['period'].month): float(row['total'] or 0) for row in rows if row['period']}
-        labels, data = [], []
-        y, m = start_date.year, start_date.month
-        while (y, m) <= (end_date.year, end_date.month):
-            labels.append(f"{MONTH_LABELS_FR[m - 1]} {y}")
-            data.append(totals.get((y, m), 0))
-            m += 1
-            if m > 12:
-                m = 1
-                y += 1
-
-    return labels, data
+def _monthly_revenue(user, year):
+    """Retourne (labels, valeurs) du chiffre d'affaires mensuel pour l'année donnée."""
+    rows = (
+        Sale.objects.filter(company=user, date__year=year)
+        .annotate(month=TruncMonth('date'))
+        .values('month')
+        .annotate(total=Sum('total_price'))
+    )
+    totals_by_month = {row['month'].month: float(row['total'] or 0) for row in rows if row['month']}
+    data = [totals_by_month.get(m, 0) for m in range(1, 13)]
+    return MONTH_LABELS_FR, data
 
 
 def _sales_breakdown_by_product(user, limit=4):
@@ -295,20 +522,6 @@ def _sales_breakdown_by_product(user, limit=4):
     return labels, values
 
 
-def _top_products(user, limit=5):
-    """Retourne (noms, quantités vendues, ca) des produits les plus vendus, triés par CA décroissant."""
-    rows = list(
-        SaleItem.objects.filter(sale__company=user)
-        .values('product__name')
-        .annotate(qty=Sum('quantity'), total=Sum('total_price'))
-        .order_by('-total')[:limit]
-    )
-    names = [row['product__name'] or 'Produit supprimé' for row in rows]
-    quantities = [row['qty'] or 0 for row in rows]
-    ca = [float(row['total'] or 0) for row in rows]
-    return names, quantities, ca
-
-
 def _agents_performance(user):
     """Retourne (noms, nb_ventes, ca, rôles) des agents ayant vendu ce mois-ci, triés par CA décroissant."""
     now = timezone.now()
@@ -331,13 +544,8 @@ def dashboard(request):
     user = request.user
     now = timezone.now()
 
-    # Période par défaut au premier chargement : du 1er du mois en cours à aujourd'hui
-    period_start = now.date().replace(day=1)
-    period_end = now.date()
-
-    ca_labels, ca_data = _revenue_by_period(user, period_start, period_end)
+    ca_labels, ca_data = _monthly_revenue(user, now.year)
     cat_labels, cat_values = _sales_breakdown_by_product(user)
-    top_product_names, top_product_qty, top_product_ca = _top_products(user)
     agent_names, agent_sales, agent_ca, agent_roles = _agents_performance(user)
 
     currency_symbols = {'EUR': '€', 'USD': '$', 'XOF': 'FCFA'}
@@ -358,15 +566,10 @@ def dashboard(request):
         'supplies_count': user.supplies.count(),
         'invoices_count': user.invoices.count(),
         'currency_symbol': currency_symbol,
-        'ca_period_labels': json.dumps(ca_labels),
-        'ca_period_data': json.dumps(ca_data),
-        'ca_period_start': period_start.isoformat(),
-        'ca_period_end': period_end.isoformat(),
+        'ca_monthly_labels': json.dumps(ca_labels),
+        'ca_monthly_data': json.dumps(ca_data),
         'sales_categories': json.dumps(cat_labels),
         'sales_cat_values': json.dumps(cat_values),
-        'top_product_names': json.dumps(top_product_names),
-        'top_product_qty': json.dumps(top_product_qty),
-        'top_product_ca': json.dumps(top_product_ca),
         'agents_names': json.dumps(agent_names),
         'agents_sales': json.dumps(agent_sales),
         'agents_ca': json.dumps(agent_ca),
@@ -377,18 +580,11 @@ def dashboard(request):
 @require_http_methods(["GET"])
 @login_required
 def api_dashboard_ca(request):
-    """Retourne le CA en JSON pour une période précise (paramètres start / end au format YYYY-MM-DD)."""
-    start_str = request.GET.get('start')
-    end_str = request.GET.get('end')
+    """Retourne le CA mensuel en JSON pour le sélecteur de période du dashboard."""
+    period = request.GET.get('period', 'year')
     now = timezone.now()
-
-    try:
-        start_date = datetime.strptime(start_str, '%Y-%m-%d').date() if start_str else now.date().replace(day=1)
-        end_date = datetime.strptime(end_str, '%Y-%m-%d').date() if end_str else now.date()
-    except ValueError:
-        return JsonResponse({'error': 'Format de date invalide (attendu YYYY-MM-DD)'}, status=400)
-
-    labels, data = _revenue_by_period(request.user, start_date, end_date)
+    year = now.year if period == 'year' else now.year - 1
+    labels, data = _monthly_revenue(request.user, year)
     return JsonResponse({'labels': labels, 'values': data})
 
 @require_http_methods(["GET", "POST"])

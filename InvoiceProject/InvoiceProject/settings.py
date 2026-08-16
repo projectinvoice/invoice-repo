@@ -10,15 +10,15 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
-from pathlib import Path
 import os
-from dotenv import load_dotenv 
+from pathlib import Path
+from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# Charge les variables du fichier .env (identifiants sensibles), qui ne doit
-# JAMAIS être partagé ni mis sur GitHub — voir .env.example pour le modèle.
+# Charge les variables définies dans le fichier .env à la racine du projet
+# (créé côté serveur, jamais versionné — voir .env.example pour le modèle).
 load_dotenv(BASE_DIR / '.env')
 
 
@@ -56,6 +56,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'InvoiceApp.middleware.SubscriptionAccessMiddleware',
 ]
 
 ROOT_URLCONF = 'InvoiceProject.urls'
@@ -70,6 +71,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'InvoiceApp.context_processors.subscription_context',
             ],
         },
     },
@@ -132,18 +134,45 @@ MEDIA_ROOT = BASE_DIR / 'media'
 # Configuration de l'authentification
 LOGIN_URL = '/login/'
 
-# ── EMAIL ──────────────────────────────────────────────────────────────────
-# Envoi réel via Gmail SMTP. Les identifiants sont lus depuis le fichier .env
-# (jamais écrits en dur ici) — voir .env.example pour savoir quoi y mettre.
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.gmail.com'
-EMAIL_PORT = 587
-EMAIL_USE_TLS = True
+# ═══════════════════════════════════════════════════════════════
+# Configuration MoneyFusion / FusionPay (paiement des abonnements)
+# ═══════════════════════════════════════════════════════════════
+# Récupérez votre URL d'API unique depuis votre tableau de bord MoneyFusion
+# (créez une "application" sur https://moneyfusion.net pour l'obtenir). Ne mettez
+# jamais cette URL en dur en production : utilisez une variable d'environnement.
+MONEYFUSION_API_URL = os.environ.get('MONEYFUSION_API_URL', '')
+
+# URL de vérification du statut d'un paiement (GET, {token} remplacé par le tokenPay
+# renvoyé à l'initialisation). ⚠️ À confirmer/ajuster auprès du support MoneyFusion ou
+# de docs.moneyfusion.net : le format ci-dessous est celui observé dans l'écosystème
+# FusionPay au moment de l'écriture de ce code, mais n'a pas pu être vérifié par un
+# appel réel (voir README_ABONNEMENT.md).
+MONEYFUSION_STATUS_CHECK_TEMPLATE = os.environ.get(
+    'MONEYFUSION_STATUS_CHECK_TEMPLATE',
+    'https://www.pay.moneyfusion.net/paiementNotif/{token}',
+)
+
+# URL publique de base de votre site, utilisée pour construire webhook_url et
+# return_url envoyés à MoneyFusion. À changer en production (ex: https://monapp.com).
+SITE_BASE_URL = os.environ.get('SITE_BASE_URL', 'http://127.0.0.1:8000')
+
+# ═══════════════════════════════════════════════════════════════
+# Configuration email (envoi des liens de réinitialisation de mot de passe)
+# ═══════════════════════════════════════════════════════════════
+# Par défaut (développement) : les emails sont affichés dans la console au lieu
+# d'être réellement envoyés. En production, configurez un vrai serveur SMTP via
+# les variables d'environnement ci-dessous (ex: Gmail, SendGrid, Mailgun, etc.).
+EMAIL_BACKEND = os.environ.get(
+    'EMAIL_BACKEND',
+    'django.core.mail.backends.console.EmailBackend',
+)
+EMAIL_HOST = os.environ.get('EMAIL_HOST', '')
+EMAIL_PORT = int(os.environ.get('EMAIL_PORT', '587'))
+EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', 'True') == 'True'
 EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')
 EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
-DEFAULT_FROM_EMAIL = f'InvoiceApp <{EMAIL_HOST_USER}>'
+DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'no-reply@votre-domaine.com')
 
-# Si .env n'est pas configuré, on retombe sur le mode console (affichage dans
-# le terminal) pour ne jamais planter le serveur par manque d'identifiants.
-if not EMAIL_HOST_USER or not EMAIL_HOST_PASSWORD:
-    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+# Durée de validité d'un lien de réinitialisation de mot de passe (en secondes).
+# 86400 = 24 heures.
+PASSWORD_RESET_TIMEOUT = int(os.environ.get('PASSWORD_RESET_TIMEOUT', '86400'))
