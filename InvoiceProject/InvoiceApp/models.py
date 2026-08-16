@@ -16,6 +16,23 @@ CURRENCY_CHOICES = [
     ('XOF', 'Franc CFA (FCFA)'),
 ]
 
+# ═══════════════════════════════════════════════════════════════
+# Abonnement (essai gratuit + plans mensuel / annuel via MoneyFusion)
+# ═══════════════════════════════════════════════════════════════
+
+SUBSCRIPTION_PLAN_CHOICES = [
+    ('monthly', 'Mensuel'),
+    ('annual', 'Annuel'),
+]
+
+# Tarifs en Franc CFA (XOF)
+SUBSCRIPTION_PLAN_PRICES = {
+    'monthly': Decimal('6000'),
+    'annual': Decimal('50000'),
+}
+
+TRIAL_DURATION_DAYS = 7
+
 # Modèle utilisateur personnalisé (l'entreprise elle-même est l'utilisateur)
 class User(AbstractUser):
     logo = models.ImageField(upload_to="company_logos/", blank=True, null=True, verbose_name="Logo de l'entreprise")
@@ -536,3 +553,219 @@ class StockReturnItem(models.Model):
     class Meta:
         verbose_name = "Ligne de retour"
         verbose_name_plural = "Lignes de retour"
+
+
+# ═══════════════════════════════════════════════════════════════
+# Abonnement de l'entreprise (essai gratuit de 7 jours + plan payant)
+# ═══════════════════════════════════════════════════════════════
+
+class Subscription(models.Model):
+    """Un seul abonnement par entreprise : suit l'essai gratuit, les codes promo et l'accès payant."""
+    company = models.OneToOneField(User, on_delete=models.CASCADE, related_name='subscription', verbose_name="Entreprise")
+    plan = models.CharField(max_length=10, choices=SUBSCRIPTION_PLAN_CHOICES, verbose_name="Plan choisi")
+    trial_end_date = models.DateTimeField(verbose_name="Fin de l'essai gratuit")
+    # Date jusqu'à laquelle l'accès payant est valide (rempli/étendu à chaque paiement réussi)
+    active_until = models.DateTimeField(null=True, blank=True, verbose_name="Accès payant valide jusqu'au")
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Date de création")
+    updated_at = models.DateTimeField(auto_now=True, verbose_name="Dernière mise à jour")
+
+    def __str__(self):
+        return f"Abonnement {self.get_plan_display()} — {self.company.company_name}"
+
+    @property
+    def price(self):
+        return SUBSCRIPTION_PLAN_PRICES.get(self.plan, Decimal('0'))
+
+    @property
+    def promo_active_until(self):
+        """Date la plus lointaine offerte par un code promo utilisé par cette entreprise (ou None)."""
+        latest = self.company.promo_redemptions.order_by('-expires_at').first()
+        return latest.expires_at if latest else None
+
+    @property
+    def status(self):
+        """'active' (paiement en cours), 'promo' (code promo en cours), 'trial' (essai gratuit),
+        sinon 'expired'. Priorité : paiement > code promo > essai."""
+        now = timezone.now()
+        if self.active_until and self.active_until >= now:
+            return 'active'
+        promo_until = self.promo_active_until
+        if promo_until and promo_until >= now:
+            return 'promo'
+        if self.trial_end_date and self.trial_end_date >= now:
+            return 'trial'
+        return 'expired'
+
+    @property
+    def is_blocked(self):
+        """True dès que ni le paiement, ni un code promo, ni l'essai ne couvrent la période en cours."""
+        return self.status == 'expired'
+
+    @property
+    def access_expiry_date(self):
+        """Date d'expiration de l'accès actuellement en vigueur, selon le statut courant (ou None si expiré)."""
+        status = self.status
+        if status == 'active':
+            return self.active_until
+        if status == 'promo':
+            return self.promo_active_until
+        if status == 'trial':
+            return self.trial_end_date
+        return None
+
+    @property
+    def days_left(self):
+        """Jours restants avant la fin de l'accès en cours (essai ou code promo), 0 si payant ou expiré."""
+        if self.status not in ('trial', 'promo'):
+            return 0
+        expiry = self.access_expiry_date
+        if not expiry:
+            return 0
+        remaining = expiry - timezone.now()
+        return max(0, remaining.days + (1 if remaining.seconds > 0 else 0))
+
+    # Conservé pour compatibilité (anciens templates) — identique à `days_left`
+    @property
+    def days_left_in_trial(self):
+        return self.days_left
+
+    def extend_after_payment(self):
+        """Étend l'accès payant d'une période (30 jours pour le mensuel, 365 pour l'annuel).
+        Repart de la date d'expiration actuelle si elle est encore dans le futur (paiement en avance),
+        sinon repart de maintenant."""
+        now = timezone.now()
+        base = self.active_until if (self.active_until and self.active_until > now) else now
+        delta_days = 365 if self.plan == 'annual' else 30
+        self.active_until = base + timezone.timedelta(days=delta_days)
+        self.save(update_fields=['active_until', 'updated_at'])
+
+    class Meta:
+        verbose_name = "Abonnement"
+        verbose_name_plural = "Abonnements"
+
+
+# Historique des tentatives de paiement d'abonnement via MoneyFusion
+class SubscriptionPayment(models.Model):
+    STATUS_CHOICES = [
+        ('pending', 'En attente'),
+        ('success', 'Réussi'),
+        ('failed', 'Échoué'),
+    ]
+
+    company = models.ForeignKey(User, on_delete=models.CASCADE, related_name='subscription_payments', verbose_name="Entreprise")
+    plan = models.CharField(max_length=10, choices=SUBSCRIPTION_PLAN_CHOICES, verbose_name="Plan payé")
+    amount = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Montant (FCFA)")
+    transaction_id = models.CharField(max_length=100, unique=True, verbose_name="ID de transaction interne")
+    provider_token = models.CharField(max_length=150, blank=True, db_index=True, verbose_name="Token MoneyFusion (tokenPay)")
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='pending', verbose_name="Statut")
+    payment_method = models.CharField(max_length=50, blank=True, verbose_name="Moyen de paiement")
+    operator_id = models.CharField(max_length=100, blank=True, verbose_name="Référence opérateur")
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Date de création")
+    updated_at = models.DateTimeField(auto_now=True, verbose_name="Dernière mise à jour")
+
+    def __str__(self):
+        return f"Paiement {self.transaction_id} — {self.company.company_name} ({self.get_status_display()})"
+
+    class Meta:
+        verbose_name = "Paiement d'abonnement"
+        verbose_name_plural = "Paiements d'abonnement"
+        ordering = ['-created_at']
+
+
+# ═══════════════════════════════════════════════════════════════
+# Codes promo (ex : 1 mois offert aux premiers utilisateurs)
+# ═══════════════════════════════════════════════════════════════
+
+def generate_promo_code():
+    """Génère un code promo aléatoire lisible (ex: A3F9-K2QZ)."""
+    alphabet = string.ascii_uppercase + string.digits
+    part1 = ''.join(random.choices(alphabet, k=4))
+    part2 = ''.join(random.choices(alphabet, k=4))
+    return f"{part1}-{part2}"
+
+
+class PromoCode(models.Model):
+    """Un code promo offre `duration_days` jours d'accès complet à la plateforme, sans paiement,
+    aux entreprises qui l'utilisent. La durée est fixée à la génération du code."""
+    code = models.CharField(max_length=32, unique=True, default=generate_promo_code, verbose_name="Code")
+    duration_days = models.PositiveIntegerField(verbose_name="Durée offerte (jours)")
+    note = models.CharField(max_length=255, blank=True, verbose_name="Note / campagne (ex: Lancement bêta)")
+    max_redemptions = models.PositiveIntegerField(null=True, blank=True, verbose_name="Nombre d'utilisations max (vide = illimité)")
+    is_active = models.BooleanField(default=True, verbose_name="Actif")
+    valid_until = models.DateTimeField(null=True, blank=True, verbose_name="Date limite d'utilisation (vide = jamais)")
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Créé le")
+
+    def __str__(self):
+        return f"{self.code} ({self.duration_days} j)"
+
+    @property
+    def redemptions_count(self):
+        return self.redemptions.count()
+
+    @property
+    def is_redeemable(self):
+        if not self.is_active:
+            return False
+        if self.valid_until and self.valid_until < timezone.now():
+            return False
+        if self.max_redemptions is not None and self.redemptions_count >= self.max_redemptions:
+            return False
+        return True
+
+    class Meta:
+        verbose_name = "Code promo"
+        verbose_name_plural = "Codes promo"
+        ordering = ['-created_at']
+
+
+class PromoCodeRedemption(models.Model):
+    """Trace chaque utilisation d'un code promo par une entreprise (une entreprise ne peut
+    utiliser un même code qu'une seule fois)."""
+    promo_code = models.ForeignKey(PromoCode, on_delete=models.CASCADE, related_name='redemptions', verbose_name="Code promo")
+    company = models.ForeignKey(User, on_delete=models.CASCADE, related_name='promo_redemptions', verbose_name="Entreprise")
+    redeemed_at = models.DateTimeField(auto_now_add=True, verbose_name="Utilisé le")
+    expires_at = models.DateTimeField(verbose_name="Accès offert jusqu'au")
+
+    def __str__(self):
+        return f"{self.company.company_name} — {self.promo_code.code}"
+
+    class Meta:
+        verbose_name = "Utilisation de code promo"
+        verbose_name_plural = "Utilisations de codes promo"
+        ordering = ['-redeemed_at']
+        constraints = [
+            models.UniqueConstraint(fields=['promo_code', 'company'], name='unique_promo_redemption_per_company'),
+        ]
+
+
+def redeem_promo_code(company, code_str):
+    """Applique un code promo à l'abonnement de `company`. Retourne (succès: bool, message: str).
+    Le nouvel avantage se cumule à la fin de l'accès déjà en cours (essai, autre promo ou paiement)
+    s'il est encore valide, sinon il démarre à partir de maintenant."""
+    code_str = (code_str or "").strip()
+    if not code_str:
+        return False, "Veuillez saisir un code promo."
+
+    try:
+        promo = PromoCode.objects.get(code__iexact=code_str)
+    except PromoCode.DoesNotExist:
+        return False, "Ce code promo n'existe pas."
+
+    if not promo.is_redeemable:
+        return False, "Ce code promo n'est plus valide."
+
+    if PromoCodeRedemption.objects.filter(promo_code=promo, company=company).exists():
+        return False, "Vous avez déjà utilisé ce code promo."
+
+    now = timezone.now()
+    subscription = getattr(company, 'subscription', None)
+    base = now
+    if subscription is not None:
+        current_expiry = subscription.access_expiry_date
+        if current_expiry and current_expiry > now:
+            base = current_expiry
+
+    expires_at = base + timezone.timedelta(days=promo.duration_days)
+    PromoCodeRedemption.objects.create(promo_code=promo, company=company, expires_at=expires_at)
+
+    return True, f"Code promo appliqué : {promo.duration_days} jours offerts (jusqu'au {expires_at.strftime('%d/%m/%Y')})."

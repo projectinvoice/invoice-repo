@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Retour de paiement</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap');
+        :root {
+            --bg-base: #0F1629; --bg-card: #1A2238; --border: rgba(99, 102, 241, 0.15);
+            --indigo: #6366F1; --emerald: #10B981; --amber: #F59E0B; --rose: #F43F5E;
+            --text-primary: #E2E8F0; --text-secondary: #94A3B8; --radius: 16px; --radius-sm: 10px;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', sans-serif; background: var(--bg-base); color: var(--text-primary);
+            min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px;
+        }
+        .card {
+            background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius);
+            padding: 36px 32px; max-width: 420px; width: 100%; text-align: center;
+        }
+        .icon { font-size: 44px; margin-bottom: 14px; }
+        .title { font-size: 19px; font-weight: 700; margin-bottom: 8px; }
+        .detail { font-size: 13.5px; color: var(--text-secondary); margin-bottom: 24px; }
+        .success .title { color: var(--emerald); }
+        .pending .title { color: var(--amber); }
+        .failed .title { color: var(--rose); }
+        .btn {
+            display: inline-flex; padding: 10px 22px; border-radius: var(--radius-sm);
+            background: var(--indigo); color: white; text-decoration: none; font-weight: 600; font-size: 13.5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="card {% if payment.status == 'success' %}success{% elif payment.status == 'failed' %}failed{% else %}pending{% endif %}">
+        {% if payment.status == 'success' %}
+            <div class="icon">✅</div>
+            <div class="title">Paiement confirmé</div>
+            <div class="detail">Votre abonnement {{ payment.get_plan_display }} est maintenant actif. Merci !</div>
+        {% elif payment.status == 'failed' %}
+            <div class="icon">❌</div>
+            <div class="title">Paiement échoué</div>
+            <div class="detail">Le paiement n'a pas abouti. Vous pouvez réessayer depuis la page d'abonnement.</div>
+        {% else %}
+            <div class="icon">⏳</div>
+            <div class="title">Paiement en cours de vérification</div>
+            <div class="detail">MoneyFusion traite votre paiement. Le statut sera mis à jour automatiquement dans quelques instants.</div>
+        {% endif %}
+        <a href="{% url 'subscription' %}" class="btn">Voir mon abonnement</a>
+    </div>
+</body>
+</html>
