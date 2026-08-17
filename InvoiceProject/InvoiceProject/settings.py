@@ -21,6 +21,15 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # (créé côté serveur, jamais versionné — voir .env.example pour le modèle).
 load_dotenv(BASE_DIR / '.env')
 
+# ═══════════════════════════════════════════════════════════════
+# Assistant IA (Gemini) — bouton flottant présent sur les pages de l'app
+# ═══════════════════════════════════════════════════════════════
+# Clé API Google AI Studio. Laissez vide pour désactiver l'assistant
+# (le widget affichera un message d'indisponibilité au lieu de planter).
+GEMINI_API_KEY = os.getenv('GEMINI_API_KEY', '')
+# Modèle Gemini utilisé côté serveur pour les appels de fonctions.
+GEMINI_MODEL = os.getenv('GEMINI_MODEL', 'gemini-2.5-flash')
+
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
