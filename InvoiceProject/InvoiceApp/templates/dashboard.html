@@ -409,6 +409,29 @@
             font-family: 'Inter', sans-serif;
         }
 
+        .chart-period-range {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .chart-date-input {
+            background: var(--overlay-2);
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+            font-size: 12px;
+            padding: 5px 8px;
+            border-radius: 8px;
+            font-family: 'Inter', sans-serif;
+            color-scheme: light dark;
+        }
+
+        .chart-period-sep {
+            color: var(--text-muted);
+            font-size: 12px;
+        }
+
         .chart-canvas-wrap { position: relative; }
 
         /* ── AGENTS PERFORMANCE ── */
@@ -616,9 +639,6 @@
             <button type="button" class="btn btn-ghost theme-toggle-btn" id="themeToggleBtn" aria-label="Changer de thème">
                 <span id="themeToggleIcon">☀️</span>
             </button>
-            <a href="{% url 'list_agents' %}" class="btn btn-primary {% if subscription_blocked %}locked-link{% endif %}">+ Ajouter un agent</a>
-            <a href="{% url 'change_password' %}" class="btn btn-ghost {% if subscription_blocked %}locked-link{% endif %}">🔐 Mot de passe</a>
-            <a href="{% url 'delete_account' %}" class="btn btn-ghost btn-danger {% if subscription_blocked %}locked-link{% endif %}">🗑️</a>
         </div>
     </header>
 
@@ -696,17 +716,19 @@
 
         <!-- CHARTS ROW 1 -->
         <div class="charts-grid">
-            <!-- CA MENSUEL -->
+            <!-- CA PAR PÉRIODE -->
             <div class="chart-card">
                 <div class="chart-header">
                     <div>
-                        <div class="chart-title">Chiffre d'affaires mensuel</div>
-                        <div class="chart-subtitle">Évolution des ventes sur l'année</div>
+                        <div class="chart-title">Chiffre d'affaires par période</div>
+                        <div class="chart-subtitle">Choisissez une période précise</div>
                     </div>
-                    <select class="chart-period-select" id="ca-period" onchange="updateCAChart(this.value)">
-                        <option value="year">Cette année</option>
-                        <option value="last_year">Année précédente</option>
-                    </select>
+                    <div class="chart-period-range">
+                        <input type="date" class="chart-date-input" id="ca-start" value="{{ ca_period_start }}">
+                        <span class="chart-period-sep">→</span>
+                        <input type="date" class="chart-date-input" id="ca-end" value="{{ ca_period_end }}">
+                        <button type="button" class="btn btn-primary btn-sm" id="ca-apply-btn" onclick="updateCAChart()">Appliquer</button>
+                    </div>
                 </div>
                 <div class="chart-canvas-wrap">
                     <canvas id="caChart" height="220"></canvas>
@@ -740,16 +762,16 @@
                 <canvas id="agentsBarChart" height="240"></canvas>
             </div>
 
-            <!-- LISTE AGENTS AVEC BARRES -->
+            <!-- LISTE TOP PRODUITS VENDUS -->
             <div class="agent-perf-card">
                 <div class="chart-header">
                     <div>
-                        <div class="chart-title">Top agents</div>
-                        <div class="chart-subtitle">Classement par CA généré</div>
+                        <div class="chart-title">Top produits vendus</div>
+                        <div class="chart-subtitle">Classement par quantité vendue</div>
                     </div>
                 </div>
-                <div class="agent-list" id="agent-list-render">
-                    <!-- Rempli par JS depuis Django context ou API -->
+                <div class="agent-list" id="product-list-render">
+                    <!-- Rempli par JS depuis Django context -->
                 </div>
             </div>
         </div>
@@ -765,14 +787,18 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 // Injection Django (fallback sur données démo si vide)
-const CA_LABELS  = {{ ca_monthly_labels|default:'["Jan","Fév","Mar","Avr","Mai","Jun","Jul","Aoû","Sep","Oct","Nov","Déc"]'|safe }};
-const CA_DATA    = {{ ca_monthly_data|default:'[820000,950000,1100000,870000,1350000,1200000,980000,1050000,1400000,1250000,1600000,1800000]'|safe }};
+const CA_LABELS  = {{ ca_period_labels|default:'["01/08","02/08","03/08"]'|safe }};
+const CA_DATA    = {{ ca_period_data|default:'[420000,610000,530000]'|safe }};
+const CA_START   = "{{ ca_period_start|escapejs }}";
+const CA_END     = "{{ ca_period_end|escapejs }}";
 const CAT_LABELS = {{ sales_categories|default:'["Produit A","Produit B","Produit C","Autres"]'|safe }};
 const CAT_DATA   = {{ sales_cat_values|default:'[38,27,22,13]'|safe }};
 const AG_NAMES   = {{ agents_names|default:'["Alice M.","Bob K.","Clara D.","David P.","Emma S."]'|safe }};
 const AG_SALES   = {{ agents_sales|default:'[52,41,38,29,24]'|safe }};
-const AG_CA      = {{ agents_ca|default:'[1200000,980000,870000,640000,510000]'|safe }};
 const AG_ROLES   = {{ agents_roles|default:'["Commercial","Technicien","Commercial","Livreur","Commercial"]'|safe }};
+const PROD_NAMES = {{ top_products_names|default:'["Produit A","Produit B","Produit C","Produit D","Produit E"]'|safe }};
+const PROD_QTY   = {{ top_products_qty|default:'[120,98,87,64,51]'|safe }};
+const PROD_CA    = {{ top_products_ca|default:'[1200000,980000,870000,640000,510000]'|safe }};
 const CURRENCY_SYMBOL = "{{ currency_symbol|default:'EUR'|escapejs }}";
 
 // ─── Palette ───
@@ -915,32 +941,31 @@ const agentsBarChart = new Chart(agCtx, {
     }
 });
 
-// ════════════ LISTE TOP AGENTS ════════════
-(function renderAgentList() {
-    const el = document.getElementById('agent-list-render');
-    if (!AG_NAMES.length) { el.innerHTML = '<p style="color:#64748B;font-size:13px;padding:16px 0">Aucun agent disponible</p>'; return; }
+// ════════════ LISTE TOP PRODUITS VENDUS ════════════
+(function renderProductList() {
+    const el = document.getElementById('product-list-render');
+    if (!PROD_NAMES.length) { el.innerHTML = '<p style="color:#64748B;font-size:13px;padding:16px 0">Aucun produit vendu</p>'; return; }
 
-    const maxCA = Math.max(...AG_CA);
-    const sortedIdx = AG_CA.map((v,i) => i).sort((a,b) => AG_CA[b]-AG_CA[a]);
+    const maxQty = Math.max(...PROD_QTY);
+    const sortedIdx = PROD_QTY.map((v,i) => i).sort((a,b) => PROD_QTY[b]-PROD_QTY[a]);
 
     el.innerHTML = sortedIdx.map((i, rank) => {
-        const pct = Math.round((AG_CA[i] / maxCA) * 100);
+        const pct = maxQty ? Math.round((PROD_QTY[i] / maxQty) * 100) : 0;
         const color = COLORS[rank % COLORS.length];
-        const caStr = AG_CA[i].toLocaleString('fr-FR');
-        const initials = AG_NAMES[i].split(/[\s.]+/).filter(Boolean).map(w=>w[0]).join('').slice(0,2).toUpperCase();
+        const initials = PROD_NAMES[i].split(/[\s.]+/).filter(Boolean).map(w=>w[0]).join('').slice(0,2).toUpperCase();
         return `
         <div class="agent-row">
             <div class="agent-avatar" style="background:${color}22;color:${color};">${initials}</div>
             <div class="agent-info">
-                <div class="agent-name">${AG_NAMES[i]}</div>
-                <div class="agent-role">${AG_ROLES[i] || ''}</div>
+                <div class="agent-name">${PROD_NAMES[i]}</div>
+                <div class="agent-role">${(PROD_CA[i]/1000).toFixed(0)}k ${CURRENCY_SYMBOL} de CA</div>
             </div>
             <div class="agent-bar-wrap">
                 <div class="agent-bar-bg">
                     <div class="agent-bar-fill" data-pct="${pct}" style="background:${color};"></div>
                 </div>
             </div>
-            <div class="agent-value" style="color:${color};">${(AG_CA[i]/1000).toFixed(0)}k</div>
+            <div class="agent-value" style="color:${color};">${PROD_QTY[i]}</div>
         </div>`;
     }).join('');
 
@@ -952,17 +977,29 @@ const agentsBarChart = new Chart(agCtx, {
     });
 })();
 
-// ════════════ SWITCH PÉRIODE CA ════════════
-// Connecter ici à une API Django pour charger les données dynamiquement
-function updateCAChart(period) {
-    fetch(`{% url 'api_dashboard_ca' %}?period=${encodeURIComponent(period)}`, { credentials: 'same-origin' })
+// ════════════ CA PAR PÉRIODE (dates précises) ════════════
+function updateCAChart() {
+    const startInput = document.getElementById('ca-start');
+    const endInput = document.getElementById('ca-end');
+    const start = startInput.value;
+    const end = endInput.value;
+
+    if (!start || !end) return;
+    if (start > end) { alert('La date de début doit précéder la date de fin.'); return; }
+
+    const btn = document.getElementById('ca-apply-btn');
+    btn.disabled = true;
+
+    fetch(`{% url 'api_dashboard_ca' %}?start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}`, { credentials: 'same-origin' })
         .then(response => response.json())
         .then(data => {
+            if (data.error) { alert(data.error); return; }
             caChart.data.labels = data.labels;
             caChart.data.datasets[0].data = data.values;
             caChart.update();
         })
-        .catch(error => console.error('Erreur chargement CA:', error));
+        .catch(error => console.error('Erreur chargement CA:', error))
+        .finally(() => { btn.disabled = false; });
 }
 
 // ════════════ THÈME CLAIR / SOMBRE ════════════

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Connexion — Plateforme de Gestion de Stock</title>
+    <title>Lien d'activation invalide — Plateforme de Gestion de Stock</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 
@@ -46,14 +46,9 @@
         }
 
         .header { text-align: center; margin-bottom: 28px; }
-        .logo-mark {
-            width: 48px; height: 48px; margin: 0 auto 14px;
-            background: linear-gradient(135deg, var(--indigo), #9333EA);
-            border-radius: 14px; display: flex; align-items: center; justify-content: center;
-            font-size: 22px; font-weight: 800; color: white;
-        }
+        .invalid-icon { font-size: 40px; text-align: center; margin-bottom: 12px; }
         h1 { font-size: 20px; font-weight: 700; margin-bottom: 4px; color: var(--text-primary); }
-        .subtitle { font-size: 13px; color: var(--text-secondary); }
+        .subtitle { font-size: 13px; color: var(--text-secondary); line-height: 1.5; }
 
         .form-group { margin-bottom: 18px; }
         label {
@@ -61,8 +56,6 @@
             font-weight: 600; font-size: 13px;
         }
         .required { color: var(--rose); }
-
-        .input-wrap { position: relative; }
 
         input {
             width: 100%;
@@ -82,27 +75,7 @@
             box-shadow: 0 0 0 3px rgba(99,102,241,0.15);
         }
 
-        #password { padding-right: 44px; }
-        .toggle-password {
-            position: absolute;
-            right: 4px;
-            top: 50%;
-            transform: translateY(-50%);
-            background: transparent;
-            border: none;
-            color: var(--text-muted);
-            font-size: 16px;
-            cursor: pointer;
-            padding: 8px 10px;
-            flex: none;
-        }
-        .toggle-password:hover { color: var(--text-secondary); }
-
-        .btn-group {
-            display: flex;
-            gap: 10px;
-            margin-top: 24px;
-        }
+        .btn-group { display: flex; gap: 10px; margin-top: 24px; }
 
         button {
             flex: 1;
@@ -150,78 +123,45 @@
 <body>
     <div class="container">
         <div class="header">
-            <div class="logo-mark">📦</div>
-            <h1>Connexion</h1>
-            <div class="subtitle">Accédez à votre espace de gestion</div>
+            <div class="invalid-icon">⚠️</div>
+            <h1>Lien d'activation invalide</h1>
+            <div class="subtitle">Ce lien n'est plus valide ou a déjà été utilisé. Saisissez votre email pour en recevoir un nouveau.</div>
         </div>
 
-        <form id="loginForm">
+        <form id="resendForm">
             {% csrf_token %}
-
-            <!-- Email -->
             <div class="form-group">
                 <label for="email">Email <span class="required">*</span></label>
-                <input type="email" id="email" name="email" required placeholder="utilisateur@exemple.com" autofocus>
+                <input type="email" id="email" name="email" required placeholder="utilisateur@exemple.com" value="{{ email }}" autofocus>
             </div>
 
-            <!-- Mot de passe -->
-            <div class="form-group">
-                <label for="password">Mot de passe <span class="required">*</span></label>
-                <div class="input-wrap">
-                    <input type="password" id="password" name="password" required placeholder="Entrez votre mot de passe">
-                    <button type="button" class="toggle-password" id="togglePassword" aria-label="Afficher le mot de passe">👁️</button>
-                </div>
-                <div style="text-align:right; margin-top:8px;">
-                    <a href="{% url 'forgot_password' %}" style="color: var(--indigo-light); text-decoration:none; font-size:12.5px; font-weight:600;">Mot de passe oublié ?</a>
-                </div>
-            </div>
-
-            <!-- Message d'erreur/succès -->
             <div id="message" class="message"></div>
-            <div id="resendWrap" style="text-align:center; margin-top:10px; display:none;">
-                <a href="#" id="resendLink" style="color: var(--indigo-light); text-decoration:none; font-size:12.5px; font-weight:600;">Renvoyer le lien d'activation</a>
-            </div>
 
-            <!-- Boutons -->
             <div class="btn-group">
-                <button type="submit" class="btn-submit" id="submitBtn">Se connecter</button>
-            </div>
-
-            <div class="register-link">
-                Pas encore de compte ? <a href="{% url 'register' %}">Créez-en un</a>
-            </div>
-
-            <div class="register-link">
-                Vous êtes vendeur ? <a href="{% url 'vendor_login' %}">S'identifier</a>
+                <button type="submit" class="btn-submit" id="submitBtn">Renvoyer le lien</button>
             </div>
         </form>
+
+        <div class="register-link">
+            <a href="{% url 'login' %}">← Retour à la connexion</a>
+        </div>
     </div>
 
     <script>
-        const form = document.getElementById('loginForm');
+        const form = document.getElementById('resendForm');
         const messageDiv = document.getElementById('message');
         const submitBtn = document.getElementById('submitBtn');
-        const resendWrap = document.getElementById('resendWrap');
-        const resendLink = document.getElementById('resendLink');
-
-        document.getElementById('togglePassword').addEventListener('click', function() {
-            const pwd = document.getElementById('password');
-            const isHidden = pwd.type === 'password';
-            pwd.type = isHidden ? 'text' : 'password';
-            this.textContent = isHidden ? '🙈' : '👁️';
-        });
 
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
 
             submitBtn.disabled = true;
-            submitBtn.textContent = 'Connexion...';
-            resendWrap.style.display = 'none';
+            submitBtn.textContent = 'Envoi...';
 
             const formData = new FormData(form);
 
             try {
-                const response = await fetch('{% url "login" %}', {
+                const response = await fetch('{% url "resend_activation_email" %}', {
                     method: 'POST',
                     body: formData,
                 });
@@ -234,47 +174,18 @@
                 messageDiv.classList.add('show');
 
                 if (data.success) {
-                    setTimeout(() => {
-                        window.location.href = data.redirect || '/dashboard/';
-                    }, 1000);
+                    form.querySelector('#email').disabled = true;
+                    submitBtn.textContent = 'Email envoyé';
                 } else {
                     submitBtn.disabled = false;
-                    submitBtn.textContent = 'Se connecter';
-                    if (data.inactive) {
-                        resendWrap.style.display = 'block';
-                    }
+                    submitBtn.textContent = 'Renvoyer le lien';
                 }
             } catch (error) {
                 messageDiv.classList.remove('success');
                 messageDiv.classList.add('error', 'show');
-                messageDiv.textContent = 'Erreur lors de la connexion. Veuillez réessayer.';
+                messageDiv.textContent = 'Erreur réseau. Veuillez réessayer.';
                 submitBtn.disabled = false;
-                submitBtn.textContent = 'Se connecter';
-            }
-        });
-
-        resendLink.addEventListener('click', async (e) => {
-            e.preventDefault();
-            const email = document.getElementById('email').value;
-            if (!email) return;
-
-            resendLink.textContent = 'Envoi...';
-            const formData = new FormData();
-            formData.append('email', email);
-
-            try {
-                const response = await fetch('{% url "resend_activation_email" %}', {
-                    method: 'POST',
-                    body: formData,
-                });
-                const data = await response.json();
-                messageDiv.classList.remove('success', 'error');
-                messageDiv.textContent = data.message || data.error;
-                messageDiv.classList.add(data.success ? 'success' : 'error');
-                messageDiv.classList.add('show');
-                resendWrap.style.display = 'none';
-            } catch (error) {
-                resendLink.textContent = 'Renvoyer le lien d\'activation';
+                submitBtn.textContent = 'Renvoyer le lien';
             }
         });
     </script>
