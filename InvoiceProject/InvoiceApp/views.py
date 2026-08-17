@@ -1,5 +1,7 @@
 import json
+import re
 import uuid
+from datetime import datetime, timedelta
 from decimal import Decimal, InvalidOperation
 from functools import wraps
 
@@ -16,7 +18,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.http import JsonResponse, HttpResponse
 from django.db import transaction
 from django.db.models import Sum, Count
-from django.db.models.functions import TruncMonth
+from django.db.models.functions import TruncMonth, TruncDate
 from django.utils import timezone
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.encoding import force_bytes, force_str
@@ -68,6 +70,23 @@ def landing(request):
     """Landing page - visible to all visitors"""
     return render(request, 'landing.html')
 
+def _send_activation_email(user):
+    """Envoie l'email contenant le lien d'activation du compte entreprise."""
+    uid = urlsafe_base64_encode(force_bytes(user.pk))
+    token = default_token_generator.make_token(user)
+    activation_link = settings.SITE_BASE_URL.rstrip('/') + reverse('activate_account', kwargs={'uidb64': uid, 'token': token})
+
+    subject = "Activez votre compte InvoiceApp"
+    message = (
+        f"Bonjour {user.company_name},\n\n"
+        f"Merci de votre inscription sur InvoiceApp !\n"
+        f"Cliquez sur le lien ci-dessous pour activer votre compte et commencer à l'utiliser :\n\n"
+        f"{activation_link}\n\n"
+        f"Si vous n'êtes pas à l'origine de cette inscription, ignorez simplement cet email.\n"
+    )
+    send_mail(subject, message, settings.DEFAULT_FROM_EMAIL, [user.email], fail_silently=False)
+
+
 @require_http_methods(["GET", "POST"])
 def register_company(request):
     if request.method == "POST":
@@ -106,6 +125,7 @@ def register_company(request):
             address=address,
             default_currency=default_currency,
             logo=logo,
+            is_active=False,
         )
         Subscription.objects.create(
             company=user,
@@ -121,11 +141,20 @@ def register_company(request):
                 # on informe simplement l'entreprise dans la réponse.
                 pass
 
+        try:
+            _send_activation_email(user)
+            activation_email_sent = True
+        except Exception:
+            # On ne bloque jamais la création du compte si l'envoi d'email échoue,
+            # mais on informe le front pour proposer un renvoi manuel.
+            activation_email_sent = False
+
         return JsonResponse({
             "success": True,
-            "message": "Compte créé",
+            "message": "Compte créé. Vérifiez votre boîte mail pour activer votre compte.",
             "user_id": user.id,
             "promo_message": promo_message,
+            "activation_email_sent": activation_email_sent,
         })
 
     return render(request, 'register.html')
@@ -140,6 +169,15 @@ def login_view(request):
 
         user = authenticate(request, username=email, password=password)
         if user is None:
+            # Le compte existe peut-être mais n'est pas encore activé : authenticate()
+            # renvoie None dans ce cas (ModelBackend rejette les comptes is_active=False).
+            existing = User.objects.filter(username=email).first()
+            if existing and not existing.is_active and existing.check_password(password):
+                return JsonResponse({
+                    "success": False,
+                    "error": "Votre compte n'est pas encore activé. Vérifiez votre boîte mail (et vos spams) pour le lien d'activation.",
+                    "inactive": True,
+                }, status=403)
             return JsonResponse({"success": False, "error": "Identifiants invalides"}, status=400)
 
         login(request, user)
@@ -222,6 +260,51 @@ def reset_password_confirm(request, uidb64, token):
     user.set_password(new_password)
     user.save()
     return JsonResponse({"success": True, "message": "Mot de passe réinitialisé. Vous pouvez maintenant vous connecter."})
+
+
+# ═══════════════════════════════════════════════════════════════
+# Activation du compte entreprise (par email, après inscription)
+# ═══════════════════════════════════════════════════════════════
+
+@require_http_methods(["GET"])
+def activate_account(request, uidb64, token):
+    """Lien reçu par email après inscription : active le compte et connecte
+    directement l'entreprise si le lien est valide."""
+    try:
+        uid = force_str(urlsafe_base64_decode(uidb64))
+        user = User.objects.get(pk=uid)
+    except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+        user = None
+
+    if user is not None and default_token_generator.check_token(user, token):
+        if not user.is_active:
+            user.is_active = True
+            user.save(update_fields=['is_active'])
+        login(request, user)
+        return redirect('dashboard')
+
+    return render(request, 'activation_invalid.html', {
+        'email': user.email if user else '',
+    })
+
+
+@require_http_methods(["POST"])
+def resend_activation_email(request):
+    """Renvoie un email d'activation. Réponse générique (même si l'email n'existe
+    pas ou que le compte est déjà actif) pour ne pas révéler quels comptes existent."""
+    email = (request.POST.get("email") or "").strip()
+    if not email:
+        return JsonResponse({"success": False, "error": "Veuillez saisir votre adresse email."}, status=400)
+
+    generic_message = "Si un compte inactif existe avec cette adresse, un email d'activation vient d'être renvoyé."
+    user = User.objects.filter(email__iexact=email, is_active=False).first()
+    if user is not None:
+        try:
+            _send_activation_email(user)
+        except Exception:
+            pass
+
+    return JsonResponse({"success": True, "message": generic_message})
 
 
 # ═══════════════════════════════════════════════════════════════
@@ -522,6 +605,38 @@ def _sales_breakdown_by_product(user, limit=4):
     return labels, values
 
 
+def _revenue_by_period(user, start_date, end_date):
+    """Retourne (labels, valeurs) du chiffre d'affaires jour par jour entre deux dates précises (incluses)."""
+    rows = (
+        Sale.objects.filter(company=user, date__date__gte=start_date, date__date__lte=end_date)
+        .annotate(day=TruncDate('date'))
+        .values('day')
+        .annotate(total=Sum('total_price'))
+    )
+    totals_by_day = {row['day']: float(row['total'] or 0) for row in rows if row['day']}
+    labels, data = [], []
+    current = start_date
+    while current <= end_date:
+        labels.append(current.strftime('%d/%m/%Y'))
+        data.append(totals_by_day.get(current, 0))
+        current += timedelta(days=1)
+    return labels, data
+
+
+def _top_products(user, limit=5):
+    """Retourne (noms, quantités vendues, ca) des produits les plus vendus, triés par quantité décroissante."""
+    rows = list(
+        SaleItem.objects.filter(sale__company=user)
+        .values('product__id', 'product__name')
+        .annotate(qty=Sum('quantity'), total_ca=Sum('total_price'))
+        .order_by('-qty')[:limit]
+    )
+    names = [row['product__name'] or 'Produit supprimé' for row in rows]
+    qty = [row['qty'] or 0 for row in rows]
+    ca = [float(row['total_ca'] or 0) for row in rows]
+    return names, qty, ca
+
+
 def _agents_performance(user):
     """Retourne (noms, nb_ventes, ca, rôles) des agents ayant vendu ce mois-ci, triés par CA décroissant."""
     now = timezone.now()
@@ -544,9 +659,13 @@ def dashboard(request):
     user = request.user
     now = timezone.now()
 
-    ca_labels, ca_data = _monthly_revenue(user, now.year)
+    # Période par défaut du graphique CA : du 1er du mois en cours à aujourd'hui.
+    period_end = now.date()
+    period_start = period_end.replace(day=1)
+    ca_labels, ca_data = _revenue_by_period(user, period_start, period_end)
     cat_labels, cat_values = _sales_breakdown_by_product(user)
     agent_names, agent_sales, agent_ca, agent_roles = _agents_performance(user)
+    top_product_names, top_product_qty, top_product_ca = _top_products(user)
 
     currency_symbols = {'EUR': '€', 'USD': '$', 'XOF': 'FCFA'}
     currency_symbol = currency_symbols.get(user.default_currency, user.default_currency)
@@ -566,25 +685,47 @@ def dashboard(request):
         'supplies_count': user.supplies.count(),
         'invoices_count': user.invoices.count(),
         'currency_symbol': currency_symbol,
-        'ca_monthly_labels': json.dumps(ca_labels),
-        'ca_monthly_data': json.dumps(ca_data),
+        'ca_period_labels': json.dumps(ca_labels),
+        'ca_period_data': json.dumps(ca_data),
+        'ca_period_start': period_start.isoformat(),
+        'ca_period_end': period_end.isoformat(),
         'sales_categories': json.dumps(cat_labels),
         'sales_cat_values': json.dumps(cat_values),
         'agents_names': json.dumps(agent_names),
         'agents_sales': json.dumps(agent_sales),
         'agents_ca': json.dumps(agent_ca),
         'agents_roles': json.dumps(agent_roles),
+        'top_products_names': json.dumps(top_product_names),
+        'top_products_qty': json.dumps(top_product_qty),
+        'top_products_ca': json.dumps(top_product_ca),
     }
     return render(request, 'dashboard.html', context)
 
 @require_http_methods(["GET"])
 @login_required
 def api_dashboard_ca(request):
-    """Retourne le CA mensuel en JSON pour le sélecteur de période du dashboard."""
-    period = request.GET.get('period', 'year')
-    now = timezone.now()
-    year = now.year if period == 'year' else now.year - 1
-    labels, data = _monthly_revenue(request.user, year)
+    """Retourne le CA jour par jour, en JSON, pour une période précise choisie sur le dashboard."""
+    start_str = request.GET.get('start')
+    end_str = request.GET.get('end')
+
+    try:
+        start_date = datetime.strptime(start_str, '%Y-%m-%d').date() if start_str else None
+        end_date = datetime.strptime(end_str, '%Y-%m-%d').date() if end_str else None
+    except ValueError:
+        return JsonResponse({'error': "Format de date invalide (attendu AAAA-MM-JJ)"}, status=400)
+
+    today = timezone.now().date()
+    if not start_date or not end_date:
+        start_date = start_date or today.replace(day=1)
+        end_date = end_date or today
+
+    if start_date > end_date:
+        start_date, end_date = end_date, start_date
+
+    if (end_date - start_date).days > 366:
+        return JsonResponse({'error': "La période ne peut pas dépasser 366 jours"}, status=400)
+
+    labels, data = _revenue_by_period(request.user, start_date, end_date)
     return JsonResponse({'labels': labels, 'values': data})
 
 @require_http_methods(["GET", "POST"])
@@ -649,6 +790,7 @@ def list_agents(request):
         'company_logo_url': user.logo.url if user.logo else None,
         'agents': agents,
         'roles': user.agent_roles.all(),
+        'engines': user.engines.all(),
         'agent_login_code': user.agent_login_code,
     }
     return render(request, 'agent_list.html', context)
@@ -865,6 +1007,7 @@ def add_agent(request):
     email = request.POST.get("email", "")
     phone = request.POST.get("phone", "")
     role_id = request.POST.get("role_id")
+    engine_id = request.POST.get("engine_id")
     pin = request.POST.get("pin", "").strip()
 
     if not name:
@@ -882,6 +1025,9 @@ def add_agent(request):
                 return JsonResponse({"success": False, "error": "Ce PIN est déjà utilisé par un autre agent"}, status=400)
 
     role = AgentRole.objects.filter(id=role_id, company=request.user).first() if role_id else None
+    engine = Engine.objects.filter(id=engine_id, company=request.user).first() if engine_id else None
+    if engine_id and not engine:
+        return JsonResponse({"success": False, "error": "Engin introuvable"}, status=400)
 
     if agent_id:
         # Édition
@@ -891,6 +1037,7 @@ def add_agent(request):
             agent.email = email
             agent.phone = phone
             agent.role = role
+            agent.engine = engine
             if pin:
                 agent.set_pin(pin)
             agent.save()
@@ -899,7 +1046,7 @@ def add_agent(request):
             return JsonResponse({"success": False, "error": "Agent non trouvé"}, status=404)
     else:
         # Création
-        agent = Agent(company=request.user, name=name, email=email, phone=phone, role=role)
+        agent = Agent(company=request.user, name=name, email=email, phone=phone, role=role, engine=engine)
         if pin:
             agent.set_pin(pin)
         agent.save()
@@ -1497,7 +1644,11 @@ def record_invoice_payment(request):
     })
 
 
-def _render_invoice_pdf(invoice):
+
+
+def _build_invoice_pdf_bytes(invoice):
+    """Génère le PDF de la facture et retourne ses octets bruts (réutilisable pour
+    le téléchargement HTTP ou tout autre usage futur)."""
     company = invoice.company
     sale = invoice.sale
     client = sale.client
@@ -1641,8 +1792,13 @@ def _render_invoice_pdf(invoice):
     p.showPage()
     p.save()
     buffer.seek(0)
+    return buffer.getvalue()
 
-    response = HttpResponse(buffer, content_type='application/pdf')
+
+def _render_invoice_pdf(invoice):
+    """Réponse HTTP de téléchargement du PDF de la facture."""
+    pdf_bytes = _build_invoice_pdf_bytes(invoice)
+    response = HttpResponse(pdf_bytes, content_type='application/pdf')
     response['Content-Disposition'] = f'attachment; filename="{invoice.invoice_number}.pdf"'
     return response
 
@@ -1886,7 +2042,6 @@ def vendor_add_sale(request):
                 invoice=invoice, amount=amount_paid, recorded_by_agent=agent,
                 note="Versement à la vente" if payment_type == "partial" else "Paiement comptant"
             )
-
 
     return JsonResponse({
         "success": True,

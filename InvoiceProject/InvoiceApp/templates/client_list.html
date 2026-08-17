@@ -276,6 +276,15 @@
         }
         .close-btn:hover { color: var(--text-primary); }
 
+        .modal-box { text-align: center; max-width: 420px; }
+        .modal-icon { font-size: 36px; margin-bottom: 12px; }
+        .modal-title { font-size: 17px; font-weight: 700; }
+        .modal-msg { font-size: 13.5px; color: var(--text-secondary); margin-bottom: 24px; line-height: 1.7; }
+        .modal-msg strong { color: var(--text-primary); }
+        .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 8px; }
+        .btn-danger-solid { background: var(--rose); color: white; border: none; }
+        .btn-danger-solid:hover { background: #e0294a; }
+
         .form-label {
             display: block;
             margin-bottom: 6px;
@@ -396,7 +405,7 @@
                                     onclick="openClientModal({{ client.id }}, '{{ client.name|escapejs }}', '{{ client.shop_name|escapejs }}', '{{ client.email|escapejs }}', '{{ client.phone|escapejs }}', '{{ client.address|escapejs }}')">
                                 Modifier
                             </button>
-                            <button type="button" onclick="deleteClient({{ client.id }})" class="btn btn-danger-soft btn-sm">Supprimer</button>
+                            <button type="button" onclick="openDeleteModal({{ client.id }}, '{{ client.name|escapejs }}')" class="btn btn-danger-soft btn-sm">Supprimer</button>
                         </td>
                     </tr>
                     {% empty %}
@@ -541,10 +550,27 @@
         }
     });
 
-    async function deleteClient(clientId) {
-        if (!confirm('Supprimer ce client ?')) return;
+    let clientToDelete = null;
+
+    function openDeleteModal(clientId, name) {
+        clientToDelete = clientId;
+        document.getElementById('modal-client-name').textContent = name;
+        document.getElementById('deleteModal').classList.add('show');
+    }
+
+    function closeDeleteModal() {
+        clientToDelete = null;
+        document.getElementById('deleteModal').classList.remove('show');
+    }
+
+    document.getElementById('deleteModal').addEventListener('click', function (e) {
+        if (e.target === this) closeDeleteModal();
+    });
+
+    document.getElementById('confirmDeleteBtn').addEventListener('click', async function () {
+        if (!clientToDelete) return;
         const formData = new FormData();
-        formData.append('client_id', clientId);
+        formData.append('client_id', clientToDelete);
 
         const response = await fetch('{% url "delete_client" %}', {
             method: 'POST',
@@ -564,11 +590,12 @@
 
         const data = await response.json();
         if (data.success) {
+            closeDeleteModal();
             location.reload();
         } else {
             alert(data.error || 'Erreur lors de la suppression');
         }
-    }
+    });
 
     document.getElementById('searchInput').addEventListener('keyup', function() {
         const filter = this.value.toLowerCase();
@@ -579,6 +606,22 @@
         });
     });
 </script>
+
+<!-- ══════════════ MODAL CONFIRMATION SUPPRESSION ══════════════ -->
+<div class="modal-overlay" id="deleteModal">
+    <div class="modal-content modal-box">
+        <div class="modal-icon">⚠️</div>
+        <div class="modal-title">Confirmer la suppression</div>
+        <div class="modal-msg">
+            Êtes-vous sûr de vouloir supprimer le client <strong id="modal-client-name"></strong> ?
+            <br>Cette action est <strong>irréversible</strong>.
+        </div>
+        <div class="modal-actions">
+            <button type="button" class="btn btn-ghost" onclick="closeDeleteModal()">Annuler</button>
+            <button type="button" class="btn btn-danger-solid" id="confirmDeleteBtn">🗑️ Supprimer</button>
+        </div>
+    </div>
+</div>
 
 </body>
 </html>

@@ -93,6 +93,7 @@ class Agent(models.Model):
     email = models.EmailField(blank=True, verbose_name="Email")
     phone = models.CharField(max_length=20, blank=True, verbose_name="Téléphone")
     role = models.ForeignKey(AgentRole, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Rôle")
+    engine = models.ForeignKey('Engine', on_delete=models.SET_NULL, null=True, blank=True, related_name='assigned_agents', verbose_name="Engin par défaut")
     pin_hash = models.CharField(max_length=128, blank=True, verbose_name="PIN (haché)")
     is_active = models.BooleanField(default=True, verbose_name="Accès actif")
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="Date de création")

@@ -296,6 +296,15 @@
         }
         .close-btn:hover { color: var(--text-primary); }
 
+        .modal-box { text-align: center; max-width: 420px; }
+        .modal-icon { font-size: 36px; margin-bottom: 12px; }
+        .modal-title { font-size: 17px; font-weight: 700; }
+        .modal-msg { font-size: 13.5px; color: var(--text-secondary); margin-bottom: 24px; line-height: 1.7; }
+        .modal-msg strong { color: var(--text-primary); }
+        .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 8px; }
+        .btn-danger-solid { background: var(--rose); color: white; border: none; }
+        .btn-danger-solid:hover { background: #e0294a; }
+
         .form-label {
             display: block;
             margin-bottom: 6px;
@@ -432,7 +441,7 @@
                                     onclick="openProductModalFromButton(this)">
                                 Modifier
                             </button>
-                            <button type="button" onclick="deleteProduct({{ product.id }})" class="btn btn-danger-soft btn-sm">Supprimer</button>
+                            <button type="button" onclick="openDeleteModal({{ product.id }}, '{{ product.name|escapejs }}')" class="btn btn-danger-soft btn-sm">Supprimer</button>
                         </td>
                     </tr>
                     {% empty %}
@@ -591,10 +600,27 @@
         }
     });
 
-    async function deleteProduct(productId) {
-        if (!confirm('Supprimer ce produit ?')) return;
+    let productToDelete = null;
+
+    function openDeleteModal(productId, name) {
+        productToDelete = productId;
+        document.getElementById('modal-product-name').textContent = name;
+        document.getElementById('deleteModal').classList.add('show');
+    }
+
+    function closeDeleteModal() {
+        productToDelete = null;
+        document.getElementById('deleteModal').classList.remove('show');
+    }
+
+    document.getElementById('deleteModal').addEventListener('click', function (e) {
+        if (e.target === this) closeDeleteModal();
+    });
+
+    document.getElementById('confirmDeleteBtn').addEventListener('click', async function () {
+        if (!productToDelete) return;
         const formData = new FormData();
-        formData.append('product_id', productId);
+        formData.append('product_id', productToDelete);
 
         const response = await fetch('{% url "delete_product" %}', {
             method: 'POST',
@@ -614,11 +640,12 @@
 
         const data = await response.json();
         if (data.success) {
+            closeDeleteModal();
             location.reload();
         } else {
             alert(data.error || 'Erreur lors de la suppression');
         }
-    }
+    });
 
     document.getElementById('searchInput').addEventListener('keyup', function() {
         const filter = this.value.toLowerCase();
@@ -629,6 +656,22 @@
         });
     });
 </script>
+
+<!-- ══════════════ MODAL CONFIRMATION SUPPRESSION ══════════════ -->
+<div class="modal-overlay" id="deleteModal">
+    <div class="modal-content modal-box">
+        <div class="modal-icon">⚠️</div>
+        <div class="modal-title">Confirmer la suppression</div>
+        <div class="modal-msg">
+            Êtes-vous sûr de vouloir supprimer le produit <strong id="modal-product-name"></strong> ?
+            <br>Cette action est <strong>irréversible</strong>.
+        </div>
+        <div class="modal-actions">
+            <button type="button" class="btn btn-ghost" onclick="closeDeleteModal()">Annuler</button>
+            <button type="button" class="btn btn-danger-solid" id="confirmDeleteBtn">🗑️ Supprimer</button>
+        </div>
+    </div>
+</div>
 
 </body>
 </html>

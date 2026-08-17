@@ -184,6 +184,15 @@
         .close-btn { float: right; font-size: 28px; font-weight: bold; color: var(--text-muted); cursor: pointer; }
         .close-btn:hover { color: var(--text-primary); }
 
+        .modal-box { text-align: center; max-width: 420px; }
+        .modal-icon { font-size: 36px; margin-bottom: 12px; }
+        .modal-title { font-size: 17px; font-weight: 700; }
+        .modal-msg { font-size: 13.5px; color: var(--text-secondary); margin-bottom: 24px; line-height: 1.7; }
+        .modal-msg strong { color: var(--text-primary); }
+        .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 8px; }
+        .btn-danger-solid { background: var(--rose); color: white; border: none; }
+        .btn-danger-solid:hover { background: #e0294a; }
+
         .form-label { display: block; margin-bottom: 6px; color: var(--text-secondary); font-size: 13px; font-weight: 600; }
         .form-control, .form-select, textarea { width: 100%; background: rgba(255,255,255,0.04); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; color: var(--text-primary); outline: none; }
         .form-control:focus, .form-select:focus, textarea:focus { border-color: var(--indigo); box-shadow: 0 0 0 3px rgba(99,102,241,0.15); }
@@ -284,7 +293,7 @@
                                     onclick="openSupplierModal({{ supplier.id }}, '{{ supplier.name|escapejs }}', '{{ supplier.email|escapejs }}', '{{ supplier.phone|escapejs }}', '{{ supplier.address|escapejs }}')">
                                 Modifier
                             </button>
-                            <button type="button" onclick="deleteSupplier({{ supplier.id }})" class="btn btn-danger-soft btn-sm">Supprimer</button>
+                            <button type="button" onclick="openDeleteModal({{ supplier.id }}, '{{ supplier.name|escapejs }}')" class="btn btn-danger-soft btn-sm">Supprimer</button>
                         </td>
                     </tr>
                     {% empty %}
@@ -419,10 +428,27 @@
         }
     });
 
-    async function deleteSupplier(supplierId) {
-        if (!confirm('Supprimer ce fournisseur ?')) return;
+    let supplierToDelete = null;
+
+    function openDeleteModal(supplierId, name) {
+        supplierToDelete = supplierId;
+        document.getElementById('modal-supplier-name').textContent = name;
+        document.getElementById('deleteModal').classList.add('open');
+    }
+
+    function closeDeleteModal() {
+        supplierToDelete = null;
+        document.getElementById('deleteModal').classList.remove('open');
+    }
+
+    document.getElementById('deleteModal').addEventListener('click', function (e) {
+        if (e.target === this) closeDeleteModal();
+    });
+
+    document.getElementById('confirmDeleteBtn').addEventListener('click', async function () {
+        if (!supplierToDelete) return;
         const formData = new FormData();
-        formData.append('supplier_id', supplierId);
+        formData.append('supplier_id', supplierToDelete);
 
         const response = await fetch('{% url "delete_supplier" %}', {
             method: 'POST',
@@ -440,11 +466,12 @@
 
         const data = await response.json();
         if (data.success) {
+            closeDeleteModal();
             location.reload();
         } else {
             alert(data.error || 'Erreur lors de la suppression');
         }
-    }
+    });
 
     document.getElementById('searchInput').addEventListener('keyup', function() {
         const filter = this.value.toLowerCase();
@@ -456,7 +483,21 @@
     });
 </script>
 
+<!-- ══════════════ MODAL CONFIRMATION SUPPRESSION ══════════════ -->
+<div class="modal-overlay" id="deleteModal">
+    <div class="modal-box">
+        <div class="modal-icon">⚠️</div>
+        <div class="modal-title">Confirmer la suppression</div>
+        <div class="modal-msg">
+            Êtes-vous sûr de vouloir supprimer le fournisseur <strong id="modal-supplier-name"></strong> ?
+            <br>Cette action est <strong>irréversible</strong>.
+        </div>
+        <div class="modal-actions">
+            <button type="button" class="btn btn-ghost" onclick="closeDeleteModal()">Annuler</button>
+            <button type="button" class="btn btn-danger-solid" id="confirmDeleteBtn">🗑️ Supprimer</button>
+        </div>
+    </div>
+</div>
+
 </body>
 </html>
-
-
