@@ -439,7 +439,7 @@
                                     onclick="openSaleModalFromButton(this)">
                                 Modifier
                             </button>
-                            <button type="button" onclick="deleteSale({{ sale.id }})" class="btn btn-danger-soft btn-sm">Supprimer</button>
+                            <button type="button" onclick="openDeleteModal({{ sale.id }})" class="btn btn-danger-soft btn-sm">Supprimer</button>
                         </td>
                     </tr>
                     {% empty %}
@@ -693,10 +693,27 @@
         }
     });
 
-    async function deleteSale(saleId) {
-        if (!confirm('Supprimer cette vente ?')) return;
+    let saleToDelete = null;
+
+    function openDeleteModal(saleId) {
+        saleToDelete = saleId;
+        document.getElementById('modal-sale-id').textContent = '#' + saleId;
+        document.getElementById('deleteModal').classList.add('open');
+    }
+
+    function closeDeleteModal() {
+        saleToDelete = null;
+        document.getElementById('deleteModal').classList.remove('open');
+    }
+
+    document.getElementById('deleteModal').addEventListener('click', function (e) {
+        if (e.target === this) closeDeleteModal();
+    });
+
+    document.getElementById('confirmDeleteBtn').addEventListener('click', async function () {
+        if (!saleToDelete) return;
         const formData = new FormData();
-        formData.append('sale_id', saleId);
+        formData.append('sale_id', saleToDelete);
 
         const response = await fetch('{% url "delete_sale" %}', {
             method: 'POST',
@@ -716,11 +733,12 @@
 
         const data = await response.json();
         if (data.success) {
+            closeDeleteModal();
             location.reload();
         } else {
             alert(data.error || 'Erreur lors de la suppression');
         }
-    }
+    });
 
     document.getElementById('searchInput').addEventListener('keyup', function() {
         const filter = this.value.toLowerCase();
@@ -731,6 +749,22 @@
         });
     });
 </script>
+
+<!-- ══════════════ MODAL CONFIRMATION SUPPRESSION ══════════════ -->
+<div class="modal-overlay" id="deleteModal">
+    <div class="modal-box">
+        <div class="modal-icon">⚠️</div>
+        <div class="modal-title">Confirmer la suppression</div>
+        <div class="modal-msg">
+            Êtes-vous sûr de vouloir supprimer la vente <strong id="modal-sale-id"></strong> ?
+            <br>Cette action est <strong>irréversible</strong>.
+        </div>
+        <div class="modal-actions">
+            <button type="button" class="btn btn-ghost" onclick="closeDeleteModal()">Annuler</button>
+            <button type="button" class="btn btn-danger-solid" id="confirmDeleteBtn">🗑️ Supprimer</button>
+        </div>
+    </div>
+</div>
 
 </body>
 </html>

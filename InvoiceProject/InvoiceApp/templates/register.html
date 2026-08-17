@@ -530,7 +530,7 @@
                 if (data.success) {
                     setTimeout(() => {
                         window.location.href = '{% url "login" %}';
-                    }, 1800);
+                    }, 3000);
                 } else {
                     submitBtn.disabled = false;
                     submitBtn.textContent = 'Créer mon compte';

@@ -187,6 +187,15 @@
         .close-btn { float: right; font-size: 28px; font-weight: bold; color: var(--text-muted); cursor: pointer; }
         .close-btn:hover { color: var(--text-primary); }
 
+        .modal-box { text-align: center; max-width: 420px; }
+        .modal-icon { font-size: 36px; margin-bottom: 12px; }
+        .modal-title { font-size: 17px; font-weight: 700; }
+        .modal-msg { font-size: 13.5px; color: var(--text-secondary); margin-bottom: 24px; line-height: 1.7; }
+        .modal-msg strong { color: var(--text-primary); }
+        .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 8px; }
+        .btn-danger-solid { background: var(--rose); color: white; border: none; }
+        .btn-danger-solid:hover { background: #e0294a; }
+
         .form-label { display: block; margin-bottom: 6px; color: var(--text-secondary); font-size: 13px; font-weight: 600; }
         .form-control, .form-select { width: 100%; background: rgba(255,255,255,0.04); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; color: var(--text-primary); outline: none; }
         .form-control:focus, .form-select:focus { border-color: var(--indigo); box-shadow: 0 0 0 3px rgba(99,102,241,0.15); }
@@ -306,7 +315,7 @@
                                     onclick="openSupplyModalFromButton(this)">
                                 Modifier
                             </button>
-                            <button type="button" onclick="deleteSupply({{ supply.id }})" class="btn btn-danger-soft btn-sm">Supprimer</button>
+                            <button type="button" onclick="openDeleteModal({{ supply.id }})" class="btn btn-danger-soft btn-sm">Supprimer</button>
                         </td>
                     </tr>
                     {% empty %}
@@ -544,10 +553,27 @@
         }
     });
 
-    async function deleteSupply(supplyId) {
-        if (!confirm('Supprimer cet approvisionnement ?')) return;
+    let supplyToDelete = null;
+
+    function openDeleteModal(supplyId) {
+        supplyToDelete = supplyId;
+        document.getElementById('modal-supply-id').textContent = '#' + supplyId;
+        document.getElementById('deleteModal').classList.add('show');
+    }
+
+    function closeDeleteModal() {
+        supplyToDelete = null;
+        document.getElementById('deleteModal').classList.remove('show');
+    }
+
+    document.getElementById('deleteModal').addEventListener('click', function (e) {
+        if (e.target === this) closeDeleteModal();
+    });
+
+    document.getElementById('confirmDeleteBtn').addEventListener('click', async function () {
+        if (!supplyToDelete) return;
         const formData = new FormData();
-        formData.append('supply_id', supplyId);
+        formData.append('supply_id', supplyToDelete);
 
         const response = await fetch('{% url "delete_supply" %}', {
             method: 'POST',
@@ -565,11 +591,12 @@
 
         const data = await response.json();
         if (data.success) {
+            closeDeleteModal();
             location.reload();
         } else {
             alert(data.error || 'Erreur lors de la suppression');
         }
-    }
+    });
 
     document.getElementById('searchInput').addEventListener('keyup', function() {
         const filter = this.value.toLowerCase();
@@ -580,6 +607,22 @@
         });
     });
 </script>
+
+<!-- ══════════════ MODAL CONFIRMATION SUPPRESSION ══════════════ -->
+<div class="modal-overlay" id="deleteModal">
+    <div class="modal-content modal-box">
+        <div class="modal-icon">⚠️</div>
+        <div class="modal-title">Confirmer la suppression</div>
+        <div class="modal-msg">
+            Êtes-vous sûr de vouloir supprimer l'approvisionnement <strong id="modal-supply-id"></strong> ?
+            <br>Cette action est <strong>irréversible</strong>.
+        </div>
+        <div class="modal-actions">
+            <button type="button" class="btn btn-ghost" onclick="closeDeleteModal()">Annuler</button>
+            <button type="button" class="btn btn-danger-solid" id="confirmDeleteBtn">🗑️ Supprimer</button>
+        </div>
+    </div>
+</div>
 
 </body>
 </html>
