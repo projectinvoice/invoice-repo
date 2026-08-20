@@ -32,6 +32,10 @@ urlpatterns = [
     path('logout/', invoice_views.logout_view, name='logout'),
     path('dashboard/', invoice_views.dashboard, name='dashboard'),
     path('api/dashboard/ca/', invoice_views.api_dashboard_ca, name='api_dashboard_ca'),
+
+    # Assistant IA flottant (Gemini + function calling sur les données de l'entreprise)
+    path('api/ai-chat/', invoice_views.ai_chat_api, name='ai_chat_api'),
+    path('api/ai-chat/init/', invoice_views.ai_chat_init, name='ai_chat_init'),
     path('company-settings/', invoice_views.company_settings, name='company_settings'),
     path('manage-agent-roles/', invoice_views.manage_agent_roles, name='manage_agent_roles'),
 
