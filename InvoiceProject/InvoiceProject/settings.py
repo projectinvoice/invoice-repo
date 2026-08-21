@@ -35,12 +35,24 @@ GEMINI_MODEL = os.getenv('GEMINI_MODEL', 'gemini-2.5-flash')
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-ly8$wnu(bk8=b^$gvwz$)z0cmwbhd$#oin)jp7492qzqa^s_2t'
+# Lue depuis .env — ne JAMAIS committer de vraie clé. Le fallback ci-dessous
+# n'est utilisable qu'en local (il est volontairement marqué "insecure").
+SECRET_KEY = os.environ.get(
+    'SECRET_KEY',
+    'django-insecure-CHANGE-ME-en-dev-uniquement-ne-jamais-utiliser-en-prod',
+)
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.environ.get('DEBUG', 'True') == 'True'
 
-ALLOWED_HOSTS = []
+# Domaines/IP autorisés à servir l'app, séparés par des virgules dans .env.
+# Ex: ALLOWED_HOSTS=monapp.com,www.monapp.com
+ALLOWED_HOSTS = [h.strip() for h in os.environ.get('ALLOWED_HOSTS', '').split(',') if h.strip()]
+
+# Origines de confiance pour les requêtes POST cross-origin protégées par CSRF
+# (nécessaire dès que l'app est servie en HTTPS derrière un domaine réel).
+# Ex: CSRF_TRUSTED_ORIGINS=https://monapp.com,https://www.monapp.com
+CSRF_TRUSTED_ORIGINS = [o.strip() for o in os.environ.get('CSRF_TRUSTED_ORIGINS', '').split(',') if o.strip()]
 
 
 # Application definition
@@ -185,3 +197,34 @@ DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'no-reply@votre-domain
 # Durée de validité d'un lien de réinitialisation de mot de passe (en secondes).
 # 86400 = 24 heures.
 PASSWORD_RESET_TIMEOUT = int(os.environ.get('PASSWORD_RESET_TIMEOUT', '86400'))
+
+# ═══════════════════════════════════════════════════════════════
+# Sécurité production — actif uniquement quand DEBUG=False (via .env)
+# ═══════════════════════════════════════════════════════════════
+# En local (DEBUG=True), ces réglages sont désactivés pour ne pas gêner le
+# développement (pas de HTTPS local, pas de domaine réel).
+if not DEBUG:
+    # Redirige tout le trafic HTTP vers HTTPS.
+    SECURE_SSL_REDIRECT = os.environ.get('SECURE_SSL_REDIRECT', 'True') == 'True'
+    # Nécessaire si l'app est derrière un proxy/load balancer qui termine le TLS
+    # (Nginx, Render, Railway, etc.) pour que Django sache que la requête est HTTPS.
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+    # Les cookies de session et CSRF ne doivent circuler qu'en HTTPS.
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+
+    # HSTS : force le navigateur à toujours utiliser HTTPS pour ce domaine.
+    # Démarrez avec une valeur basse (ex: 3600) le temps de valider le déploiement
+    # HTTPS, puis augmentez (ex: 31536000 = 1 an) une fois confiant.
+    SECURE_HSTS_SECONDS = int(os.environ.get('SECURE_HSTS_SECONDS', '3600'))
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+
+    # Empêche le navigateur de deviner le type MIME d'un fichier (protection XSS).
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+
+    # Interdit l'affichage du site dans une <iframe> sur un autre domaine
+    # (protection contre le clickjacking). XFrameOptionsMiddleware l'applique déjà
+    # par défaut à 'DENY' ; on le rend explicite ici.
+    X_FRAME_OPTIONS = 'DENY'
