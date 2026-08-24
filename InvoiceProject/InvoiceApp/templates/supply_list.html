@@ -367,6 +367,22 @@
     </div>
 </div>
 
+<!-- ══════════════ MODAL CONFIRMATION SUPPRESSION ══════════════ -->
+<div class="modal-overlay" id="deleteModal">
+    <div class="modal-content modal-box">
+        <div class="modal-icon">⚠️</div>
+        <div class="modal-title">Confirmer la suppression</div>
+        <div class="modal-msg">
+            Êtes-vous sûr de vouloir supprimer l'approvisionnement <strong id="modal-supply-id"></strong> ?
+            <br>Cette action est <strong>irréversible</strong>.
+        </div>
+        <div class="modal-actions">
+            <button type="button" class="btn btn-ghost" onclick="closeDeleteModal()">Annuler</button>
+            <button type="button" class="btn btn-danger-solid" id="confirmDeleteBtn">🗑️ Supprimer</button>
+        </div>
+    </div>
+</div>
+
 <script>
     function createSupplyItemRow(productId = '', quantity = '', unitPrice = '') {
         const container = document.getElementById('supplyItemsContainer');
@@ -609,21 +625,7 @@
     });
 </script>
 
-<!-- ══════════════ MODAL CONFIRMATION SUPPRESSION ══════════════ -->
-<div class="modal-overlay" id="deleteModal">
-    <div class="modal-content modal-box">
-        <div class="modal-icon">⚠️</div>
-        <div class="modal-title">Confirmer la suppression</div>
-        <div class="modal-msg">
-            Êtes-vous sûr de vouloir supprimer l'approvisionnement <strong id="modal-supply-id"></strong> ?
-            <br>Cette action est <strong>irréversible</strong>.
-        </div>
-        <div class="modal-actions">
-            <button type="button" class="btn btn-ghost" onclick="closeDeleteModal()">Annuler</button>
-            <button type="button" class="btn btn-danger-solid" id="confirmDeleteBtn">🗑️ Supprimer</button>
-        </div>
-    </div>
-</div>
+
 
 <script src="{% static 'InvoiceApp/js/ai_assistant.js' %}"></script>
 </body>
