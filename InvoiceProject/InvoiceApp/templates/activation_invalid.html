@@ -159,11 +159,14 @@
             submitBtn.textContent = 'Envoi...';
 
             const formData = new FormData(form);
+            const csrfToken = form.querySelector('[name=csrfmiddlewaretoken]').value;
 
             try {
                 const response = await fetch('{% url "resend_activation_email" %}', {
                     method: 'POST',
                     body: formData,
+                    headers: { 'X-CSRFToken': csrfToken },
+                    credentials: 'same-origin',
                 });
 
                 const data = await response.json();

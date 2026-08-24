@@ -244,6 +244,29 @@
             padding: 24px;
         }
         .modal-overlay.show { display: flex; }
+        .modal-icon { font-size: 36px; margin-bottom: 12px; text-align: center; }
+        .modal-msg { font-size: 13.5px; color: var(--text-secondary); margin-bottom: 24px; line-height: 1.7; text-align: center; }
+        .modal-msg strong { color: var(--text-primary); }
+        .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 8px; }
+        .btn-danger-solid { background: var(--rose); color: white; border: none; }
+        .btn-danger-solid:hover { background: #e0294a; }
+        .confirm-content { max-width: 400px; }
+        .toast {
+            position: fixed; bottom: 24px; right: 24px;
+            background: #1E293B; border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 12px 18px;
+            font-size: 13px; font-weight: 500;
+            display: flex; align-items: center; gap: 10px;
+            box-shadow: var(--shadow);
+            transform: translateY(80px); opacity: 0;
+            transition: all 0.3s cubic-bezier(0.22,1,0.36,1);
+            z-index: 999;
+            pointer-events: none;
+        }
+        .toast.show { transform: translateY(0); opacity: 1; }
+        .toast.success { border-color: rgba(16,185,129,0.4); color: var(--emerald); }
+        .toast.error { border-color: rgba(244,63,94,0.4); color: var(--rose); }
         .modal-content {
             background: var(--bg-card);
             border: 1px solid var(--border);
@@ -369,7 +392,7 @@
                         <td><span class="role-muted">{{ role.description|default:"Aucune description" }}</span></td>
                         <td>
                             <button type="button" class="btn btn-edit-soft btn-sm" onclick="openRoleModal({{ role.id }}, '{{ role.name|escapejs }}', '{{ role.description|default:''|escapejs }}')">Modifier</button>
-                            <button type="button" class="btn btn-danger-soft btn-sm" onclick="deleteRole({{ role.id }})">Supprimer</button>
+                            <button type="button" class="btn btn-danger-soft btn-sm" onclick="openDeleteModal({{ role.id }}, '{{ role.name|escapejs }}')">Supprimer</button>
                         </td>
                     </tr>
                     {% empty %}
@@ -408,6 +431,25 @@
         <div id="message" style="margin-top: 15px;"></div>
     </div>
 </div>
+
+<!-- ══════════════ MODAL CONFIRMATION SUPPRESSION ══════════════ -->
+<div class="modal-overlay" id="deleteModal">
+    <div class="modal-content confirm-content">
+        <div class="modal-icon">⚠️</div>
+        <div style="font-size:17px;font-weight:700;margin-bottom:12px;text-align:center;">Confirmer la suppression</div>
+        <div class="modal-msg">
+            Êtes-vous sûr de vouloir supprimer le rôle <strong id="modal-item-name"></strong> ?
+            <br>Cette action est <strong>irréversible</strong>.
+        </div>
+        <div class="modal-actions">
+            <button type="button" class="btn btn-ghost" onclick="closeDeleteModal()">Annuler</button>
+            <button type="button" class="btn btn-danger-solid" id="confirmDeleteBtn">🗑️ Supprimer</button>
+        </div>
+    </div>
+</div>
+
+<!-- ══════════════ TOAST ══════════════ -->
+<div class="toast" id="toast"></div>
 
 <script>
     function openRoleModal(roleId = '', name = '', description = '') {
@@ -475,32 +517,66 @@
         }
     });
 
-    async function deleteRole(roleId) {
-        if (!confirm('Supprimer ce rôle ?')) return;
-        const formData = new FormData();
-        formData.append('role_id', roleId);
-        formData.append('csrfmiddlewaretoken', csrfToken);
-        const response = await fetch('{% url "delete_agent_role" %}', {
-            method: 'POST',
-            body: formData,
-            headers: {
-                'X-CSRFToken': csrfToken
-            },
-            credentials: 'same-origin'
-        });
-        if (!response.ok) {
-            const text = await response.text();
-            alert('Erreur serveur: ' + response.status);
-            console.error('Server error:', response.status, text);
-            return;
-        }
-        const data = await response.json();
-        if (data.success) {
-            location.reload();
-        } else {
-            alert(data.error || 'Erreur lors de la suppression');
-        }
+    /* ── TOAST ── */
+    function showToast(message, type = 'success') {
+        const toast = document.getElementById('toast');
+        toast.textContent = (type === 'success' ? '✅ ' : '⚠️ ') + message;
+        toast.className = 'toast show ' + type;
+        setTimeout(() => { toast.classList.remove('show'); }, 3500);
     }
+
+    /* ── SUPPRESSION ── */
+    let itemToDelete = null;
+
+    function openDeleteModal(roleId, name) {
+        itemToDelete = roleId;
+        document.getElementById('modal-item-name').textContent = name;
+        document.getElementById('deleteModal').classList.add('show');
+    }
+
+    function closeDeleteModal() {
+        itemToDelete = null;
+        document.getElementById('deleteModal').classList.remove('show');
+    }
+
+    document.getElementById('deleteModal').addEventListener('click', function (e) {
+        if (e.target === this) closeDeleteModal();
+    });
+
+    document.getElementById('confirmDeleteBtn').addEventListener('click', async function () {
+        if (!itemToDelete) return;
+        const formData = new FormData();
+        formData.append('role_id', itemToDelete);
+        formData.append('csrfmiddlewaretoken', csrfToken);
+
+        try {
+            const response = await fetch('{% url "delete_agent_role" %}', {
+                method: 'POST',
+                body: formData,
+                headers: { 'X-CSRFToken': csrfToken },
+                credentials: 'same-origin'
+            });
+
+            if (!response.ok) {
+                const text = await response.text();
+                console.error('Server error:', response.status, text);
+                showToast('Erreur serveur: ' + response.status, 'error');
+                return;
+            }
+
+            const data = await response.json();
+            if (data.success) {
+                showToast('Rôle supprimé', 'success');
+                closeDeleteModal();
+                setTimeout(() => location.reload(), 800);
+            } else {
+                showToast(data.error || 'Erreur lors de la suppression', 'error');
+            }
+        } catch (err) {
+            console.error(err);
+            showToast('Erreur serveur', 'error');
+        }
+    });
 
     document.getElementById('searchInput').addEventListener('keyup', function() {
         const filter = this.value.toLowerCase();

@@ -266,7 +266,7 @@
             <div class="table-wrap">
                 <table>
                     <thead>
-                        <tr><th>Agent</th><th>Engin</th><th>Produits chargés</th><th>Note</th><th>Date</th></tr>
+                        <tr><th>Agent</th><th>Engin</th><th>Produits chargés</th><th>Note</th><th>Date</th><th></th></tr>
                     </thead>
                     <tbody>
                         {% for load in loads %}
@@ -278,9 +278,13 @@
                             </td>
                             <td class="muted-cell">{{ load.note|default:"—" }}</td>
                             <td class="muted-cell">{{ load.date|date:"d/m/Y H:i" }}</td>
+                            <td style="white-space:nowrap;">
+                                <button type="button" class="btn btn-ghost btn-sm" onclick="openLoadModal({{ load.id }})">Modifier</button>
+                                <button type="button" class="btn btn-danger-soft btn-sm" onclick="openDeleteModal('load', {{ load.id }}, '{{ load.agent.name|escapejs }}')">Supprimer</button>
+                            </td>
                         </tr>
                         {% empty %}
-                        <tr><td colspan="5"><div class="empty-state">Aucun chargement enregistré.</div></td></tr>
+                        <tr><td colspan="6"><div class="empty-state">Aucun chargement enregistré.</div></td></tr>
                         {% endfor %}
                     </tbody>
                 </table>
@@ -292,7 +296,7 @@
             <div class="table-wrap">
                 <table>
                     <thead>
-                        <tr><th>Agent</th><th>Produits retournés</th><th>Note</th><th>Date</th></tr>
+                        <tr><th>Agent</th><th>Produits retournés</th><th>Note</th><th>Date</th><th></th></tr>
                     </thead>
                     <tbody>
                         {% for ret in returns %}
@@ -303,9 +307,13 @@
                             </td>
                             <td class="muted-cell">{{ ret.note|default:"—" }}</td>
                             <td class="muted-cell">{{ ret.date|date:"d/m/Y H:i" }}</td>
+                            <td style="white-space:nowrap;">
+                                <button type="button" class="btn btn-ghost btn-sm" onclick="openReturnModal({{ ret.id }})">Modifier</button>
+                                <button type="button" class="btn btn-danger-soft btn-sm" onclick="openDeleteModal('return', {{ ret.id }}, '{{ ret.agent.name|escapejs }}')">Supprimer</button>
+                            </td>
                         </tr>
                         {% empty %}
-                        <tr><td colspan="4"><div class="empty-state">Aucun retour enregistré.</div></td></tr>
+                        <tr><td colspan="5"><div class="empty-state">Aucun retour enregistré.</div></td></tr>
                         {% endfor %}
                     </tbody>
                 </table>
@@ -324,6 +332,7 @@
         </div>
         <form id="loadForm">
             {% csrf_token %}
+            <input type="hidden" id="loadIdInput" name="load_id" value="">
             <div class="form-group">
                 <label class="form-label" for="loadAgent">Vendeur *</label>
                 <select class="form-select" id="loadAgent" name="agent_id" required onchange="prefillLoadEngine()">
@@ -370,6 +379,7 @@
         </div>
         <form id="returnForm">
             {% csrf_token %}
+            <input type="hidden" id="returnIdInput" name="return_id" value="">
             <div class="form-group">
                 <label class="form-label" for="returnAgent">Vendeur *</label>
                 <select class="form-select" id="returnAgent" name="agent_id" required onchange="renderReturnRows()">
@@ -399,6 +409,23 @@
     </div>
 </div>
 
+<!-- MODAL CONFIRMATION SUPPRESSION -->
+<div class="modal-overlay" id="deleteModal">
+    <div class="modal-box" style="max-width:400px; text-align:center;">
+        <div style="font-size:36px; margin-bottom:12px;">⚠️</div>
+        <div style="font-size:17px; font-weight:700; margin-bottom:12px;">Confirmer la suppression</div>
+        <div style="font-size:13.5px; color:var(--text-secondary); margin-bottom:24px; line-height:1.7;">
+            Es-tu sûr de vouloir supprimer ce <span id="deleteModalKind"></span> pour <strong id="deleteModalName"></strong> ?
+            <br>Le stock correspondant sera automatiquement remis à jour.
+            <br>Cette action est <strong>irréversible</strong>.
+        </div>
+        <div class="modal-actions">
+            <button type="button" class="btn btn-ghost" onclick="closeDeleteModal()">Annuler</button>
+            <button type="button" class="btn btn-danger-solid" id="confirmDeleteBtn">🗑️ Supprimer</button>
+        </div>
+    </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -422,6 +449,33 @@
         {% endfor %}
     };
 
+    // Détail des chargements/retours existants, pour pré-remplir le modal en mode édition
+    const LOADS_DATA = {};
+    {% for load in loads %}
+    LOADS_DATA['{{ load.id }}'] = {
+        agentId: '{{ load.agent.id }}',
+        note: '{{ load.note|escapejs }}',
+        items: [
+            {% for item in load.items.all %}
+            { productId: '{{ item.product.id }}', productName: '{{ item.product.name|escapejs }}', quantity: {{ item.quantity }}, unitPrice: {{ item.unit_price }} }{% if not forloop.last %},{% endif %}
+            {% endfor %}
+        ]
+    };
+    {% endfor %}
+
+    const RETURNS_DATA = {};
+    {% for ret in returns %}
+    RETURNS_DATA['{{ ret.id }}'] = {
+        agentId: '{{ ret.agent.id }}',
+        note: '{{ ret.note|escapejs }}',
+        items: [
+            {% for item in ret.items.all %}
+            { productId: '{{ item.product.id }}', quantity: {{ item.quantity }} }{% if not forloop.last %},{% endif %}
+            {% endfor %}
+        ]
+    };
+    {% endfor %}
+
     function prefillLoadEngine() {
         const agentId = document.getElementById('loadAgent').value;
         const defaultEngineId = AGENT_DEFAULT_ENGINE[agentId] || '';
@@ -442,17 +496,34 @@
     });
 
     /* ── CHARGEMENT ── */
-    function openLoadModal() {
+    function openLoadModal(loadId) {
         document.getElementById('loadForm').reset();
         document.getElementById('loadCartContainer').innerHTML = '';
         document.getElementById('loadFormError').style.display = 'none';
-        addLoadRow();
+        document.getElementById('loadIdInput').value = loadId || '';
+
+        const modalTitle = document.querySelector('#loadModal .modal-title');
+        const submitBtn = document.getElementById('loadSubmitBtn');
+
+        if (loadId && LOADS_DATA[loadId]) {
+            const data = LOADS_DATA[loadId];
+            modalTitle.textContent = '✏️ Modifier le chargement';
+            submitBtn.textContent = '💾 Enregistrer les modifications';
+            document.getElementById('loadAgent').value = data.agentId;
+            document.getElementById('loadNote').value = data.note;
+            data.items.forEach(item => addLoadRow(item));
+        } else {
+            modalTitle.textContent = '🚚 Charger un vendeur';
+            submitBtn.textContent = '💾 Enregistrer le chargement';
+            addLoadRow();
+        }
+
         document.getElementById('loadModal').classList.add('open');
     }
     function closeLoadModal() { document.getElementById('loadModal').classList.remove('open'); }
     document.getElementById('loadModal').addEventListener('click', e => { if (e.target === e.currentTarget) closeLoadModal(); });
 
-    function addLoadRow() {
+    function addLoadRow(prefill) {
         const container = document.getElementById('loadCartContainer');
         const row = document.createElement('div');
         row.className = 'cart-row';
@@ -462,12 +533,13 @@
                 <option value="">Produit...</option>
                 ${options}
             </select>
-            <input type="number" class="form-control load-qty" min="1" value="1" required placeholder="Qté">
-            <input type="number" class="form-control load-price" min="0" step="0.01" required placeholder="Prix vendeur">
+            <input type="number" class="form-control load-qty" min="1" value="${prefill ? prefill.quantity : 1}" required placeholder="Qté">
+            <input type="number" class="form-control load-price" min="0" step="0.01" value="${prefill ? prefill.unitPrice : ''}" required placeholder="Prix vendeur">
             <button type="button" class="btn btn-danger-soft btn-sm" onclick="this.closest('.cart-row').remove(); syncLoadItems();">✕</button>
         `;
         container.appendChild(row);
         const select = row.querySelector('.load-product');
+        if (prefill) select.value = prefill.productId;
         select.addEventListener('change', function () {
             const opt = this.selectedOptions[0];
             if (opt && opt.dataset.price) row.querySelector('.load-price').value = opt.dataset.price;
@@ -524,42 +596,77 @@
         } catch (err) {
             errorBox.textContent = 'Erreur serveur'; errorBox.style.display = 'block';
         } finally {
-            btn.disabled = false; btn.textContent = '💾 Enregistrer le chargement';
+            btn.disabled = false;
+            btn.textContent = document.getElementById('loadIdInput').value ? '💾 Enregistrer les modifications' : '💾 Enregistrer le chargement';
         }
     });
 
     /* ── RETOUR ── */
-    function openReturnModal() {
+    function openReturnModal(returnId) {
         document.getElementById('returnForm').reset();
         document.getElementById('returnFormError').style.display = 'none';
-        renderReturnRows();
+        document.getElementById('returnIdInput').value = returnId || '';
+
+        const modalTitle = document.querySelector('#returnModal .modal-title');
+        const submitBtn = document.getElementById('returnSubmitBtn');
+
+        if (returnId && RETURNS_DATA[returnId]) {
+            const data = RETURNS_DATA[returnId];
+            modalTitle.textContent = '✏️ Modifier le retour';
+            submitBtn.textContent = '💾 Enregistrer les modifications';
+            document.getElementById('returnAgent').value = data.agentId;
+            document.getElementById('returnNote').value = data.note;
+            renderReturnRows(data.items);
+        } else {
+            modalTitle.textContent = '↩ Enregistrer un retour';
+            submitBtn.textContent = '💾 Enregistrer le retour';
+            renderReturnRows();
+        }
+
         document.getElementById('returnModal').classList.add('open');
     }
     function closeReturnModal() { document.getElementById('returnModal').classList.remove('open'); }
     document.getElementById('returnModal').addEventListener('click', e => { if (e.target === e.currentTarget) closeReturnModal(); });
 
-    function renderReturnRows() {
+    function renderReturnRows(prefillItems) {
         const agentId = document.getElementById('returnAgent').value;
         const container = document.getElementById('returnCartContainer');
-        const stocks = AGENT_STOCKS[agentId] || [];
+        let stocks = (AGENT_STOCKS[agentId] || []).slice();
 
         if (!agentId) {
             container.innerHTML = '<p class="muted-cell" style="font-size:12.5px;">Choisis d\'abord un vendeur pour voir son stock.</p>';
             document.getElementById('returnItemsInput').value = '[]';
             return;
         }
+
+        // En édition : les produits déjà présents dans ce retour doivent apparaître
+        // même s'ils n'ont plus de stock disponible chez le vendeur actuellement.
+        const prefillMap = {};
+        (prefillItems || []).forEach(item => { prefillMap[item.productId] = item.quantity; });
+        const knownIds = new Set(stocks.map(s => s.productId));
+        Object.keys(prefillMap).forEach(pid => {
+            if (!knownIds.has(pid)) {
+                const product = PRODUCTS.find(p => p.id === pid);
+                stocks.push({ productId: pid, name: product ? product.name : 'Produit', quantity: 0 });
+            }
+        });
+
         if (!stocks.length) {
             container.innerHTML = '<p class="muted-cell" style="font-size:12.5px;">Ce vendeur n\'a aucun stock actuellement.</p>';
             document.getElementById('returnItemsInput').value = '[]';
             return;
         }
 
-        container.innerHTML = stocks.map(s => `
+        container.innerHTML = stocks.map(s => {
+            const prefillQty = prefillMap[s.productId] || 0;
+            // En édition, la quantité modifiable max = ce qui est dispo maintenant + ce qui était déjà dans ce retour
+            const maxQty = s.quantity + prefillQty;
+            return `
             <div class="cart-row">
                 <span style="flex:2; font-size:13px;">${s.name} <span class="muted-cell">(dispo: ${s.quantity})</span></span>
-                <input type="number" class="form-control return-qty" data-product-id="${s.productId}" data-max="${s.quantity}" min="0" max="${s.quantity}" value="0">
-            </div>
-        `).join('');
+                <input type="number" class="form-control return-qty" data-product-id="${s.productId}" data-max="${maxQty}" min="0" max="${maxQty}" value="${prefillQty}">
+            </div>`;
+        }).join('');
 
         container.querySelectorAll('.return-qty').forEach(input => input.addEventListener('input', syncReturnItems));
         syncReturnItems();
@@ -607,7 +714,57 @@
         } catch (err) {
             errorBox.textContent = 'Erreur serveur'; errorBox.style.display = 'block';
         } finally {
-            btn.disabled = false; btn.textContent = '💾 Enregistrer le retour';
+            btn.disabled = false;
+            btn.textContent = document.getElementById('returnIdInput').value ? '💾 Enregistrer les modifications' : '💾 Enregistrer le retour';
+        }
+    });
+
+    /* ── SUPPRESSION (chargement ou retour) ── */
+    let deleteTarget = null; // { kind: 'load' | 'return', id: ... }
+
+    function openDeleteModal(kind, id, agentName) {
+        deleteTarget = { kind, id };
+        document.getElementById('deleteModalKind').textContent = kind === 'load' ? 'chargement' : 'retour';
+        document.getElementById('deleteModalName').textContent = agentName;
+        document.getElementById('deleteModal').classList.add('open');
+    }
+    function closeDeleteModal() {
+        deleteTarget = null;
+        document.getElementById('deleteModal').classList.remove('open');
+    }
+    document.getElementById('deleteModal').addEventListener('click', e => { if (e.target === e.currentTarget) closeDeleteModal(); });
+
+    document.getElementById('confirmDeleteBtn').addEventListener('click', async function () {
+        if (!deleteTarget) return;
+        const btn = this;
+        btn.disabled = true;
+        btn.textContent = 'Suppression…';
+
+        const isLoad = deleteTarget.kind === 'load';
+        const url = isLoad ? "{% url 'delete_stock_load' %}" : "{% url 'delete_stock_return' %}";
+        const formData = new FormData();
+        formData.append(isLoad ? 'load_id' : 'return_id', deleteTarget.id);
+
+        try {
+            const response = await fetch(url, {
+                method: 'POST', body: formData,
+                headers: { 'X-CSRFToken': csrfToken }, credentials: 'same-origin'
+            });
+            const data = await response.json();
+            if (response.ok && data.success) {
+                showToast(data.message, 'success');
+                closeDeleteModal();
+                setTimeout(() => location.reload(), 800);
+            } else {
+                showToast(data.error || 'Erreur lors de la suppression', 'error');
+                closeDeleteModal();
+            }
+        } catch (err) {
+            showToast('Erreur serveur', 'error');
+            closeDeleteModal();
+        } finally {
+            btn.disabled = false;
+            btn.textContent = '🗑️ Supprimer';
         }
     });
 </script>

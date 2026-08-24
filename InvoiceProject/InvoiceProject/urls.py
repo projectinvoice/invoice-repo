@@ -102,7 +102,9 @@ urlpatterns = [
     # Stock vendeur (chargement / retour de tournée) — géré par l'admin
     path('stock-loads/', invoice_views.list_stock_loads, name='list_stock_loads'),
     path('add-stock-load/', invoice_views.add_stock_load, name='add_stock_load'),
+    path('delete-stock-load/', invoice_views.delete_stock_load, name='delete_stock_load'),
     path('add-stock-return/', invoice_views.add_stock_return, name='add_stock_return'),
+    path('delete-stock-return/', invoice_views.delete_stock_return, name='delete_stock_return'),
 
 ]
 

@@ -320,7 +320,16 @@
         .alert { padding: 10px 12px; border-radius: 10px; margin-top: 12px; }
         .alert-success { background: rgba(16,185,129,0.15); color: #A7F3D0; }
         .alert-danger { background: rgba(244,63,94,0.15); color: #FECACA; }
-        .btn-close { background: transparent; border: none; color: inherit; cursor: pointer; }
+                .btn-close { background: transparent; border: none; color: inherit; cursor: pointer; }
+
+        .modal-box { text-align: center; max-width: 420px; }
+        .modal-icon { font-size: 36px; margin-bottom: 12px; }
+        .modal-title { font-size: 17px; font-weight: 700; }
+        .modal-msg { font-size: 13.5px; color: var(--text-secondary); margin-bottom: 24px; line-height: 1.7; }
+        .modal-msg strong { color: var(--text-primary); }
+        .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 8px; }
+        .btn-danger-solid { background: var(--rose); color: white; border: none; }
+        .btn-danger-solid:hover { background: #e0294a; }
 
         @media (max-width: 900px) {
             .sidebar { display: none; }
@@ -500,6 +509,22 @@
         </form>
 
         <div id="message" style="margin-top: 15px;"></div>
+    </div>
+</div>
+
+<!-- ══════════════ MODAL CONFIRMATION SUPPRESSION ══════════════ -->
+<div class="modal-overlay" id="deleteModal">
+    <div class="modal-box">
+        <div class="modal-icon">⚠️</div>
+        <div class="modal-title">Confirmer la suppression</div>
+        <div class="modal-msg">
+            Êtes-vous sûr de vouloir supprimer la vente <strong id="modal-sale-id"></strong> ?
+            <br>Cette action est <strong>irréversible</strong>.
+        </div>
+        <div class="modal-actions">
+            <button type="button" class="btn btn-ghost" onclick="closeDeleteModal()">Annuler</button>
+            <button type="button" class="btn btn-danger-solid" id="confirmDeleteBtn">🗑️ Supprimer</button>
+        </div>
     </div>
 </div>
 
@@ -696,15 +721,15 @@
 
     let saleToDelete = null;
 
-    function openDeleteModal(saleId) {
+            function openDeleteModal(saleId) {
         saleToDelete = saleId;
         document.getElementById('modal-sale-id').textContent = '#' + saleId;
-        document.getElementById('deleteModal').classList.add('open');
+        document.getElementById('deleteModal').classList.add('show');
     }
 
     function closeDeleteModal() {
         saleToDelete = null;
-        document.getElementById('deleteModal').classList.remove('open');
+        document.getElementById('deleteModal').classList.remove('show');
     }
 
     document.getElementById('deleteModal').addEventListener('click', function (e) {
@@ -751,21 +776,7 @@
     });
 </script>
 
-<!-- ══════════════ MODAL CONFIRMATION SUPPRESSION ══════════════ -->
-<div class="modal-overlay" id="deleteModal">
-    <div class="modal-box">
-        <div class="modal-icon">⚠️</div>
-        <div class="modal-title">Confirmer la suppression</div>
-        <div class="modal-msg">
-            Êtes-vous sûr de vouloir supprimer la vente <strong id="modal-sale-id"></strong> ?
-            <br>Cette action est <strong>irréversible</strong>.
-        </div>
-        <div class="modal-actions">
-            <button type="button" class="btn btn-ghost" onclick="closeDeleteModal()">Annuler</button>
-            <button type="button" class="btn btn-danger-solid" id="confirmDeleteBtn">🗑️ Supprimer</button>
-        </div>
-    </div>
-</div>
+
 
 <script src="{% static 'InvoiceApp/js/ai_assistant.js' %}"></script>
 </body>
