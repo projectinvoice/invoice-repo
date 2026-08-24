@@ -347,6 +347,22 @@
     </div>
 </div>
 
+<!-- ══════════════ MODAL CONFIRMATION SUPPRESSION ══════════════ -->
+<div class="modal-overlay" id="deleteModal">
+    <div class="modal-box">
+        <div class="modal-icon">⚠️</div>
+        <div class="modal-title">Confirmer la suppression</div>
+        <div class="modal-msg">
+            Êtes-vous sûr de vouloir supprimer le fournisseur <strong id="modal-supplier-name"></strong> ?
+            <br>Cette action est <strong>irréversible</strong>.
+        </div>
+        <div class="modal-actions">
+            <button type="button" class="btn btn-ghost" onclick="closeDeleteModal()">Annuler</button>
+            <button type="button" class="btn btn-danger-solid" id="confirmDeleteBtn">🗑️ Supprimer</button>
+        </div>
+    </div>
+</div>
+
 <script>
     function openSupplierModal(supplierId, name = '', email = '', phone = '', address = '') {
         const modal = document.getElementById('supplierModal');
@@ -431,15 +447,15 @@
 
     let supplierToDelete = null;
 
-    function openDeleteModal(supplierId, name) {
+        function openDeleteModal(supplierId, name) {
         supplierToDelete = supplierId;
         document.getElementById('modal-supplier-name').textContent = name;
-        document.getElementById('deleteModal').classList.add('open');
+        document.getElementById('deleteModal').classList.add('show');
     }
 
     function closeDeleteModal() {
         supplierToDelete = null;
-        document.getElementById('deleteModal').classList.remove('open');
+        document.getElementById('deleteModal').classList.remove('show');
     }
 
     document.getElementById('deleteModal').addEventListener('click', function (e) {
@@ -484,21 +500,7 @@
     });
 </script>
 
-<!-- ══════════════ MODAL CONFIRMATION SUPPRESSION ══════════════ -->
-<div class="modal-overlay" id="deleteModal">
-    <div class="modal-box">
-        <div class="modal-icon">⚠️</div>
-        <div class="modal-title">Confirmer la suppression</div>
-        <div class="modal-msg">
-            Êtes-vous sûr de vouloir supprimer le fournisseur <strong id="modal-supplier-name"></strong> ?
-            <br>Cette action est <strong>irréversible</strong>.
-        </div>
-        <div class="modal-actions">
-            <button type="button" class="btn btn-ghost" onclick="closeDeleteModal()">Annuler</button>
-            <button type="button" class="btn btn-danger-solid" id="confirmDeleteBtn">🗑️ Supprimer</button>
-        </div>
-    </div>
-</div>
+
 
 <script src="{% static 'InvoiceApp/js/ai_assistant.js' %}"></script>
 </body>
