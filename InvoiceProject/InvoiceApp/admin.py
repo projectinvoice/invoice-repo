@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from .models import (
     User, Agent, AgentRole, Engine, Product, Client,
-    Supplier, Supply, Sale, Invoice, PaymentType, PaymentMethod,
+    Supplier, Supply, Sale, Invoice,
     Subscription, SubscriptionPayment, PromoCode, PromoCodeRedemption,
 )
 
@@ -36,8 +36,6 @@ admin.site.register(Supplier)
 admin.site.register(Supply)
 admin.site.register(Sale)
 admin.site.register(Invoice)
-admin.site.register(PaymentType)
-admin.site.register(PaymentMethod)
 
 
 @admin.register(Subscription)
@@ -87,4 +85,3 @@ class PromoCodeRedemptionAdmin(admin.ModelAdmin):
     list_display = ('promo_code', 'company', 'redeemed_at', 'expires_at')
     search_fields = ('promo_code__code', 'company__company_name')
     readonly_fields = ('redeemed_at',)
-

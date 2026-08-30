@@ -14,7 +14,6 @@ from .agents import manage_agent_roles, list_agents, list_engines, add_agent_rol
 from .products import list_products, add_product, delete_product
 from .clients import list_clients, add_client, delete_client
 from .suppliers import list_suppliers, list_supplies, add_supplier, delete_supplier, add_supply, delete_supply
-from .payments import list_payment_types, list_payment_methods, add_payment_type, delete_payment_type, add_payment_method, delete_payment_method
 from .sales import list_sales, add_sale, delete_sale
 from .invoices import list_invoices, add_invoice, delete_invoice, record_invoice_payment, _build_invoice_pdf_bytes, _render_invoice_pdf, invoice_pdf
 from .vendor import generate_invoice_number, agent_login_required, vendor_login, vendor_logout, vendor_invoice_pdf, vendor_dashboard, vendor_add_sale, vendor_add_payment

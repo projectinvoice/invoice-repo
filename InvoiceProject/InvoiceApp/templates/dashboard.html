@@ -592,16 +592,7 @@
         <a href="{% url 'list_invoices' %}" class="nav-item {% if subscription_blocked %}locked-link{% endif %}">
             <span class="nav-icon">🧾</span> Factures
         </a>
-
-        <div class="nav-section-label">Finance</div>
-        <a href="{% url 'list_payment_methods' %}" class="nav-item {% if subscription_blocked %}locked-link{% endif %}">
-            <span class="nav-icon">💳</span> Modes de paiement
-        </a>
-        <a href="{% url 'list_payment_types' %}" class="nav-item {% if subscription_blocked %}locked-link{% endif %}">
-            <span class="nav-icon">🏷️</span> Types de paiement
-        </a>
-
-        <div class="nav-section-label">Entreprise</div>
+<div class="nav-section-label">Entreprise</div>
         <a href="{% url 'company_settings' %}" class="nav-item {% if subscription_blocked %}locked-link{% endif %}">
             <span class="nav-icon">⚙️</span> Paramètres
         </a>

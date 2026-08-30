@@ -185,39 +185,6 @@ class Client(models.Model):
         verbose_name_plural = "Clients"
         ordering = ['-created_at']
 
-# Modèle pour les types de paiement
-class PaymentType(models.Model):
-    company = models.ForeignKey(User, on_delete=models.CASCADE, related_name='payment_types', verbose_name="Entreprise", default=1)
-    name = models.CharField(max_length=100, verbose_name="Nom du type de paiement")
-    description = models.TextField(blank=True, verbose_name="Description")
-    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Date de création")
-
-    def __str__(self):
-        return self.name
-
-    class Meta:
-        verbose_name = "Type de paiement"
-        verbose_name_plural = "Types de paiement"
-        unique_together = ('company', 'name')
-        ordering = ['-created_at']
-
-# Modèle pour les modes de paiement
-class PaymentMethod(models.Model):
-    company = models.ForeignKey(User, on_delete=models.CASCADE, related_name='payment_methods', verbose_name="Entreprise")
-    name = models.CharField(max_length=100, verbose_name="Nom du mode de paiement")
-    payment_type = models.ForeignKey(PaymentType, on_delete=models.SET_NULL, null=True, verbose_name="Type de paiement")
-    description = models.TextField(blank=True, verbose_name="Description")
-    is_active = models.BooleanField(default=True, verbose_name="Actif")
-    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Date de création")
-
-    def __str__(self):
-        return f"{self.name} ({self.company.company_name})"
-
-    class Meta:
-        verbose_name = "Mode de paiement"
-        verbose_name_plural = "Modes de paiement"
-        ordering = ['-created_at']
-
 # Modèle pour les fournisseurs
 class Supplier(models.Model):
     company = models.ForeignKey(User, on_delete=models.CASCADE, related_name='suppliers', verbose_name="Entreprise")
