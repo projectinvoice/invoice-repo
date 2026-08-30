@@ -27,7 +27,7 @@ from django.contrib.auth import get_user_model
 from django.urls import reverse
 
 from .models import (
-    Agent, AgentRole, Client, Engine, Invoice, PaymentMethod, PaymentType,
+    Agent, AgentRole, Client, Engine, Invoice,
     Product, Sale, Supplier, Supply,
 )
 from . import views as invoice_views
@@ -68,10 +68,6 @@ class MultiTenantFixtureMixin:
         self.role_b = AgentRole.objects.create(company=self.company_b, name='Vendeur B')
         self.engine_b = Engine.objects.create(company=self.company_b, name='Moto B')
         self.agent_b = Agent.objects.create(company=self.company_b, name='Agent de B', role=self.role_b)
-        self.payment_type_b = PaymentType.objects.create(company=self.company_b, name='Espèces B')
-        self.payment_method_b = PaymentMethod.objects.create(
-            company=self.company_b, name='Cash B', payment_type=self.payment_type_b,
-        )
 
         # Quelques données pour A aussi, pour vérifier que les listes de A restent
         # correctes ET ne fuitent pas celles de B.
@@ -198,14 +194,6 @@ class WriteEndpointIsolationTests(MultiTenantFixtureMixin, TestCase):
     def test_cannot_delete_another_companys_agent_role(self):
         self.http.post(reverse('delete_agent_role'), {'role_id': self.role_b.id})
         self.assertTrue(AgentRole.objects.filter(id=self.role_b.id).exists())
-
-    def test_cannot_delete_another_companys_payment_type(self):
-        self.http.post(reverse('delete_payment_type'), {'payment_type_id': self.payment_type_b.id})
-        self.assertTrue(PaymentType.objects.filter(id=self.payment_type_b.id).exists())
-
-    def test_cannot_delete_another_companys_payment_method(self):
-        self.http.post(reverse('delete_payment_method'), {'payment_method_id': self.payment_method_b.id})
-        self.assertTrue(PaymentMethod.objects.filter(id=self.payment_method_b.id).exists())
 
 
 class ListViewIsolationTests(MultiTenantFixtureMixin, TestCase):

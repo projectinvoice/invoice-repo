@@ -47,8 +47,6 @@ from ..models import (
     Engine,
     Product,
     Client,
-    PaymentType,
-    PaymentMethod,
     Supplier,
     Supply,
     SupplyItem,

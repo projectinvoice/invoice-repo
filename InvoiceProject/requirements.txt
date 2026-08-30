@@ -8,4 +8,4 @@ Pillow==12.1.1
 gunicorn==23.0.0          # serveur WSGI de production
 whitenoise==6.11.0        # sert les fichiers statiques directement depuis Django
 dj-database-url==3.1.0    # parse la variable DATABASE_URL (Postgres fourni par Render)
-psycopg2-binary==2.9.10   # driver PostgreSQL
+# psycopg2-binary==2.9.10   # driver PostgreSQL

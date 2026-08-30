@@ -118,8 +118,6 @@ def dashboard(request):
         'products_count': user.products.count(),
         'clients_count': user.clients.count(),
         'suppliers_count': user.suppliers.count(),
-        'payment_methods_count': user.payment_methods.count(),
-        'payment_types_count': user.payment_types.count(),
         'sales_count': user.sales.count(),
         'supplies_count': user.supplies.count(),
         'invoices_count': user.invoices.count(),
