@@ -49,10 +49,18 @@ DEBUG = os.environ.get('DEBUG', 'True') == 'True'
 # Ex: ALLOWED_HOSTS=monapp.com,www.monapp.com
 ALLOWED_HOSTS = [h.strip() for h in os.environ.get('ALLOWED_HOSTS', '').split(',') if h.strip()]
 
+# Render injecte automatiquement le nom d'hôte externe (ex: invoiceproject2.onrender.com)
+# dans cette variable — on l'ajoute nous-mêmes pour ne pas avoir à la dupliquer dans ALLOWED_HOSTS.
+RENDER_EXTERNAL_HOSTNAME = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
+if RENDER_EXTERNAL_HOSTNAME:
+    ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
+
 # Origines de confiance pour les requêtes POST cross-origin protégées par CSRF
 # (nécessaire dès que l'app est servie en HTTPS derrière un domaine réel).
 # Ex: CSRF_TRUSTED_ORIGINS=https://monapp.com,https://www.monapp.com
 CSRF_TRUSTED_ORIGINS = [o.strip() for o in os.environ.get('CSRF_TRUSTED_ORIGINS', '').split(',') if o.strip()]
+if RENDER_EXTERNAL_HOSTNAME:
+    CSRF_TRUSTED_ORIGINS.append(f'https://{RENDER_EXTERNAL_HOSTNAME}')
 
 
 # Application definition
@@ -71,6 +79,7 @@ AUTH_USER_MODEL = 'InvoiceApp.User'
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',  # sert les fichiers statiques en production (juste après SecurityMiddleware)
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -103,13 +112,27 @@ WSGI_APPLICATION = 'InvoiceProject.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
+#
+# En local (pas de DATABASE_URL dans .env) : SQLite, comme avant.
+# Sur Render : définissez DATABASE_URL sur la valeur "Internal Database URL"
+# fournie par votre instance Postgres Render — dj-database-url la parse automatiquement.
+# ⚠️ Le disque de Render est éphémère pour un Web Service standard : SQLite y serait
+# réinitialisé à chaque déploiement. Utilisez Postgres (gratuit sur Render) en production.
+import dj_database_url
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+DATABASE_URL = os.environ.get('DATABASE_URL')
+
+if DATABASE_URL:
+    DATABASES = {
+        'default': dj_database_url.parse(DATABASE_URL, conn_max_age=600)
     }
-}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
 
 
 # Password validation
@@ -148,7 +171,26 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 
+# Dossier où `collectstatic` rassemble tous les fichiers statiques avant déploiement
+# (obligatoire en production ; sert de racine à WhiteNoise).
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+
+STORAGES = {
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
+    "staticfiles": {
+        # Ajoute un hash au nom de chaque fichier + compression gzip/brotli,
+        # avec un fallback silencieux si un fichier référencé est manquant.
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    },
+}
+
 # Media files (upload d'images pour logo et produits)
+# ⚠️ Comme pour SQLite, ces fichiers uploadés sont perdus à chaque déploiement sur un
+# Web Service Render standard (disque éphémère). Pour les conserver durablement, montez
+# un "Persistent Disk" Render sur MEDIA_ROOT, ou migrez vers un stockage externe
+# (Cloudinary, S3, etc.). Dites-le-moi si vous voulez que je mette ça en place.
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 

@@ -143,5 +143,18 @@ def delete_sale(request):
     sale_id = request.POST.get("sale_id")
     if not sale_id:
         return JsonResponse({"success": False, "error": "sale_id requis"}, status=400)
-    Sale.objects.filter(id=sale_id, company=request.user).delete()
+
+    sale = Sale.objects.filter(id=sale_id, company=request.user).first()
+    if not sale:
+        return JsonResponse({"success": False, "error": "Vente introuvable"}, status=404)
+
+    with transaction.atomic():
+        # Recrédite le stock de chaque produit avant de supprimer la vente,
+        # sinon les quantités vendues restent définitivement déduites du stock.
+        for item in sale.sale_items.select_related('product').all():
+            item.product.refresh_from_db(fields=['stock_quantity'])
+            item.product.stock_quantity += item.quantity
+            item.product.save(update_fields=['stock_quantity'])
+        sale.delete()
+
     return JsonResponse({"success": True, "message": "Vente supprimée"})
