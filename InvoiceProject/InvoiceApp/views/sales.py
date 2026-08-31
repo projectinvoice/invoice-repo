@@ -30,6 +30,12 @@ def add_sale(request):
     client_id = request.POST.get("client_id")
     agent_id = request.POST.get("agent_id")
     sale_items_payload = request.POST.get("sale_items")
+    payment_type = request.POST.get("payment_type", "full")  # full | credit | partial
+    amount_paid_input = request.POST.get("amount_paid", "")
+    due_date_input = request.POST.get("due_date", "")
+
+    if payment_type not in ("full", "credit", "partial"):
+        payment_type = "full"
 
     if not client_id:
         return JsonResponse({"success": False, "error": "client_id requis"}, status=400)
@@ -92,6 +98,8 @@ def add_sale(request):
             return JsonResponse({"success": False, "error": "Vente introuvable"}, status=404)
         old_items = list(sale.sale_items.select_related('product').all())
 
+    is_new_sale = sale is None
+
     # Simule le stock disponible (en remettant virtuellement les anciennes quantités
     # si on édite) AVANT de valider — aucune écriture en base à ce stade
     stock_preview = {}
@@ -107,6 +115,40 @@ def add_sale(request):
                 "error": f"Stock insuffisant pour {product.name} (disponible : {available})"
             }, status=400)
         stock_preview[product.id] = available - quantity
+
+    # Paiement (comptant / crédit / avance) — uniquement à la création d'une vente.
+    # La modification du paiement d'une vente existante se fait depuis l'espace Factures.
+    amount_paid = None
+    due_date = None
+    if is_new_sale:
+        sale_total = sum((unit_price * quantity for _, quantity, unit_price, _ in items), Decimal('0.00'))
+        today = timezone.now().date()
+        if payment_type == "full":
+            amount_paid = sale_total
+            due_date = today
+        elif payment_type == "credit":
+            amount_paid = Decimal('0.00')
+            if not due_date_input:
+                return JsonResponse({"success": False, "error": "Indique une date d'échéance pour le crédit"}, status=400)
+            try:
+                due_date = timezone.datetime.strptime(due_date_input, "%Y-%m-%d").date()
+            except ValueError:
+                return JsonResponse({"success": False, "error": "Date d'échéance invalide"}, status=400)
+        else:  # partial
+            if not amount_paid_input:
+                return JsonResponse({"success": False, "error": "Indique le montant déjà versé"}, status=400)
+            try:
+                amount_paid = Decimal(str(amount_paid_input))
+            except (InvalidOperation, ValueError):
+                return JsonResponse({"success": False, "error": "Montant versé invalide"}, status=400)
+            if amount_paid <= 0 or amount_paid >= sale_total:
+                return JsonResponse({"success": False, "error": "Le montant versé doit être supérieur à 0 et inférieur au total (sinon utilise « payé en totalité »)"}, status=400)
+            if not due_date_input:
+                return JsonResponse({"success": False, "error": "Indique une date d'échéance pour le solde restant"}, status=400)
+            try:
+                due_date = timezone.datetime.strptime(due_date_input, "%Y-%m-%d").date()
+            except ValueError:
+                return JsonResponse({"success": False, "error": "Date d'échéance invalide"}, status=400)
 
     # Tout est validé : on applique les changements, tout ou rien
     with transaction.atomic():
@@ -134,7 +176,33 @@ def add_sale(request):
             )
 
         sale.save()
-    return JsonResponse({"success": True, "sale_id": sale.id, "message": "Vente enregistrée"})
+
+        invoice = None
+        if is_new_sale:
+            # Facture générée automatiquement, une seule fois, numéro garanti unique et séquentiel
+            # (même logique que côté espace vendeur, pour un comportement cohérent).
+            invoice_number = generate_invoice_number(request.user)
+            invoice = Invoice.objects.create(
+                company=request.user,
+                sale=sale,
+                invoice_number=invoice_number,
+                due_date=due_date,
+                amount_paid=amount_paid,
+            )
+            invoice.refresh_status()
+            invoice.save(update_fields=['status'])
+
+            if amount_paid > 0:
+                Payment.objects.create(
+                    invoice=invoice, amount=amount_paid,
+                    note="Versement à la vente" if payment_type == "partial" else "Paiement comptant"
+                )
+
+    response = {"success": True, "sale_id": sale.id, "message": "Vente enregistrée"}
+    if invoice:
+        response["invoice_id"] = invoice.id
+        response["invoice_number"] = invoice.invoice_number
+    return JsonResponse(response)
 
 
 @require_http_methods(["POST"])

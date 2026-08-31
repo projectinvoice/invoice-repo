@@ -5,18 +5,6 @@ from ._common import *  # noqa: F401,F403
 from .invoices import _render_invoice_pdf
 
 
-def generate_invoice_number(company):
-    """Génère un numéro de facture séquentiel et unique par entreprise, sans collision
-    même en cas de ventes simultanées (verrouillage de la ligne de l'entreprise)."""
-    with transaction.atomic():
-        locked_company = User.objects.select_for_update().get(pk=company.pk)
-        number = locked_company.next_invoice_number
-        locked_company.next_invoice_number = number + 1
-        locked_company.save(update_fields=['next_invoice_number'])
-    year = timezone.now().year
-    return f"FAC-{year}-{number:05d}"
-
-
 def agent_login_required(view_func):
     @wraps(view_func)
     def wrapper(request, *args, **kwargs):
