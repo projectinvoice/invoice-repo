@@ -28,6 +28,9 @@ def list_sales(request):
 def add_sale(request):
     sale_id = request.POST.get("sale_id")
     client_id = request.POST.get("client_id")
+    new_client_name = request.POST.get("new_client_name", "").strip()
+    new_client_shop_name = request.POST.get("new_client_shop_name", "").strip()
+    new_client_phone = request.POST.get("new_client_phone", "").strip()
     agent_id = request.POST.get("agent_id")
     sale_items_payload = request.POST.get("sale_items")
     payment_type = request.POST.get("payment_type", "full")  # full | credit | partial
@@ -37,12 +40,21 @@ def add_sale(request):
     if payment_type not in ("full", "credit", "partial"):
         payment_type = "full"
 
-    if not client_id:
-        return JsonResponse({"success": False, "error": "client_id requis"}, status=400)
+    if not client_id and not new_client_name:
+        return JsonResponse({"success": False, "error": "Sélectionnez un client ou renseignez son nom"}, status=400)
 
-    client = Client.objects.filter(id=client_id, company=request.user).first()
-    if not client:
-        return JsonResponse({"success": False, "error": "Client introuvable"}, status=404)
+    if client_id:
+        client = Client.objects.filter(id=client_id, company=request.user).first()
+        if not client:
+            return JsonResponse({"success": False, "error": "Client introuvable"}, status=404)
+    else:
+        # Création rapide d'un nouveau client, comme côté espace vendeur
+        client = Client.objects.create(
+            company=request.user,
+            name=new_client_name,
+            shop_name=new_client_shop_name,
+            phone=new_client_phone,
+        )
 
     agent = None
     if agent_id:
