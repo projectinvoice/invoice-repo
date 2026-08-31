@@ -68,3 +68,15 @@ from ..models import (
     PromoCodeRedemption,
     redeem_promo_code,
 )
+
+
+def generate_invoice_number(company):
+    """Génère un numéro de facture séquentiel et unique par entreprise, sans collision
+    même en cas de ventes simultanées (verrouillage de la ligne de l'entreprise)."""
+    with transaction.atomic():
+        locked_company = User.objects.select_for_update().get(pk=company.pk)
+        number = locked_company.next_invoice_number
+        locked_company.next_invoice_number = number + 1
+        locked_company.save(update_fields=['next_invoice_number'])
+    year = timezone.now().year
+    return f"FAC-{year}-{number:05d}"

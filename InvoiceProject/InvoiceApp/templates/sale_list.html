@@ -313,6 +313,18 @@
             border-color: var(--indigo);
             box-shadow: 0 0 0 3px rgba(99,102,241,0.15);
         }
+        .tabs { display: flex; gap: 6px; margin-bottom: 14px; }
+        .tab-btn {
+            flex: 1; padding: 8px; border-radius: 10px; text-align: center;
+            font-size: 12.5px; font-weight: 600; cursor: pointer;
+            background: rgba(255,255,255,0.04); color: var(--text-secondary); border: 1px solid var(--border);
+        }
+        .tab-btn.active { background: rgba(99,102,241,0.15); color: var(--indigo-light); border-color: var(--border-hover); }
+        .form-error { color: var(--rose); font-size: 12px; margin-top: 4px; display: none; }
+        .payment-hint {
+            font-size: 12px; color: var(--text-secondary); margin-bottom: 14px;
+            padding: 8px 10px; background: rgba(255,255,255,0.03); border-radius: 8px;
+        }
         .mb-3 { margin-bottom: 14px; }
         .row { display: flex; gap: 12px; flex-wrap: wrap; }
         .col-md-4 { flex: 1; min-width: 180px; }
@@ -502,6 +514,32 @@
 
             <input type="hidden" id="saleItemsInput" name="sale_items" value="[]">
 
+            <div class="mb-3" id="paymentSection">
+                <label class="form-label">Paiement *</label>
+                <div class="tabs">
+                    <div class="tab-btn active" id="payFull" onclick="switchPaymentType('full')">Comptant</div>
+                    <div class="tab-btn" id="payCredit" onclick="switchPaymentType('credit')">Crédit</div>
+                    <div class="tab-btn" id="payPartial" onclick="switchPaymentType('partial')">Avance</div>
+                </div>
+
+                <div id="amountPaidGroup" style="display:none; margin-top: 10px;">
+                    <label class="form-label" for="amountPaid">Montant déjà versé *</label>
+                    <input type="number" class="form-control" id="amountPaid" name="amount_paid" min="0" step="0.01">
+                </div>
+
+                <div id="dueDateGroup" style="display:none; margin-top: 10px;">
+                    <label class="form-label" for="dueDate">Date d'échéance (paiement du solde) *</label>
+                    <input type="date" class="form-control" id="dueDate" name="due_date">
+                </div>
+
+                <input type="hidden" id="paymentTypeInput" name="payment_type" value="full">
+                <div class="form-error" id="paymentError"></div>
+            </div>
+
+            <div class="mb-3 payment-hint" id="paymentEditHint" style="display:none;">
+                ℹ️ Le paiement d'une vente déjà enregistrée se gère depuis l'espace <strong>Factures</strong>.
+            </div>
+
             <div class="d-flex">
                 <button type="submit" class="btn btn-primary">💾 Enregistrer</button>
                 <button type="button" class="btn btn-ghost" onclick="closeSaleModal()">Annuler</button>
@@ -609,11 +647,36 @@
         document.getElementById('saleItemsInput').value = JSON.stringify(items);
     }
 
+    function switchPaymentType(type) {
+        document.getElementById('paymentTypeInput').value = type;
+        document.getElementById('payFull').classList.toggle('active', type === 'full');
+        document.getElementById('payCredit').classList.toggle('active', type === 'credit');
+        document.getElementById('payPartial').classList.toggle('active', type === 'partial');
+
+        document.getElementById('amountPaidGroup').style.display = type === 'partial' ? 'block' : 'none';
+        document.getElementById('dueDateGroup').style.display = (type === 'credit' || type === 'partial') ? 'block' : 'none';
+
+        document.getElementById('amountPaid').required = type === 'partial';
+        document.getElementById('dueDate').required = (type === 'credit' || type === 'partial');
+
+        if (type === 'credit' || type === 'partial') {
+            const dueDateInput = document.getElementById('dueDate');
+            if (!dueDateInput.value) {
+                const d = new Date();
+                d.setDate(d.getDate() + 7);
+                dueDateInput.value = d.toISOString().split('T')[0];
+            }
+        }
+    }
+
     function openSaleModal(saleId, clientId = '', agentId = '', items = []) {
         const modal = document.getElementById('saleModal');
         const modalTitle = document.getElementById('modalTitle');
+        const paymentSection = document.getElementById('paymentSection');
+        const paymentEditHint = document.getElementById('paymentEditHint');
+        const isEditing = Boolean(saleId);
 
-        if (saleId) {
+        if (isEditing) {
             modalTitle.textContent = 'Modifier une Vente';
             document.getElementById('saleId').value = saleId;
             document.getElementById('client').value = clientId;
@@ -623,6 +686,14 @@
             document.getElementById('saleId').value = '';
             document.getElementById('saleForm').reset();
         }
+
+        // Le paiement (comptant/crédit/avance) ne se choisit qu'à la création d'une vente ;
+        // pour une vente existante, il se gère depuis l'espace Factures.
+        paymentSection.style.display = isEditing ? 'none' : 'block';
+        paymentEditHint.style.display = isEditing ? 'block' : 'none';
+        switchPaymentType('full');
+        document.getElementById('amountPaid').required = false;
+        document.getElementById('dueDate').required = false;
 
         renderSaleItemRows(items);
         modal.classList.add('show');
@@ -686,6 +757,34 @@
         if (!items.length) {
             document.getElementById('message').innerHTML = '<div class="alert alert-danger">Ajoutez au moins un produit pour enregistrer la vente.</div>';
             return;
+        }
+
+        const isEditing = Boolean(document.getElementById('saleId').value);
+        const paymentError = document.getElementById('paymentError');
+        paymentError.style.display = 'none';
+
+        if (!isEditing) {
+            const paymentType = document.getElementById('paymentTypeInput').value;
+            const total = items.reduce((sum, item) => sum + (parseFloat(item.unit_price) || 0) * (parseInt(item.quantity, 10) || 0), 0);
+
+            if (paymentType === 'partial') {
+                const amountPaid = parseFloat(document.getElementById('amountPaid').value);
+                if (!amountPaid || amountPaid <= 0 || amountPaid >= total) {
+                    paymentError.textContent = 'Le montant versé doit être supérieur à 0 et inférieur au total';
+                    paymentError.style.display = 'block';
+                    return;
+                }
+            }
+            if ((paymentType === 'credit' || paymentType === 'partial') && !document.getElementById('dueDate').value) {
+                paymentError.textContent = "Indique une date d'échéance";
+                paymentError.style.display = 'block';
+                return;
+            }
+        } else {
+            // En édition, le bloc paiement est masqué : on ne l'envoie pas.
+            formData.delete('payment_type');
+            formData.delete('amount_paid');
+            formData.delete('due_date');
         }
 
         try {
