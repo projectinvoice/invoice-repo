@@ -487,13 +487,30 @@
             <input type="hidden" id="saleId" name="sale_id" value="">
 
             <div class="mb-3">
-                <label for="client" class="form-label">Client *</label>
-                <select class="form-select" id="client" name="client_id" required>
-                    <option value="">Sélectionner un client...</option>
-                    {% for client in clients %}
-                        <option value="{{ client.id }}">{{ client.name }}</option>
-                    {% endfor %}
-                </select>
+                <label class="form-label">Client *</label>
+                <div class="tabs">
+                    <div class="tab-btn active" id="tabExistingClient" onclick="switchClientTab('existing')">Client existant</div>
+                    <div class="tab-btn" id="tabNewClient" onclick="switchClientTab('new')">Nouveau client</div>
+                </div>
+
+                <div id="existingClientGroup">
+                    <select class="form-select" id="client" name="client_id">
+                        <option value="">Sélectionner un client...</option>
+                        {% for client in clients %}
+                            <option value="{{ client.id }}">{{ client.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div id="newClientGroup" style="display:none;">
+                    <label class="form-label" for="newClientName">Nom du nouveau client *</label>
+                    <input type="text" class="form-control" id="newClientName" name="new_client_name" style="margin-bottom: 10px;">
+                    <label class="form-label" for="newClientShopName">Nom du magasin</label>
+                    <input type="text" class="form-control" id="newClientShopName" name="new_client_shop_name" style="margin-bottom: 10px;">
+                    <label class="form-label" for="newClientPhone">Téléphone</label>
+                    <input type="text" class="form-control" id="newClientPhone" name="new_client_phone">
+                </div>
+                <div class="form-error" id="clientError"></div>
             </div>
 
             <div class="mb-3">
@@ -647,6 +664,15 @@
         document.getElementById('saleItemsInput').value = JSON.stringify(items);
     }
 
+    function switchClientTab(tab) {
+        const isExisting = tab === 'existing';
+        document.getElementById('tabExistingClient').classList.toggle('active', isExisting);
+        document.getElementById('tabNewClient').classList.toggle('active', !isExisting);
+        document.getElementById('existingClientGroup').style.display = isExisting ? 'block' : 'none';
+        document.getElementById('newClientGroup').style.display = isExisting ? 'none' : 'block';
+        document.getElementById('clientError').style.display = 'none';
+    }
+
     function switchPaymentType(type) {
         document.getElementById('paymentTypeInput').value = type;
         document.getElementById('payFull').classList.toggle('active', type === 'full');
@@ -681,11 +707,15 @@
             document.getElementById('saleId').value = saleId;
             document.getElementById('client').value = clientId;
             document.getElementById('agent').value = agentId || '';
+            document.getElementById('newClientName').value = '';
+            document.getElementById('newClientShopName').value = '';
+            document.getElementById('newClientPhone').value = '';
         } else {
             modalTitle.textContent = 'Ajouter une Vente';
             document.getElementById('saleId').value = '';
             document.getElementById('saleForm').reset();
         }
+        switchClientTab('existing');
 
         // Le paiement (comptant/crédit/avance) ne se choisit qu'à la création d'une vente ;
         // pour une vente existante, il se gère depuis l'espace Factures.
@@ -760,8 +790,29 @@
         }
 
         const isEditing = Boolean(document.getElementById('saleId').value);
+        const clientError = document.getElementById('clientError');
         const paymentError = document.getElementById('paymentError');
+        clientError.style.display = 'none';
         paymentError.style.display = 'none';
+
+        const isExistingClient = document.getElementById('tabExistingClient').classList.contains('active');
+        if (isExistingClient) {
+            if (!document.getElementById('client').value) {
+                clientError.textContent = 'Sélectionne un client';
+                clientError.style.display = 'block';
+                return;
+            }
+            formData.delete('new_client_name');
+            formData.delete('new_client_shop_name');
+            formData.delete('new_client_phone');
+        } else {
+            if (!document.getElementById('newClientName').value.trim()) {
+                clientError.textContent = 'Indique le nom du nouveau client';
+                clientError.style.display = 'block';
+                return;
+            }
+            formData.delete('client_id');
+        }
 
         if (!isEditing) {
             const paymentType = document.getElementById('paymentTypeInput').value;
