@@ -620,17 +620,17 @@
                 </div>
                 <div class="footer-col">
                     <h4>Ressources</h4>
-                    <a href="#">Centre d'aide</a>
-                    <a href="#">Contact</a>
-                    <a href="#">Statut du service</a>
+                    <a href="{% url 'help_center' %}">Centre d'aide</a>
+                    <a href="{% url 'contact' %}">Contact</a>
+                    <a href="{% url 'service_status' %}">Statut du service</a>
                 </div>
             </div>
 
             <div class="footer-bottom">
                 <span>&copy; 2026 InvoiceApp. Tous droits réservés.</span>
                 <div class="legal-links">
-                    <a href="#">Conditions d'utilisation</a>
-                    <a href="#">Confidentialité</a>
+                    <a href="{% url 'terms_of_service' %}">Conditions d'utilisation</a>
+                    <a href="{% url 'privacy_policy' %}">Confidentialité</a>
                 </div>
             </div>
         </div>

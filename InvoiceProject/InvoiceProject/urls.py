@@ -22,6 +22,11 @@ from InvoiceApp import views as invoice_views
 
 urlpatterns = [
     path('', invoice_views.landing, name='landing'),
+    path('centre-aide/', invoice_views.help_center, name='help_center'),
+    path('contact/', invoice_views.contact, name='contact'),
+    path('statut/', invoice_views.service_status, name='service_status'),
+    path('conditions-utilisation/', invoice_views.terms_of_service, name='terms_of_service'),
+    path('confidentialite/', invoice_views.privacy_policy, name='privacy_policy'),
     path('admin/', admin.site.urls),
     path('register/', invoice_views.register_company, name='register'),
     path('login/', invoice_views.login_view, name='login'),
