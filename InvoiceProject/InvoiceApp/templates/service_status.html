@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Statut du service — InvoiceApp</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+        :root {
+            --bg-base: #0F1629; --bg-card: #1A2238; --bg-card-hover: #1F2A44;
+            --border: rgba(99, 102, 241, 0.15); --border-hover: rgba(99, 102, 241, 0.45);
+            --indigo: #6366F1; --indigo-light: #818CF8; --violet: #9333EA;
+            --emerald: #10B981; --amber: #F59E0B; --rose: #F43F5E; --sky: #38BDF8;
+            --text-primary: #E2E8F0; --text-secondary: #94A3B8; --text-muted: #64748B;
+            --radius: 20px; --radius-sm: 12px;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg-base); color: var(--text-primary); line-height: 1.6; }
+        a { color: inherit; }
+        .wrap { max-width: 1180px; margin: 0 auto; padding: 0 24px; }
+        header {
+            position: sticky; top: 0; z-index: 200;
+            background: rgba(15, 22, 41, 0.82); backdrop-filter: blur(14px);
+            border-bottom: 1px solid var(--border);
+        }
+        .header-inner { display: flex; align-items: center; justify-content: space-between; padding: 16px 24px; max-width: 1180px; margin: 0 auto; }
+        .brand { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 17px; text-decoration: none; }
+        .brand-mark { width: 34px; height: 34px; border-radius: 10px; background: linear-gradient(135deg, var(--indigo), var(--violet)); display: flex; align-items: center; justify-content: center; font-size: 16px; }
+        .header-actions { display: flex; align-items: center; gap: 10px; }
+        .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 10px 20px; border-radius: 999px; font-size: 13.5px; font-weight: 600; text-decoration: none; border: none; cursor: pointer; transition: all 0.2s; font-family: 'Inter', sans-serif; white-space: nowrap; }
+        .btn-ghost { color: var(--text-primary); background: rgba(255,255,255,0.06); border: 1px solid var(--border); }
+        .btn-ghost:hover { background: rgba(255,255,255,0.12); }
+        .btn-primary { background: linear-gradient(135deg, var(--indigo), var(--violet)); color: white; }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 10px 28px rgba(99,102,241,0.4); }
+
+        .page-hero { padding: 60px 0 40px; text-align: center; }
+        .page-hero h1 { font-size: clamp(30px, 5vw, 44px); font-weight: 800; letter-spacing: -0.02em; margin-bottom: 14px; }
+        .page-hero p { color: var(--text-secondary); font-size: 16px; max-width: 560px; margin: 0 auto; }
+        .page-content { padding: 10px 0 80px; }
+
+        .card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 28px; }
+
+        footer { border-top: 1px solid var(--border); padding: 50px 0 26px; margin-top: 40px; }
+        .footer-grid { display: grid; grid-template-columns: 1.4fr repeat(3, 1fr); gap: 32px; margin-bottom: 36px; }
+        .footer-brand .brand { margin-bottom: 12px; }
+        .footer-brand p { font-size: 13px; color: var(--text-muted); max-width: 260px; }
+        .footer-col h4 { font-size: 12.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); margin-bottom: 14px; }
+        .footer-col a { display: block; font-size: 13.5px; color: var(--text-secondary); text-decoration: none; margin-bottom: 10px; }
+        .footer-col a:hover { color: var(--text-primary); }
+        .footer-bottom { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; padding-top: 24px; border-top: 1px solid var(--border); font-size: 12.5px; color: var(--text-muted); }
+        .footer-bottom .legal-links { display: flex; gap: 18px; }
+        .footer-bottom a { text-decoration: none; color: var(--text-muted); }
+        .footer-bottom a:hover { color: var(--text-secondary); }
+
+        @media (max-width: 860px) {
+            .footer-grid { grid-template-columns: 1fr 1fr; }
+        }
+        @media (max-width: 560px) {
+            .header-actions .btn-ghost { display: none; }
+            .footer-grid { grid-template-columns: 1fr; gap: 26px; }
+            .footer-bottom { flex-direction: column; align-items: flex-start; }
+        }
+        .status-banner {
+            display: flex; align-items: center; gap: 14px; padding: 20px 24px;
+            border-radius: var(--radius-sm); margin-bottom: 28px;
+        }
+        .status-banner.ok { background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.3); }
+        .status-banner.warn { background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.3); }
+        .status-banner .dot { width: 14px; height: 14px; border-radius: 50%; flex-shrink: 0; }
+        .status-banner.ok .dot { background: #10B981; box-shadow: 0 0 12px #10B981; }
+        .status-banner.warn .dot { background: #F59E0B; box-shadow: 0 0 12px #F59E0B; }
+        .status-banner h2 { font-size: 16px; font-weight: 700; }
+        .status-banner p { font-size: 13px; color: var(--text-secondary); margin-top: 2px; }
+
+        .component-row {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 18px 4px; border-bottom: 1px solid var(--border);
+        }
+        .component-row:last-child { border-bottom: none; }
+        .component-info h4 { font-size: 14.5px; font-weight: 600; margin-bottom: 3px; }
+        .component-info p { font-size: 12.5px; color: var(--text-muted); }
+        .badge { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 999px; font-size: 12px; font-weight: 600; white-space: nowrap; }
+        .badge .dot { width: 8px; height: 8px; border-radius: 50%; }
+        .badge-operational { background: rgba(16,185,129,0.12); color: #34D399; }
+        .badge-operational .dot { background: #10B981; }
+        .badge-degraded { background: rgba(245,158,11,0.12); color: #FBBF24; }
+        .badge-degraded .dot { background: #F59E0B; }
+        .badge-disabled { background: rgba(148,163,184,0.12); color: #94A3B8; }
+        .badge-disabled .dot { background: #64748B; }
+        .badge-down { background: rgba(244,63,94,0.12); color: #FB7185; }
+        .badge-down .dot { background: #F43F5E; }
+        .checked-at { text-align: center; font-size: 12.5px; color: var(--text-muted); margin-top: 24px; }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="header-inner">
+            <a href="{% url 'landing' %}" class="brand">
+                <div class="brand-mark">📦</div>
+                InvoiceApp
+            </a>
+            <div class="header-actions">
+                <a href="{% url 'login' %}" class="btn btn-ghost">Se connecter</a>
+                <a href="{% url 'register' %}" class="btn btn-primary">Essai gratuit</a>
+            </div>
+        </div>
+    </header>
+    <section class="page-hero wrap">
+        <h1>Statut du service</h1>
+        <p>Disponibilité en direct des différents composants d'InvoiceApp.</p>
+    </section>
+
+    <div class="wrap page-content" style="max-width: 760px;">
+
+        {% if all_operational %}
+            <div class="status-banner ok">
+                <div class="dot"></div>
+                <div>
+                    <h2>Tous les systèmes sont opérationnels</h2>
+                    <p>Aucun incident en cours détecté</p>
+                </div>
+            </div>
+        {% else %}
+            <div class="status-banner warn">
+                <div class="dot"></div>
+                <div>
+                    <h2>Certains composants nécessitent votre attention</h2>
+                    <p>Consultez le détail ci-dessous</p>
+                </div>
+            </div>
+        {% endif %}
+
+        <div class="card">
+            {% for c in components %}
+            <div class="component-row">
+                <div class="component-info">
+                    <h4>{{ c.name }}</h4>
+                    <p>{{ c.detail }}</p>
+                </div>
+                {% if c.status == 'operational' %}
+                    <span class="badge badge-operational"><span class="dot"></span>Opérationnel</span>
+                {% elif c.status == 'degraded' %}
+                    <span class="badge badge-degraded"><span class="dot"></span>Dégradé</span>
+                {% elif c.status == 'disabled' %}
+                    <span class="badge badge-disabled"><span class="dot"></span>Non configuré</span>
+                {% else %}
+                    <span class="badge badge-down"><span class="dot"></span>Indisponible</span>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+
+        <p class="checked-at">Dernière vérification : {{ checked_at|date:"d/m/Y à H:i:s" }}</p>
+    </div>
+    <footer>
+        <div class="wrap">
+            <div class="footer-grid">
+                <div class="footer-brand">
+                    <div class="brand"><div class="brand-mark">📦</div> InvoiceApp</div>
+                    <p>La plateforme de gestion commerciale pensée pour les PME et leurs équipes terrain.</p>
+                </div>
+                <div class="footer-col">
+                    <h4>Produit</h4>
+                    <a href="{% url 'landing' %}#features">Fonctionnalités</a>
+                    <a href="{% url 'landing' %}#how-it-works">Comment ça marche</a>
+                    <a href="{% url 'register' %}">Essai gratuit</a>
+                </div>
+                <div class="footer-col">
+                    <h4>Accès</h4>
+                    <a href="{% url 'login' %}">Connexion entreprise</a>
+                    <a href="{% url 'vendor_login' %}">Connexion vendeur</a>
+                    <a href="{% url 'register' %}">Créer un compte</a>
+                </div>
+                <div class="footer-col">
+                    <h4>Ressources</h4>
+                    <a href="{% url 'help_center' %}">Centre d'aide</a>
+                    <a href="{% url 'contact' %}">Contact</a>
+                    <a href="{% url 'service_status' %}">Statut du service</a>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <span>&copy; 2026 InvoiceApp. Tous droits réservés.</span>
+                <div class="legal-links">
+                    <a href="{% url 'terms_of_service' %}">Conditions d'utilisation</a>
+                    <a href="{% url 'privacy_policy' %}">Confidentialité</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>

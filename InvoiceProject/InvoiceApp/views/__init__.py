@@ -18,3 +18,4 @@ from .sales import list_sales, add_sale, delete_sale
 from .invoices import list_invoices, add_invoice, delete_invoice, record_invoice_payment, _build_invoice_pdf_bytes, _render_invoice_pdf, invoice_pdf
 from .vendor import generate_invoice_number, agent_login_required, vendor_login, vendor_logout, vendor_invoice_pdf, vendor_dashboard, vendor_add_sale, vendor_add_payment
 from .stock import list_stock_loads, add_stock_load, delete_stock_load, add_stock_return, delete_stock_return
+from .public import help_center, contact, service_status, terms_of_service, privacy_policy

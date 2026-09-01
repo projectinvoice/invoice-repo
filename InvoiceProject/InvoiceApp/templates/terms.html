@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Conditions d'utilisation — InvoiceApp</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+        :root {
+            --bg-base: #0F1629; --bg-card: #1A2238; --bg-card-hover: #1F2A44;
+            --border: rgba(99, 102, 241, 0.15); --border-hover: rgba(99, 102, 241, 0.45);
+            --indigo: #6366F1; --indigo-light: #818CF8; --violet: #9333EA;
+            --emerald: #10B981; --amber: #F59E0B; --rose: #F43F5E; --sky: #38BDF8;
+            --text-primary: #E2E8F0; --text-secondary: #94A3B8; --text-muted: #64748B;
+            --radius: 20px; --radius-sm: 12px;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg-base); color: var(--text-primary); line-height: 1.6; }
+        a { color: inherit; }
+        .wrap { max-width: 1180px; margin: 0 auto; padding: 0 24px; }
+        header {
+            position: sticky; top: 0; z-index: 200;
+            background: rgba(15, 22, 41, 0.82); backdrop-filter: blur(14px);
+            border-bottom: 1px solid var(--border);
+        }
+        .header-inner { display: flex; align-items: center; justify-content: space-between; padding: 16px 24px; max-width: 1180px; margin: 0 auto; }
+        .brand { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 17px; text-decoration: none; }
+        .brand-mark { width: 34px; height: 34px; border-radius: 10px; background: linear-gradient(135deg, var(--indigo), var(--violet)); display: flex; align-items: center; justify-content: center; font-size: 16px; }
+        .header-actions { display: flex; align-items: center; gap: 10px; }
+        .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 10px 20px; border-radius: 999px; font-size: 13.5px; font-weight: 600; text-decoration: none; border: none; cursor: pointer; transition: all 0.2s; font-family: 'Inter', sans-serif; white-space: nowrap; }
+        .btn-ghost { color: var(--text-primary); background: rgba(255,255,255,0.06); border: 1px solid var(--border); }
+        .btn-ghost:hover { background: rgba(255,255,255,0.12); }
+        .btn-primary { background: linear-gradient(135deg, var(--indigo), var(--violet)); color: white; }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 10px 28px rgba(99,102,241,0.4); }
+
+        .page-hero { padding: 60px 0 40px; text-align: center; }
+        .page-hero h1 { font-size: clamp(30px, 5vw, 44px); font-weight: 800; letter-spacing: -0.02em; margin-bottom: 14px; }
+        .page-hero p { color: var(--text-secondary); font-size: 16px; max-width: 560px; margin: 0 auto; }
+        .page-content { padding: 10px 0 80px; }
+
+        .card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 28px; }
+
+        footer { border-top: 1px solid var(--border); padding: 50px 0 26px; margin-top: 40px; }
+        .footer-grid { display: grid; grid-template-columns: 1.4fr repeat(3, 1fr); gap: 32px; margin-bottom: 36px; }
+        .footer-brand .brand { margin-bottom: 12px; }
+        .footer-brand p { font-size: 13px; color: var(--text-muted); max-width: 260px; }
+        .footer-col h4 { font-size: 12.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); margin-bottom: 14px; }
+        .footer-col a { display: block; font-size: 13.5px; color: var(--text-secondary); text-decoration: none; margin-bottom: 10px; }
+        .footer-col a:hover { color: var(--text-primary); }
+        .footer-bottom { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; padding-top: 24px; border-top: 1px solid var(--border); font-size: 12.5px; color: var(--text-muted); }
+        .footer-bottom .legal-links { display: flex; gap: 18px; }
+        .footer-bottom a { text-decoration: none; color: var(--text-muted); }
+        .footer-bottom a:hover { color: var(--text-secondary); }
+
+        @media (max-width: 860px) {
+            .footer-grid { grid-template-columns: 1fr 1fr; }
+        }
+        @media (max-width: 560px) {
+            .header-actions .btn-ghost { display: none; }
+            .footer-grid { grid-template-columns: 1fr; gap: 26px; }
+            .footer-bottom { flex-direction: column; align-items: flex-start; }
+        }
+        .legal-doc { max-width: 780px; margin: 0 auto; }
+        .legal-doc h2 { font-size: 19px; font-weight: 700; margin: 32px 0 12px; }
+        .legal-doc h2:first-child { margin-top: 0; }
+        .legal-doc p { color: var(--text-secondary); font-size: 14px; margin-bottom: 12px; }
+        .legal-doc ul { color: var(--text-secondary); font-size: 14px; margin: 0 0 12px 20px; }
+        .legal-doc li { margin-bottom: 6px; }
+        .legal-doc strong { color: var(--text-primary); }
+        .updated-note { font-size: 12.5px; color: var(--text-muted); text-align: center; margin-bottom: 30px; }
+        .disclaimer { background: rgba(56,189,248,0.08); border: 1px solid rgba(56,189,248,0.25); border-radius: var(--radius-sm); padding: 16px 18px; font-size: 12.5px; color: var(--text-secondary); margin-bottom: 30px; }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="header-inner">
+            <a href="{% url 'landing' %}" class="brand">
+                <div class="brand-mark">📦</div>
+                InvoiceApp
+            </a>
+            <div class="header-actions">
+                <a href="{% url 'login' %}" class="btn btn-ghost">Se connecter</a>
+                <a href="{% url 'register' %}" class="btn btn-primary">Essai gratuit</a>
+            </div>
+        </div>
+    </header>
+    <section class="page-hero wrap">
+        <h1>Conditions d'utilisation</h1>
+    </section>
+
+    <div class="wrap page-content">
+        <div class="legal-doc">
+            <p class="updated-note">Dernière mise à jour : {{ last_updated }}</p>
+
+            <div class="disclaimer">
+                ℹ️ Ce document est un modèle générique fourni à titre indicatif pour démarrer votre activité. Il ne constitue pas un avis juridique — faites-le relire par un professionnel du droit avant une mise en production, afin de l'adapter à votre pays, votre secteur et votre situation spécifique.
+            </div>
+
+            <h2>1. Objet</h2>
+            <p>Les présentes conditions d'utilisation (« CGU ») régissent l'accès et l'utilisation de la plateforme InvoiceApp, un service de gestion commerciale (facturation, ventes, stock, clients) destiné aux petites et moyennes entreprises et à leurs équipes terrain (« le Service »).</p>
+            <p>En créant un compte ou en utilisant le Service, vous acceptez sans réserve les présentes CGU.</p>
+
+            <h2>2. Description du service</h2>
+            <p>InvoiceApp permet notamment de :</p>
+            <ul>
+                <li>Gérer un catalogue de produits et suivre les niveaux de stock ;</li>
+                <li>Enregistrer des ventes et générer automatiquement des factures ;</li>
+                <li>Gérer une équipe d'agents commerciaux disposant de leur propre espace de vente ;</li>
+                <li>Suivre les approvisionnements fournisseurs et les paiements clients ;</li>
+                <li>Accéder à un assistant conversationnel basé sur l'intelligence artificielle, lorsque celui-ci est activé par l'entreprise.</li>
+            </ul>
+
+            <h2>3. Création de compte</h2>
+            <p>L'utilisation du Service nécessite la création d'un compte entreprise, activé par email. Vous êtes responsable de la confidentialité de vos identifiants de connexion ainsi que de ceux que vous attribuez à vos agents (code entreprise et code PIN). Toute activité réalisée depuis votre compte est présumée effectuée par vous ou sous votre responsabilité.</p>
+
+            <h2>4. Abonnement et paiement</h2>
+            <p>Certaines fonctionnalités peuvent être soumises à un abonnement payant. Les tarifs applicables sont indiqués dans votre espace « Abonnement ». Le paiement s'effectue via un prestataire de paiement tiers. Le non-paiement peut entraîner la suspension de l'accès aux fonctionnalités concernées.</p>
+
+            <h2>5. Isolation et confidentialité des données</h2>
+            <p>Le Service est multi-entreprises (« multi-tenant ») : chaque entreprise n'a accès qu'à ses propres données (clients, ventes, stock, factures). Des mesures techniques sont mises en œuvre pour garantir cette isolation. Pour plus de détails sur le traitement de vos données, consultez notre <a href="{% url 'privacy_policy' %}">politique de confidentialité</a>.</p>
+
+            <h2>6. Utilisation acceptable</h2>
+            <p>Vous vous engagez à ne pas utiliser le Service à des fins illégales, frauduleuses, ou pour porter atteinte aux droits de tiers. Toute tentative d'accès non autorisé aux données d'une autre entreprise est strictement interdite.</p>
+
+            <h2>7. Disponibilité du service</h2>
+            <p>Nous nous efforçons d'assurer une disponibilité continue du Service, sans garantie absolue. Des interruptions peuvent survenir pour maintenance ou en cas d'incident technique. Le statut du service est consultable à tout moment sur notre <a href="{% url 'service_status' %}">page de statut</a>.</p>
+
+            <h2>8. Responsabilité</h2>
+            <p>Le Service est fourni « en l'état ». Nous ne saurions être tenus responsables des pertes de données, pertes financières, ou dommages indirects résultant de l'utilisation du Service, dans les limites autorisées par la loi applicable.</p>
+
+            <h2>9. Résiliation</h2>
+            <p>Vous pouvez supprimer votre compte à tout moment depuis vos paramètres. Nous nous réservons le droit de suspendre ou résilier un compte en cas de violation des présentes CGU.</p>
+
+            <h2>10. Modification des CGU</h2>
+            <p>Les présentes CGU peuvent être modifiées à tout moment. Les utilisateurs seront informés des changements substantiels. La poursuite de l'utilisation du Service après modification vaut acceptation des nouvelles conditions.</p>
+
+            <h2>11. Contact</h2>
+            <p>Pour toute question relative aux présentes conditions, contactez-nous via notre <a href="{% url 'contact' %}">formulaire de contact</a>.</p>
+        </div>
+    </div>
+    <footer>
+        <div class="wrap">
+            <div class="footer-grid">
+                <div class="footer-brand">
+                    <div class="brand"><div class="brand-mark">📦</div> InvoiceApp</div>
+                    <p>La plateforme de gestion commerciale pensée pour les PME et leurs équipes terrain.</p>
+                </div>
+                <div class="footer-col">
+                    <h4>Produit</h4>
+                    <a href="{% url 'landing' %}#features">Fonctionnalités</a>
+                    <a href="{% url 'landing' %}#how-it-works">Comment ça marche</a>
+                    <a href="{% url 'register' %}">Essai gratuit</a>
+                </div>
+                <div class="footer-col">
+                    <h4>Accès</h4>
+                    <a href="{% url 'login' %}">Connexion entreprise</a>
+                    <a href="{% url 'vendor_login' %}">Connexion vendeur</a>
+                    <a href="{% url 'register' %}">Créer un compte</a>
+                </div>
+                <div class="footer-col">
+                    <h4>Ressources</h4>
+                    <a href="{% url 'help_center' %}">Centre d'aide</a>
+                    <a href="{% url 'contact' %}">Contact</a>
+                    <a href="{% url 'service_status' %}">Statut du service</a>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <span>&copy; 2026 InvoiceApp. Tous droits réservés.</span>
+                <div class="legal-links">
+                    <a href="{% url 'terms_of_service' %}">Conditions d'utilisation</a>
+                    <a href="{% url 'privacy_policy' %}">Confidentialité</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>

@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Confidentialité — InvoiceApp</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+        :root {
+            --bg-base: #0F1629; --bg-card: #1A2238; --bg-card-hover: #1F2A44;
+            --border: rgba(99, 102, 241, 0.15); --border-hover: rgba(99, 102, 241, 0.45);
+            --indigo: #6366F1; --indigo-light: #818CF8; --violet: #9333EA;
+            --emerald: #10B981; --amber: #F59E0B; --rose: #F43F5E; --sky: #38BDF8;
+            --text-primary: #E2E8F0; --text-secondary: #94A3B8; --text-muted: #64748B;
+            --radius: 20px; --radius-sm: 12px;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg-base); color: var(--text-primary); line-height: 1.6; }
+        a { color: inherit; }
+        .wrap { max-width: 1180px; margin: 0 auto; padding: 0 24px; }
+        header {
+            position: sticky; top: 0; z-index: 200;
+            background: rgba(15, 22, 41, 0.82); backdrop-filter: blur(14px);
+            border-bottom: 1px solid var(--border);
+        }
+        .header-inner { display: flex; align-items: center; justify-content: space-between; padding: 16px 24px; max-width: 1180px; margin: 0 auto; }
+        .brand { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 17px; text-decoration: none; }
+        .brand-mark { width: 34px; height: 34px; border-radius: 10px; background: linear-gradient(135deg, var(--indigo), var(--violet)); display: flex; align-items: center; justify-content: center; font-size: 16px; }
+        .header-actions { display: flex; align-items: center; gap: 10px; }
+        .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 10px 20px; border-radius: 999px; font-size: 13.5px; font-weight: 600; text-decoration: none; border: none; cursor: pointer; transition: all 0.2s; font-family: 'Inter', sans-serif; white-space: nowrap; }
+        .btn-ghost { color: var(--text-primary); background: rgba(255,255,255,0.06); border: 1px solid var(--border); }
+        .btn-ghost:hover { background: rgba(255,255,255,0.12); }
+        .btn-primary { background: linear-gradient(135deg, var(--indigo), var(--violet)); color: white; }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 10px 28px rgba(99,102,241,0.4); }
+
+        .page-hero { padding: 60px 0 40px; text-align: center; }
+        .page-hero h1 { font-size: clamp(30px, 5vw, 44px); font-weight: 800; letter-spacing: -0.02em; margin-bottom: 14px; }
+        .page-hero p { color: var(--text-secondary); font-size: 16px; max-width: 560px; margin: 0 auto; }
+        .page-content { padding: 10px 0 80px; }
+
+        .card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 28px; }
+
+        footer { border-top: 1px solid var(--border); padding: 50px 0 26px; margin-top: 40px; }
+        .footer-grid { display: grid; grid-template-columns: 1.4fr repeat(3, 1fr); gap: 32px; margin-bottom: 36px; }
+        .footer-brand .brand { margin-bottom: 12px; }
+        .footer-brand p { font-size: 13px; color: var(--text-muted); max-width: 260px; }
+        .footer-col h4 { font-size: 12.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); margin-bottom: 14px; }
+        .footer-col a { display: block; font-size: 13.5px; color: var(--text-secondary); text-decoration: none; margin-bottom: 10px; }
+        .footer-col a:hover { color: var(--text-primary); }
+        .footer-bottom { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; padding-top: 24px; border-top: 1px solid var(--border); font-size: 12.5px; color: var(--text-muted); }
+        .footer-bottom .legal-links { display: flex; gap: 18px; }
+        .footer-bottom a { text-decoration: none; color: var(--text-muted); }
+        .footer-bottom a:hover { color: var(--text-secondary); }
+
+        @media (max-width: 860px) {
+            .footer-grid { grid-template-columns: 1fr 1fr; }
+        }
+        @media (max-width: 560px) {
+            .header-actions .btn-ghost { display: none; }
+            .footer-grid { grid-template-columns: 1fr; gap: 26px; }
+            .footer-bottom { flex-direction: column; align-items: flex-start; }
+        }
+        .legal-doc { max-width: 780px; margin: 0 auto; }
+        .legal-doc h2 { font-size: 19px; font-weight: 700; margin: 32px 0 12px; }
+        .legal-doc h2:first-child { margin-top: 0; }
+        .legal-doc p { color: var(--text-secondary); font-size: 14px; margin-bottom: 12px; }
+        .legal-doc ul { color: var(--text-secondary); font-size: 14px; margin: 0 0 12px 20px; }
+        .legal-doc li { margin-bottom: 6px; }
+        .legal-doc strong { color: var(--text-primary); }
+        .updated-note { font-size: 12.5px; color: var(--text-muted); text-align: center; margin-bottom: 30px; }
+        .disclaimer { background: rgba(56,189,248,0.08); border: 1px solid rgba(56,189,248,0.25); border-radius: var(--radius-sm); padding: 16px 18px; font-size: 12.5px; color: var(--text-secondary); margin-bottom: 30px; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 16px; font-size: 13px; }
+        th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--border); color: var(--text-secondary); }
+        th { color: var(--text-primary); font-weight: 700; }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="header-inner">
+            <a href="{% url 'landing' %}" class="brand">
+                <div class="brand-mark">📦</div>
+                InvoiceApp
+            </a>
+            <div class="header-actions">
+                <a href="{% url 'login' %}" class="btn btn-ghost">Se connecter</a>
+                <a href="{% url 'register' %}" class="btn btn-primary">Essai gratuit</a>
+            </div>
+        </div>
+    </header>
+    <section class="page-hero wrap">
+        <h1>Politique de confidentialité</h1>
+    </section>
+
+    <div class="wrap page-content">
+        <div class="legal-doc">
+            <p class="updated-note">Dernière mise à jour : {{ last_updated }}</p>
+
+            <div class="disclaimer">
+                ℹ️ Ce document est un modèle générique fourni à titre indicatif. Il ne constitue pas un avis juridique — faites-le relire par un professionnel du droit (notamment au regard du RGPD ou de la réglementation locale applicable) avant une mise en production.
+            </div>
+
+            <h2>1. Données que nous collectons</h2>
+            <p>Dans le cadre de l'utilisation d'InvoiceApp, nous traitons les catégories de données suivantes :</p>
+            <table>
+                <tr><th>Catégorie</th><th>Exemples</th></tr>
+                <tr><td>Compte entreprise</td><td>Nom de l'entreprise, email, mot de passe (chiffré), logo</td></tr>
+                <tr><td>Agents</td><td>Nom, code PIN (stocké de façon sécurisée)</td></tr>
+                <tr><td>Clients de l'entreprise</td><td>Nom, nom du magasin, téléphone, adresse</td></tr>
+                <tr><td>Données commerciales</td><td>Ventes, produits, stock, factures, paiements</td></tr>
+                <tr><td>Données techniques</td><td>Journaux de connexion, adresse IP, cookies de session</td></tr>
+            </table>
+
+            <h2>2. Finalités du traitement</h2>
+            <p>Ces données sont utilisées exclusivement pour :</p>
+            <ul>
+                <li>Fournir et faire fonctionner le Service (facturation, gestion de stock, tableau de bord) ;</li>
+                <li>Authentifier les utilisateurs et sécuriser l'accès aux comptes ;</li>
+                <li>Générer les factures PDF et suivre les paiements ;</li>
+                <li>Répondre aux demandes envoyées via le formulaire de contact ;</li>
+                <li>Améliorer la sécurité et la fiabilité du Service.</li>
+            </ul>
+
+            <h2>3. Isolation entre entreprises (multi-tenant)</h2>
+            <p>InvoiceApp héberge plusieurs entreprises clientes sur la même plateforme. Chaque entreprise n'a accès qu'à ses propres données (clients, ventes, stock, factures) : des contrôles techniques dédiés garantissent qu'aucune entreprise ne peut consulter ou modifier les données d'une autre.</p>
+
+            <h2>4. Assistant IA</h2>
+            <p>Si votre entreprise active l'assistant conversationnel intégré, certaines données commerciales (ventes, produits, clients) peuvent être transmises à l'API de génération de texte utilisée pour formuler ses réponses, uniquement dans le cadre de vos échanges avec l'assistant. Cette fonctionnalité est optionnelle et désactivable.</p>
+
+            <h2>5. Partage des données</h2>
+            <p>Nous ne vendons jamais vos données. Elles peuvent être partagées uniquement avec :</p>
+            <ul>
+                <li>Notre hébergeur, pour le stockage et le fonctionnement technique du Service ;</li>
+                <li>Notre prestataire de paiement, pour le traitement des abonnements ;</li>
+                <li>Les autorités compétentes, si la loi nous y oblige.</li>
+            </ul>
+
+            <h2>6. Conservation des données</h2>
+            <p>Vos données sont conservées tant que votre compte est actif. En cas de suppression de compte, vos données sont supprimées, sous réserve des obligations légales de conservation (notamment comptables) qui pourraient s'appliquer.</p>
+
+            <h2>7. Vos droits</h2>
+            <p>Selon votre juridiction, vous pouvez disposer d'un droit d'accès, de rectification, de suppression ou de portabilité de vos données. Vous pouvez exercer ces droits, ou supprimer votre compte directement, depuis vos paramètres, ou en nous contactant via notre <a href="{% url 'contact' %}">formulaire de contact</a>.</p>
+
+            <h2>8. Sécurité</h2>
+            <p>Nous mettons en œuvre des mesures techniques raisonnables (chiffrement des mots de passe, connexions sécurisées) pour protéger vos données contre l'accès non autorisé, la perte ou l'altération.</p>
+
+            <h2>9. Cookies</h2>
+            <p>Le Service utilise uniquement des cookies techniques nécessaires au fonctionnement (maintien de la session de connexion). Aucun cookie publicitaire ou de traçage tiers n'est utilisé.</p>
+
+            <h2>10. Modification de cette politique</h2>
+            <p>Cette politique peut être mise à jour. La date de dernière mise à jour est indiquée en haut de cette page.</p>
+
+            <h2>11. Contact</h2>
+            <p>Pour toute question relative à cette politique ou à vos données personnelles, contactez-nous via notre <a href="{% url 'contact' %}">formulaire de contact</a>.</p>
+        </div>
+    </div>
+    <footer>
+        <div class="wrap">
+            <div class="footer-grid">
+                <div class="footer-brand">
+                    <div class="brand"><div class="brand-mark">📦</div> InvoiceApp</div>
+                    <p>La plateforme de gestion commerciale pensée pour les PME et leurs équipes terrain.</p>
+                </div>
+                <div class="footer-col">
+                    <h4>Produit</h4>
+                    <a href="{% url 'landing' %}#features">Fonctionnalités</a>
+                    <a href="{% url 'landing' %}#how-it-works">Comment ça marche</a>
+                    <a href="{% url 'register' %}">Essai gratuit</a>
+                </div>
+                <div class="footer-col">
+                    <h4>Accès</h4>
+                    <a href="{% url 'login' %}">Connexion entreprise</a>
+                    <a href="{% url 'vendor_login' %}">Connexion vendeur</a>
+                    <a href="{% url 'register' %}">Créer un compte</a>
+                </div>
+                <div class="footer-col">
+                    <h4>Ressources</h4>
+                    <a href="{% url 'help_center' %}">Centre d'aide</a>
+                    <a href="{% url 'contact' %}">Contact</a>
+                    <a href="{% url 'service_status' %}">Statut du service</a>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <span>&copy; 2026 InvoiceApp. Tous droits réservés.</span>
+                <div class="legal-links">
+                    <a href="{% url 'terms_of_service' %}">Conditions d'utilisation</a>
+                    <a href="{% url 'privacy_policy' %}">Confidentialité</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>

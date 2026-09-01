@@ -236,6 +236,10 @@ EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')
 EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
 DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'no-reply@votre-domaine.com')
 
+# Adresse qui reçoit les messages envoyés depuis le formulaire de contact public.
+# Par défaut, identique à DEFAULT_FROM_EMAIL si non précisée.
+SUPPORT_EMAIL = os.environ.get('SUPPORT_EMAIL', DEFAULT_FROM_EMAIL)
+
 # Durée de validité d'un lien de réinitialisation de mot de passe (en secondes).
 # 86400 = 24 heures.
 PASSWORD_RESET_TIMEOUT = int(os.environ.get('PASSWORD_RESET_TIMEOUT', '86400'))
