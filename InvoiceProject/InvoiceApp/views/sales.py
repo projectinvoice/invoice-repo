@@ -209,6 +209,14 @@ def add_sale(request):
                     invoice=invoice, amount=amount_paid,
                     note="Versement à la vente" if payment_type == "partial" else "Paiement comptant"
                 )
+        else:
+            # La vente a été modifiée (articles/montants) : si une facture existe déjà,
+            # son statut (payé/partiel/en attente) doit être recalculé par rapport au
+            # nouveau total, sinon elle peut afficher "payée" alors qu'un solde est dû.
+            existing_invoice = Invoice.objects.filter(sale=sale).first()
+            if existing_invoice:
+                existing_invoice.refresh_status()
+                existing_invoice.save(update_fields=['status'])
 
     response = {"success": True, "sale_id": sale.id, "message": "Vente enregistrée"}
     if invoice:

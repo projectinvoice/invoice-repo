@@ -3,6 +3,19 @@ Espace vendeur (agents) : authentification separee par code entreprise + PIN.
 """
 from ._common import *  # noqa: F401,F403
 from .invoices import _render_invoice_pdf
+from django.core.cache import cache
+
+VENDOR_LOGIN_MAX_ATTEMPTS = 5
+VENDOR_LOGIN_LOCKOUT_SECONDS = 15 * 60  # 15 minutes
+
+
+def _client_ip(request):
+    """Récupère l'IP réelle du client, en tenant compte d'un éventuel proxy
+    (Render et la plupart des hébergeurs placent l'app derrière un reverse proxy)."""
+    forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+    if forwarded_for:
+        return forwarded_for.split(',')[0].strip()
+    return request.META.get('REMOTE_ADDR', 'unknown')
 
 
 def agent_login_required(view_func):
@@ -31,8 +44,19 @@ def vendor_login(request):
     if not company_code or not pin:
         return JsonResponse({"success": False, "error": "Code entreprise et PIN requis"}, status=400)
 
+    # Protection anti brute-force : on limite le nombre de tentatives échouées
+    # par IP + code entreprise, pour empêcher de tester tous les PIN possibles.
+    throttle_key = f"vendor_login_attempts:{company_code}:{_client_ip(request)}"
+    attempts = cache.get(throttle_key, 0)
+    if attempts >= VENDOR_LOGIN_MAX_ATTEMPTS:
+        return JsonResponse({
+            "success": False,
+            "error": "Trop de tentatives échouées. Réessayez dans quelques minutes."
+        }, status=429)
+
     company = User.objects.filter(agent_login_code=company_code).first()
     if not company:
+        cache.set(throttle_key, attempts + 1, VENDOR_LOGIN_LOCKOUT_SECONDS)
         return JsonResponse({"success": False, "error": "Code entreprise invalide"}, status=400)
 
     matched_agent = None
@@ -42,8 +66,11 @@ def vendor_login(request):
             break
 
     if not matched_agent:
+        cache.set(throttle_key, attempts + 1, VENDOR_LOGIN_LOCKOUT_SECONDS)
         return JsonResponse({"success": False, "error": "PIN invalide"}, status=400)
 
+    # Connexion réussie : on efface le compteur de tentatives
+    cache.delete(throttle_key)
     request.session['agent_id'] = matched_agent.id
     return JsonResponse({"success": True, "message": "Connecté", "redirect": "/vendeur/"})
 
