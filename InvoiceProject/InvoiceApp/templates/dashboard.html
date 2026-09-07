@@ -181,6 +181,35 @@
             flex-shrink: 0;
         }
 
+        /* Petit pop-up discret, fermable, affiché dans les 3 derniers jours d'accès
+           (essai, code promo ou abonnement payant) */
+        .expiry-popup {
+            position: fixed; bottom: 24px; right: 24px; z-index: 500;
+            max-width: 320px;
+            background: var(--bg-card, #1A2238);
+            border: 1px solid rgba(245, 158, 11, 0.4);
+            border-radius: 14px;
+            padding: 16px 18px;
+            box-shadow: 0 12px 32px rgba(0,0,0,0.35);
+            animation: expiry-popup-in 0.3s ease-out;
+        }
+        @keyframes expiry-popup-in {
+            from { opacity: 0; transform: translateY(12px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .expiry-popup-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; margin-bottom: 6px; }
+        .expiry-popup-title { font-size: 13.5px; font-weight: 700; }
+        .expiry-popup-close {
+            background: none; border: none; color: var(--text-secondary, #94A3B8);
+            font-size: 16px; line-height: 1; cursor: pointer; padding: 2px 4px; flex-shrink: 0;
+        }
+        .expiry-popup-close:hover { color: var(--text-primary, #E2E8F0); }
+        .expiry-popup p { font-size: 12.5px; color: var(--text-secondary, #94A3B8); margin-bottom: 10px; }
+        .expiry-popup a.btn { font-size: 12.5px; padding: 7px 14px; }
+        @media (max-width: 560px) {
+            .expiry-popup { left: 16px; right: 16px; bottom: 16px; max-width: none; }
+        }
+
         .nav-badge {
             margin-left: auto;
             background: rgba(99, 102, 241, 0.2);
@@ -637,21 +666,45 @@
     <!-- CONTENT -->
     <main class="content">
 
-        {% if subscription_status == 'trial' %}
-        <div class="subscription-banner trial">
-            <div>⏳ Essai gratuit : il vous reste <strong>{{ subscription_days_left }} jour{{ subscription_days_left|pluralize }}</strong> avant le début de la facturation ({{ subscription.get_plan_display }} — {{ subscription_plan_price|floatformat:0 }} FCFA).</div>
-            <a href="{% url 'subscription' %}" class="btn btn-ghost">Gérer mon abonnement</a>
-        </div>
-        {% elif subscription_status == 'promo' %}
-        <div class="subscription-banner trial">
-            <div>🎟️ Accès offert par code promo : il vous reste <strong>{{ subscription_days_left }} jour{{ subscription_days_left|pluralize }}</strong> avant de devoir choisir un plan.</div>
-            <a href="{% url 'subscription' %}" class="btn btn-ghost">Gérer mon abonnement</a>
-        </div>
-        {% elif subscription_status == 'expired' %}
+        {% if subscription_status == 'expired' %}
         <div class="subscription-banner expired">
             <div>🔒 Votre période d'accès gratuit est terminée. Abonnez-vous pour retrouver l'accès complet à toutes les fonctionnalités.</div>
             <a href="{% url 'subscription' %}" class="btn btn-primary">S'abonner maintenant</a>
         </div>
+        {% elif subscription_access_days_remaining is not None and subscription_access_days_remaining <= 3 %}
+        <div class="expiry-popup" id="expiryPopup">
+            <div class="expiry-popup-header">
+                <div class="expiry-popup-title">
+                    {% if subscription_status == 'trial' %}⏳ Fin d'essai proche
+                    {% elif subscription_status == 'promo' %}🎟️ Fin d'accès promo proche
+                    {% else %}💳 Renouvellement proche{% endif %}
+                </div>
+                <button type="button" class="expiry-popup-close" onclick="dismissExpiryPopup()" aria-label="Fermer">✕</button>
+            </div>
+            <p>
+                {% if subscription_status == 'trial' %}
+                    Votre essai gratuit se termine dans <strong>{{ subscription_access_days_remaining }} jour{{ subscription_access_days_remaining|pluralize }}</strong>.
+                {% elif subscription_status == 'promo' %}
+                    Votre accès offert par code promo se termine dans <strong>{{ subscription_access_days_remaining }} jour{{ subscription_access_days_remaining|pluralize }}</strong>.
+                {% else %}
+                    Votre abonnement se termine dans <strong>{{ subscription_access_days_remaining }} jour{{ subscription_access_days_remaining|pluralize }}</strong>.
+                {% endif %}
+            </p>
+            <a href="{% url 'subscription' %}" class="btn btn-primary">Gérer mon abonnement</a>
+        </div>
+        <script>
+            (function() {
+                var dismissKey = 'expiry_popup_dismissed_{{ request.user.id }}_{{ subscription_status }}_{{ subscription_access_days_remaining }}';
+                if (localStorage.getItem(dismissKey)) {
+                    document.getElementById('expiryPopup').style.display = 'none';
+                }
+            })();
+            function dismissExpiryPopup() {
+                var dismissKey = 'expiry_popup_dismissed_{{ request.user.id }}_{{ subscription_status }}_{{ subscription_access_days_remaining }}';
+                localStorage.setItem(dismissKey, '1');
+                document.getElementById('expiryPopup').style.display = 'none';
+            }
+        </script>
         {% endif %}
 
         <!-- KPI CARDS -->

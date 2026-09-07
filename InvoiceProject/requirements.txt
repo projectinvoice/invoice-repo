@@ -1,8 +1,24 @@
-Django==6.0.3
-python-dotenv==1.2.2
-requests==2.33.1
-reportlab==4.4.10
-Pillow==12.1.1
+asgiref==3.11.1
+certifi==2026.7.22
+charset-normalizer==3.4.9
+dj-database-url==2.3.0
+Django==6.0.6
+git-filter-repo==2.47.0
+gunicorn==23.0.0
+idna==3.19
+packaging==26.3
+pillow==12.2.0
+psycopg==3.2.10
+psycopg-binary==3.2.10
+python-dotenv==1.0.1
+reportlab==5.0.0
+requests==2.32.5
+sqlparse==0.5.5
+typing_extensions==4.16.0
+tzdata==2026.2
+urllib3==2.7.0
+whitenoise==6.8.2
+
 
 # --- Déploiement sur Render ---
 gunicorn==23.0.0          # serveur WSGI de production
