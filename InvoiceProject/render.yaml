@@ -9,6 +9,7 @@ services:
     name: invoiceapp
     runtime: python
     plan: free
+    rootDir: InvoiceProject
     buildCommand: "./build.sh"
     startCommand: "gunicorn InvoiceProject.wsgi:application --bind 0.0.0.0:$PORT"
     envVars:
