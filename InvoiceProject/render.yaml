@@ -1,12 +1,12 @@
 databases:
-  - name: invoiceproject2-db
+  - name: invoiceapp-db
     plan: free
-    databaseName: invoiceproject2
-    user: invoiceproject2
+    databaseName: invoiceapp
+    user: invoiceapp
 
 services:
   - type: web
-    name: invoiceproject2
+    name: invoiceapp
     runtime: python
     plan: free
     buildCommand: "./build.sh"
@@ -20,13 +20,16 @@ services:
         generateValue: true
       - key: DATABASE_URL
         fromDatabase:
-          name: invoiceproject2-db
+          name: invoiceapp-db
           property: connectionString
       # À compléter manuellement dans le dashboard Render après le premier déploiement
-      # (Render vous donne l'URL finale, ex: invoiceproject2.onrender.com) :
+      # (Render vous donne l'URL finale, ex: invoiceapp.onrender.com) :
       - key: ALLOWED_HOSTS
         sync: false
       - key: CSRF_TRUSTED_ORIGINS
+        sync: false
+      # Adresse qui reçoit les messages du formulaire de contact public
+      - key: SUPPORT_EMAIL
         sync: false
       # Facultatif — laissez vide pour désactiver l'assistant IA
       - key: GEMINI_API_KEY
