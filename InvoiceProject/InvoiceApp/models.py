@@ -592,6 +592,21 @@ class Subscription(models.Model):
         remaining = expiry - timezone.now()
         return max(0, remaining.days + (1 if remaining.seconds > 0 else 0))
 
+    @property
+    def access_days_remaining(self):
+        """Jours restants avant la fin de l'accès en cours, quel qu'il soit
+        (essai, code promo, OU abonnement payant). Contrairement à `days_left`
+        (limité à l'essai/promo), celle-ci couvre aussi l'abonnement actif —
+        utilisée pour l'avertissement discret affiché à l'approche de l'échéance.
+        Retourne None si l'accès est déjà expiré."""
+        if self.status not in ('trial', 'promo', 'active'):
+            return None
+        expiry = self.access_expiry_date
+        if not expiry:
+            return None
+        remaining = expiry - timezone.now()
+        return max(0, remaining.days + (1 if remaining.seconds > 0 else 0))
+
     # Conservé pour compatibilité (anciens templates) — identique à `days_left`
     @property
     def days_left_in_trial(self):

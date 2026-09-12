@@ -16,4 +16,5 @@ def subscription_context(request):
         'subscription_days_left': subscription.days_left,
         'subscription_expiry_date': subscription.access_expiry_date,
         'subscription_plan_price': subscription.price,
+        'subscription_access_days_remaining': subscription.access_days_remaining,
     }
