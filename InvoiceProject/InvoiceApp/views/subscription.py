@@ -18,6 +18,7 @@ def subscription_page(request):
     context = {
         'subscription': subscription,
         'plans': [
+            {'code': 'test', 'label': 'Test', 'price': SUBSCRIPTION_PLAN_PRICES['test']},
             {'code': 'monthly', 'label': 'Mensuel', 'price': SUBSCRIPTION_PLAN_PRICES['monthly']},
             {'code': 'annual', 'label': 'Annuel', 'price': SUBSCRIPTION_PLAN_PRICES['annual']},
         ],

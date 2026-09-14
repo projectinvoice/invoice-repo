@@ -181,7 +181,7 @@
                     {{ plan.label }}
                     {% if subscription.plan == plan.code %}<span class="plan-badge">Plan actuel</span>{% endif %}
                 </div>
-                <div class="plan-price">{{ plan.price|floatformat:0 }} FCFA <span>/ {% if plan.code == 'monthly' %}mois{% else %}an{% endif %}</span></div>
+                <div class="plan-price">{{ plan.price|floatformat:0 }} FCFA <span>{% if plan.code == 'annual' %}/ an{% else %}/ 30 jours{% endif %}</span></div>
                 <button type="button" class="btn btn-primary pay-btn" data-plan="{{ plan.code }}" {% if not moneyfusion_configured %}disabled{% endif %}>
                     Payer avec MoneyFusion
                 </button>
