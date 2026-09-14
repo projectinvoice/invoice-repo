@@ -21,14 +21,14 @@ CURRENCY_CHOICES = [
 # ═══════════════════════════════════════════════════════════════
 
 SUBSCRIPTION_PLAN_CHOICES = [
-    ('test', 'Test (100 FCFA)'),
+    ('test', 'Test (200 FCFA)'),
     ('monthly', 'Mensuel'),
     ('annual', 'Annuel'),
 ]
 
 # Tarifs en Franc CFA (XOF)
 SUBSCRIPTION_PLAN_PRICES = {
-    'test': Decimal('100'),
+    'test': Decimal('200'),
     'monthly': Decimal('6000'),
     'annual': Decimal('50000'),
 }
