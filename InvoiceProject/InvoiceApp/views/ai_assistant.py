@@ -2,9 +2,40 @@
 Assistant IA flottant (Gemini + function calling sur les donnees de l'entreprise).
 """
 from ._common import *  # noqa: F401,F403
+import time
 
 
 GEMINI_API_URL_TEMPLATE = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={key}"
+
+# Codes d'erreur transitoires côté Gemini : 429 = quota/débit dépassé (très courant sur le
+# plan gratuit dès plusieurs requêtes rapprochées), 5xx = service momentanément surchargé
+# côté Google. Ces erreurs se résolvent presque toujours en réessayant après une courte pause —
+# ce n'est PAS un problème de clé API, contrairement à ce qu'on pourrait croire en échouant.
+GEMINI_RETRYABLE_STATUS_CODES = {429, 500, 502, 503, 504}
+GEMINI_MAX_ATTEMPTS = 3
+
+
+def _gemini_post_with_retry(url, body, headers):
+    """Appelle l'API Gemini avec une reprise automatique (backoff exponentiel : ~1.5s, 3s)
+    en cas d'erreur transitoire, avant de remonter un échec définitif à l'utilisateur.
+    Retourne (response, request_exception) — l'un des deux est toujours None."""
+    resp = None
+    for attempt in range(GEMINI_MAX_ATTEMPTS):
+        try:
+            resp = http_requests.post(url, json=body, headers=headers, timeout=30)
+        except http_requests.RequestException as exc:
+            if attempt < GEMINI_MAX_ATTEMPTS - 1:
+                time.sleep(1.5 * (2 ** attempt))
+                continue
+            return None, exc
+
+        if resp.status_code == 200 or resp.status_code not in GEMINI_RETRYABLE_STATUS_CODES:
+            return resp, None
+
+        if attempt < GEMINI_MAX_ATTEMPTS - 1:
+            time.sleep(1.5 * (2 ** attempt))
+
+    return resp, None
 
 
 CURRENCY_SYMBOLS = {'EUR': '€', 'USD': '$', 'XOF': 'FCFA'}
@@ -383,19 +414,24 @@ def ai_chat_api(request):
             'tools': [{'function_declarations': AI_FUNCTION_DECLARATIONS}],
             'generationConfig': {'temperature': 0.3},
         }
-        try:
-            resp = http_requests.post(url, json=body, headers=headers, timeout=30)
-        except http_requests.RequestException:
+        resp, request_exc = _gemini_post_with_retry(url, body, headers)
+
+        if resp is None:
             return JsonResponse({
                 'reply': "Impossible de contacter le service IA pour le moment. Réessaie dans un instant.",
                 'contents': contents[:-1],
             })
 
         if resp.status_code != 200:
-            return JsonResponse({
-                'reply': "Le service IA a renvoyé une erreur. Vérifie la clé GEMINI_API_KEY et réessaie.",
-                'contents': contents[:-1],
-            })
+            if resp.status_code in (401, 403):
+                reply = "La clé GEMINI_API_KEY semble invalide ou ne dispose pas des droits nécessaires. Vérifie-la dans la configuration du serveur."
+            elif resp.status_code == 429:
+                reply = "Le service IA est momentanément surchargé (trop de demandes en même temps). Réessaie dans quelques instants."
+            elif resp.status_code >= 500:
+                reply = "Le service IA est temporairement indisponible côté Google. Réessaie dans quelques instants."
+            else:
+                reply = "Le service IA a renvoyé une erreur inattendue. Réessaie, et si le problème persiste, vérifie la configuration."
+            return JsonResponse({'reply': reply, 'contents': contents[:-1]})
 
         data = resp.json()
         candidates = data.get('candidates') or []
