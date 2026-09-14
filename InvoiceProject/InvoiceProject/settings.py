@@ -220,21 +220,30 @@ MONEYFUSION_STATUS_CHECK_TEMPLATE = os.environ.get(
 SITE_BASE_URL = os.environ.get('SITE_BASE_URL', 'http://127.0.0.1:8000')
 
 # ═══════════════════════════════════════════════════════════════
-# Configuration email (envoi des liens de réinitialisation de mot de passe)
+# Configuration email — envoi via l'API REST de SendGrid (django-sendgrid-v5)
 # ═══════════════════════════════════════════════════════════════
 # Par défaut (développement) : les emails sont affichés dans la console au lieu
-# d'être réellement envoyés. En production, configurez un vrai serveur SMTP via
-# les variables d'environnement ci-dessous (ex: Gmail, SendGrid, Mailgun, etc.).
+# d'être réellement envoyés (voir EMAIL_BACKEND dans .env). En production,
+# EMAIL_BACKEND doit valoir 'sendgrid_backend.SendgridBackend' : le code métier
+# (send_mail, EmailMessage...) ne change pas, seul ce backend change la façon
+# dont les emails partent réellement (ici via l'API REST de SendGrid, pas SMTP).
 EMAIL_BACKEND = os.environ.get(
     'EMAIL_BACKEND',
     'django.core.mail.backends.console.EmailBackend',
 )
-EMAIL_HOST = os.environ.get('EMAIL_HOST', '')
-EMAIL_PORT = int(os.environ.get('EMAIL_PORT', '587'))
-EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', 'True') == 'True'
-EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')
-EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
 DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'no-reply@votre-domaine.com')
+
+# Clé API SendGrid (Settings > API Keys sur app.sendgrid.com). Requise dès que
+# EMAIL_BACKEND = 'sendgrid_backend.SendgridBackend'.
+SENDGRID_API_KEY = os.environ.get('SENDGRID_API_KEY', '')
+# En DEBUG, django-sendgrid-v5 active le "sandbox mode" par défaut : les emails
+# sont acceptés par l'API SendGrid mais jamais réellement délivrés. On force ici
+# un comportement explicite piloté par .env plutôt que la valeur par défaut.
+SENDGRID_SANDBOX_MODE_IN_DEBUG = os.environ.get('SENDGRID_SANDBOX_MODE_IN_DEBUG', 'True') == 'True'
+# Active le suivi des ouvertures/clics dans le tableau de bord SendGrid.
+SENDGRID_TRACK_EMAIL_OPENS = os.environ.get('SENDGRID_TRACK_EMAIL_OPENS', 'True') == 'True'
+SENDGRID_TRACK_CLICKS_HTML = os.environ.get('SENDGRID_TRACK_CLICKS_HTML', 'True') == 'True'
+SENDGRID_TRACK_CLICKS_PLAIN = os.environ.get('SENDGRID_TRACK_CLICKS_PLAIN', 'True') == 'True'
 
 # Adresse qui reçoit les messages envoyés depuis le formulaire de contact public.
 # Par défaut, identique à DEFAULT_FROM_EMAIL si non précisée.
