@@ -211,7 +211,7 @@ MONEYFUSION_API_URL = os.environ.get('MONEYFUSION_API_URL', '')
 # appel réel (voir README_ABONNEMENT.md).
 MONEYFUSION_STATUS_CHECK_TEMPLATE = os.environ.get(
     'MONEYFUSION_STATUS_CHECK_TEMPLATE',
-    'https://payin.moneyfusion.net/payment/{token}/Marchand',
+    'https://www.pay.moneyfusion.net/paiementNotif/{token}',
 )
 
 # URL publique de base de votre site, utilisée pour construire webhook_url et

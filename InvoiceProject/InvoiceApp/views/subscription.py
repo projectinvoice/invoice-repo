@@ -1,7 +1,11 @@
 """
 Abonnement et paiement (MoneyFusion) + codes promo.
 """
+import logging
+
 from ._common import *  # noqa: F401,F403
+
+logger = logging.getLogger(__name__)
 
 
 def _moneyfusion_configured():
@@ -184,8 +188,13 @@ def _verify_and_apply_payment(payment):
     status_url = settings.MONEYFUSION_STATUS_CHECK_TEMPLATE.format(token=payment.provider_token)
     try:
         response = http_requests.get(status_url, timeout=20)
+        response.raise_for_status()
         data = response.json()
-    except (http_requests.RequestException, ValueError):
+    except (http_requests.RequestException, ValueError) as exc:
+        logger.error(
+            "Échec de la vérification MoneyFusion pour le paiement %s (token=%s) via %s : %s",
+            payment.transaction_id, payment.provider_token, status_url, exc,
+        )
         return payment
 
     result = data.get("data", {})
