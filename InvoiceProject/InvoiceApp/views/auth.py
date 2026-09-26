@@ -4,6 +4,35 @@ Authentification entreprise : inscription, connexion, activation, mot de passe.
 from ._common import *  # noqa: F401,F403
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
+from django.core.mail import EmailMultiAlternatives
+from django.utils.html import escape
+
+
+def _send_transactional_email(subject, to_email, greeting_name, intro_html, cta_label, cta_url, outro_html, text_body):
+    """Envoie un email avec une version HTML (lien cliquable sous forme de bouton) et
+    une version texte en secours pour les clients mail qui n'affichent pas le HTML."""
+    html_body = f"""\
+<div style="font-family: Arial, Helvetica, sans-serif; max-width: 480px; margin: 0 auto; color: #1f2937;">
+  <p>Bonjour {escape(greeting_name)},</p>
+  <p>{intro_html}</p>
+  <p style="text-align: center; margin: 32px 0;">
+    <a href="{escape(cta_url)}"
+       style="background-color: #2563eb; color: #ffffff; text-decoration: none;
+              padding: 12px 24px; border-radius: 6px; font-weight: bold; display: inline-block;">
+      {escape(cta_label)}
+    </a>
+  </p>
+  <p style="font-size: 13px; color: #6b7280;">
+    Si le bouton ne fonctionne pas, copiez-collez ce lien dans votre navigateur :<br>
+    <a href="{escape(cta_url)}" style="color: #2563eb; word-break: break-all;">{escape(cta_url)}</a>
+  </p>
+  <p>{outro_html}</p>
+  <p>Cordialement,<br>L'équipe InvoiceApp</p>
+</div>
+"""
+    msg = EmailMultiAlternatives(subject, text_body, settings.DEFAULT_FROM_EMAIL, [to_email])
+    msg.attach_alternative(html_body, "text/html")
+    msg.send(fail_silently=False)
 
 
 def landing(request):
@@ -18,14 +47,28 @@ def _send_activation_email(user):
     activation_link = settings.SITE_BASE_URL.rstrip('/') + reverse('activate_account', kwargs={'uidb64': uid, 'token': token})
 
     subject = "Activez votre compte InvoiceApp"
-    message = (
+    text_body = (
         f"Bonjour {user.company_name},\n\n"
-        f"Merci de votre inscription sur InvoiceApp !\n"
-        f"Cliquez sur le lien ci-dessous pour activer votre compte et commencer à l'utiliser :\n\n"
-        f"{activation_link}\n\n"
-        f"Si vous n'êtes pas à l'origine de cette inscription, ignorez simplement cet email.\n"
+        f"Votre compte InvoiceApp a bien été créé. Il ne vous reste qu'une étape avant de "
+        f"pouvoir commencer à l'utiliser : confirmer votre adresse email.\n\n"
+        f"Activez votre compte via ce lien :\n{activation_link}\n\n"
+        f"Ce lien est valable 24 heures.\n\n"
+        f"Si vous n'êtes pas à l'origine de cette inscription, vous pouvez ignorer cet email "
+        f"en toute sécurité.\n\n"
+        f"Cordialement,\nL'équipe InvoiceApp\n"
     )
-    send_mail(subject, message, settings.DEFAULT_FROM_EMAIL, [user.email], fail_silently=False)
+    _send_transactional_email(
+        subject=subject,
+        to_email=user.email,
+        greeting_name=user.company_name,
+        intro_html="Votre compte InvoiceApp a bien été créé. Il ne vous reste qu'une étape avant de "
+                    "pouvoir commencer à l'utiliser : confirmer votre adresse email.",
+        cta_label="Activer mon compte",
+        cta_url=activation_link,
+        outro_html="Ce lien est valable 24 heures. Si vous n'êtes pas à l'origine de cette inscription, "
+                    "vous pouvez ignorer cet email en toute sécurité.",
+        text_body=text_body,
+    )
 
 
 @require_http_methods(["GET", "POST"])
@@ -153,18 +196,31 @@ def forgot_password(request):
         token = default_token_generator.make_token(user)
         reset_link = settings.SITE_BASE_URL.rstrip('/') + reverse('reset_password_confirm', kwargs={'uidb64': uid, 'token': token})
 
-        subject = "Réinitialisation de votre mot de passe"
-        message = (
+        hours = settings.PASSWORD_RESET_TIMEOUT // 3600
+        subject = "Réinitialisation de votre mot de passe InvoiceApp"
+        text_body = (
             f"Bonjour {user.company_name},\n\n"
-            f"Vous avez demandé la réinitialisation du mot de passe de votre compte.\n"
-            f"Cliquez sur le lien ci-dessous pour choisir un nouveau mot de passe "
-            f"(valable {settings.PASSWORD_RESET_TIMEOUT // 3600} heures) :\n\n"
-            f"{reset_link}\n\n"
-            f"Si vous n'êtes pas à l'origine de cette demande, ignorez simplement cet email : "
-            f"votre mot de passe actuel restera inchangé.\n"
+            f"Nous avons bien reçu une demande de réinitialisation du mot de passe associé "
+            f"à votre compte InvoiceApp.\n\n"
+            f"Choisissez un nouveau mot de passe via ce lien :\n{reset_link}\n\n"
+            f"Ce lien est valable {hours} heures.\n\n"
+            f"Si vous n'êtes pas à l'origine de cette demande, aucune action n'est nécessaire : "
+            f"votre mot de passe actuel reste inchangé.\n\n"
+            f"Cordialement,\nL'équipe InvoiceApp\n"
         )
         try:
-            send_mail(subject, message, settings.DEFAULT_FROM_EMAIL, [email], fail_silently=False)
+            _send_transactional_email(
+                subject=subject,
+                to_email=email,
+                greeting_name=user.company_name,
+                intro_html="Nous avons bien reçu une demande de réinitialisation du mot de passe associé "
+                            "à votre compte InvoiceApp.",
+                cta_label="Choisir un nouveau mot de passe",
+                cta_url=reset_link,
+                outro_html=f"Ce lien est valable {hours} heures. Si vous n'êtes pas à l'origine de cette demande, "
+                           f"aucune action n'est nécessaire : votre mot de passe actuel reste inchangé.",
+                text_body=text_body,
+            )
         except Exception:
             # On ne révèle jamais un éventuel échec technique à l'utilisateur (évite l'énumération
             # de comptes), mais on ne bloque pas non plus la réponse générique.
