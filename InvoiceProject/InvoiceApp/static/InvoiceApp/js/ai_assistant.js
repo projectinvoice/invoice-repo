@@ -13,7 +13,22 @@
 
     const API_CHAT_URL = '/api/ai-chat/';
     const API_INIT_URL = '/api/ai-chat/init/';
-    const STORAGE_KEY = 'ia_invoiceapp_conversation_v1';
+
+    function getCookie(name) {
+        const match = document.cookie.match('(^|;)\\s*' + name + '\\s*=\\s*([^;]+)');
+        return match ? decodeURIComponent(match.pop()) : '';
+    }
+
+    function getStorageKey() {
+        // Scoper l'historique par token de session / utilisateur pour éviter les mélanges entre comptes
+        const token = getCookie('sessionid') || getCookie('csrftoken') || 'default';
+        let hash = 0;
+        for (let i = 0; i < token.length; i++) {
+            hash = ((hash << 5) - hash) + token.charCodeAt(i);
+            hash |= 0;
+        }
+        return 'ia_invoiceapp_conv_' + Math.abs(hash);
+    }
 
     // ─────────────────────────────────────────────────────────
     // Styles (namespacés, thème sombre fixe indépendant de la page)
@@ -261,22 +276,17 @@
     // ─────────────────────────────────────────────────────────
     function loadState() {
         try {
-            const raw = sessionStorage.getItem(STORAGE_KEY);
+            const raw = sessionStorage.getItem(getStorageKey());
             if (raw) return JSON.parse(raw);
         } catch (e) { /* stockage indisponible ou corrompu */ }
         return { contents: [], messages: [] };
     }
     function saveState() {
         try {
-            sessionStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+            sessionStorage.setItem(getStorageKey(), JSON.stringify(state));
         } catch (e) { /* quota dépassé : on continue sans persister */ }
     }
     let state = loadState();
-
-    function getCookie(name) {
-        const match = document.cookie.match('(^|;)\\s*' + name + '\\s*=\\s*([^;]+)');
-        return match ? decodeURIComponent(match.pop()) : '';
-    }
 
     // Garantit la présence du cookie csrftoken avant le premier envoi.
     fetch(API_INIT_URL, { credentials: 'same-origin' }).catch(function () {});

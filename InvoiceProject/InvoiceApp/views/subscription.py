@@ -196,11 +196,12 @@ def _verify_and_apply_payment(payment):
     if provider_status == "paid":
         payment.status = 'success'
         payment.save(update_fields=['status', 'payment_method', 'operator_id', 'updated_at'])
-        subscription = getattr(payment.company, 'subscription', None)
-        if subscription:
-            subscription.plan = payment.plan
-            subscription.save(update_fields=['plan', 'updated_at'])
-            subscription.extend_after_payment()
+        subscription, _ = Subscription.objects.get_or_create(
+            company=payment.company,
+            defaults={'plan': payment.plan},
+        )
+        subscription.plan = payment.plan
+        subscription.extend_after_payment()
     elif provider_status in ("failed", "no paid"):
         payment.status = 'failed'
         payment.save(update_fields=['status', 'payment_method', 'operator_id', 'updated_at'])

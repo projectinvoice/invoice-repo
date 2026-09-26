@@ -264,7 +264,7 @@
                         {% for load in loads %}
                         <tr>
                             <td>{{ load.agent.name }}</td>
-                            <td class="muted-cell">{{ load.engine.name|default:"—" }}</td>
+                            <td class="muted-cell">{% if load.engine %}{{ load.engine.name }}{% elif load.agent.engine %}{{ load.agent.engine.name }}{% else %}—{% endif %}</td>
                             <td class="muted-cell">
                                 {% for item in load.items.all %}{{ item.product.name }} ({{ item.quantity }}){% if not forloop.last %}, {% endif %}{% endfor %}
                             </td>
@@ -446,6 +446,7 @@
     {% for load in loads %}
     LOADS_DATA['{{ load.id }}'] = {
         agentId: '{{ load.agent.id }}',
+        engineId: '{{ load.engine.id|default:load.agent.engine.id|default:"" }}',
         note: '{{ load.note|escapejs }}',
         items: [
             {% for item in load.items.all %}
@@ -502,6 +503,7 @@
             modalTitle.textContent = '✏️ Modifier le chargement';
             submitBtn.textContent = '💾 Enregistrer les modifications';
             document.getElementById('loadAgent').value = data.agentId;
+            document.getElementById('loadEngine').value = data.engineId || '';
             document.getElementById('loadNote').value = data.note;
             data.items.forEach(item => addLoadRow(item));
         } else {

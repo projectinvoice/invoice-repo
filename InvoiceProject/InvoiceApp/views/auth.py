@@ -2,6 +2,8 @@
 Authentification entreprise : inscription, connexion, activation, mot de passe.
 """
 from ._common import *  # noqa: F401,F403
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError
 
 
 def landing(request):
@@ -47,6 +49,11 @@ def register_company(request):
         if User.objects.filter(username=email).exists() or User.objects.filter(company_email=email).exists():
             return JsonResponse({"success": False, "error": "Un utilisateur avec cet email existe déjà"}, status=400)
 
+        try:
+            validate_password(password)
+        except ValidationError as e:
+            return JsonResponse({"success": False, "error": " ".join(e.messages)}, status=400)
+
         valid_currencies = dict(CURRENCY_CHOICES).keys()
         if default_currency not in valid_currencies:
             default_currency = "EUR"
@@ -75,10 +82,10 @@ def register_company(request):
         promo_message = None
         if promo_code_input:
             promo_success, promo_message = redeem_promo_code(user, promo_code_input)
-            if not promo_success:
-                # On ne bloque pas la création du compte pour un code promo invalide,
-                # on informe simplement l'entreprise dans la réponse.
-                pass
+            # À l'inscription initiale, le compte reste en attente de validation email
+            if user.is_active:
+                user.is_active = False
+                user.save(update_fields=['is_active'])
 
         try:
             _send_activation_email(user)
@@ -192,6 +199,10 @@ def reset_password_confirm(request, uidb64, token):
         return JsonResponse({"success": False, "error": "Les mots de passe ne correspondent pas."}, status=400)
     if len(new_password) < 8:
         return JsonResponse({"success": False, "error": "Le mot de passe doit contenir au moins 8 caractères."}, status=400)
+    try:
+        validate_password(new_password, user=user)
+    except ValidationError as e:
+        return JsonResponse({"success": False, "error": " ".join(e.messages)}, status=400)
 
     user.set_password(new_password)
     user.save()
@@ -255,6 +266,10 @@ def change_password(request):
         return JsonResponse({"success": False, "error": "Les nouveaux mots de passe ne correspondent pas"}, status=400)
     if not request.user.check_password(old_password):
         return JsonResponse({"success": False, "error": "Mot de passe actuel incorrect"}, status=400)
+    try:
+        validate_password(new_password, user=request.user)
+    except ValidationError as e:
+        return JsonResponse({"success": False, "error": " ".join(e.messages)}, status=400)
 
     user = request.user
     user.set_password(new_password)
