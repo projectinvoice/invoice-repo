@@ -74,7 +74,7 @@ class User(AbstractUser):
 
 # Modèle pour les rôles d'agent
 class AgentRole(models.Model):
-    company = models.ForeignKey(User, on_delete=models.CASCADE, related_name='agent_roles', verbose_name="Entreprise", default=1)
+    company = models.ForeignKey(User, on_delete=models.CASCADE, related_name='agent_roles', verbose_name="Entreprise")
     name = models.CharField(max_length=100, verbose_name="Nom du rôle")
     description = models.TextField(blank=True, verbose_name="Description")
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="Date de création")
@@ -394,10 +394,11 @@ class Invoice(models.Model):
     def refresh_status(self):
         """Recalcule le statut à partir du montant payé. À appeler après chaque paiement enregistré."""
         total = self.sale.total_price if self.sale else Decimal('0.00')
+        is_past_due = bool(self.due_date and self.due_date < timezone.now().date())
         if self.amount_paid <= 0:
-            self.status = 'overdue' if self.due_date < timezone.now().date() else 'pending'
+            self.status = 'overdue' if is_past_due else 'pending'
         elif self.amount_paid < total:
-            self.status = 'partial'
+            self.status = 'overdue' if is_past_due else 'partial'
         else:
             self.status = 'paid'
 
@@ -469,6 +470,7 @@ class AgentStock(models.Model):
 class StockLoad(models.Model):
     company = models.ForeignKey(User, on_delete=models.CASCADE, related_name='stock_loads', verbose_name="Entreprise")
     agent = models.ForeignKey(Agent, on_delete=models.CASCADE, related_name='stock_loads', verbose_name="Agent")
+    engine = models.ForeignKey(Engine, on_delete=models.SET_NULL, null=True, blank=True, related_name='stock_loads', verbose_name="Engin utilisé")
     note = models.CharField(max_length=255, blank=True, verbose_name="Note (ex: destination, tournée)")
     date = models.DateTimeField(auto_now_add=True, verbose_name="Date de chargement")
 
@@ -615,14 +617,18 @@ class Subscription(models.Model):
         return self.days_left
 
     def extend_after_payment(self):
-        """Étend l'accès payant d'une période (30 jours pour le mensuel, 365 pour l'annuel).
+        """Étend l'accès payant d'une période (30 jours pour le mensuel/test, 365 pour l'annuel)
+        et réactive automatiquement le compte de l'entreprise s'il était désactivé.
         Repart de la date d'expiration actuelle si elle est encore dans le futur (paiement en avance),
         sinon repart de maintenant."""
         now = timezone.now()
         base = self.active_until if (self.active_until and self.active_until > now) else now
         delta_days = 365 if self.plan == 'annual' else 30
         self.active_until = base + timezone.timedelta(days=delta_days)
-        self.save(update_fields=['active_until', 'updated_at'])
+        self.save(update_fields=['plan', 'active_until', 'updated_at'])
+        if self.company_id and not self.company.is_active:
+            self.company.is_active = True
+            self.company.save(update_fields=['is_active'])
 
     class Meta:
         verbose_name = "Abonnement"
@@ -743,7 +749,7 @@ def redeem_promo_code(company, code_str):
         return False, "Vous avez déjà utilisé ce code promo."
 
     now = timezone.now()
-    subscription = getattr(company, 'subscription', None)
+    subscription, _ = Subscription.objects.get_or_create(company=company)
     base = now
     if subscription is not None:
         current_expiry = subscription.access_expiry_date
@@ -752,5 +758,9 @@ def redeem_promo_code(company, code_str):
 
     expires_at = base + timezone.timedelta(days=promo.duration_days)
     PromoCodeRedemption.objects.create(promo_code=promo, company=company, expires_at=expires_at)
+
+    if not company.is_active:
+        company.is_active = True
+        company.save(update_fields=['is_active'])
 
     return True, f"Code promo appliqué : {promo.duration_days} jours offerts (jusqu'au {expires_at.strftime('%d/%m/%Y')})."

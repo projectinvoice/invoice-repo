@@ -991,6 +991,12 @@ const agentsBarChart = new Chart(agCtx, {
     const el = document.getElementById('product-list-render');
     if (!PROD_NAMES.length) { el.innerHTML = '<p style="color:#64748B;font-size:13px;padding:16px 0">Aucun produit vendu</p>'; return; }
 
+    function escapeHtml(str) {
+        const div = document.createElement('div');
+        div.textContent = str == null ? '' : String(str);
+        return div.innerHTML;
+    }
+
     const maxQty = Math.max(...PROD_QTY);
     const sortedIdx = PROD_QTY.map((v,i) => i).sort((a,b) => PROD_QTY[b]-PROD_QTY[a]);
 
@@ -1000,9 +1006,9 @@ const agentsBarChart = new Chart(agCtx, {
         const initials = PROD_NAMES[i].split(/[\s.]+/).filter(Boolean).map(w=>w[0]).join('').slice(0,2).toUpperCase();
         return `
         <div class="agent-row">
-            <div class="agent-avatar" style="background:${color}22;color:${color};">${initials}</div>
+            <div class="agent-avatar" style="background:${color}22;color:${color};">${escapeHtml(initials)}</div>
             <div class="agent-info">
-                <div class="agent-name">${PROD_NAMES[i]}</div>
+                <div class="agent-name">${escapeHtml(PROD_NAMES[i])}</div>
                 <div class="agent-role">${(PROD_CA[i]/1000).toFixed(0)}k ${CURRENCY_SYMBOL} de CA</div>
             </div>
             <div class="agent-bar-wrap">

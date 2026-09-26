@@ -11,10 +11,10 @@ VENDOR_LOGIN_LOCKOUT_SECONDS = 15 * 60  # 15 minutes
 
 def _client_ip(request):
     """Récupère l'IP réelle du client, en tenant compte d'un éventuel proxy
-    (Render et la plupart des hébergeurs placent l'app derrière un reverse proxy)."""
+    (on prend la dernière IP ajoutée par le reverse proxy de confiance pour éviter l'usurpation)."""
     forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
     if forwarded_for:
-        return forwarded_for.split(',')[0].strip()
+        return forwarded_for.split(',')[-1].strip()
     return request.META.get('REMOTE_ADDR', 'unknown')
 
 
@@ -45,10 +45,12 @@ def vendor_login(request):
         return JsonResponse({"success": False, "error": "Code entreprise et PIN requis"}, status=400)
 
     # Protection anti brute-force : on limite le nombre de tentatives échouées
-    # par IP + code entreprise, pour empêcher de tester tous les PIN possibles.
+    # par IP + code entreprise ET globalement par code entreprise.
     throttle_key = f"vendor_login_attempts:{company_code}:{_client_ip(request)}"
+    company_throttle_key = f"vendor_login_company_attempts:{company_code}"
     attempts = cache.get(throttle_key, 0)
-    if attempts >= VENDOR_LOGIN_MAX_ATTEMPTS:
+    company_attempts = cache.get(company_throttle_key, 0)
+    if attempts >= VENDOR_LOGIN_MAX_ATTEMPTS or company_attempts >= VENDOR_LOGIN_MAX_ATTEMPTS * 3:
         return JsonResponse({
             "success": False,
             "error": "Trop de tentatives échouées. Réessayez dans quelques minutes."
@@ -57,6 +59,7 @@ def vendor_login(request):
     company = User.objects.filter(agent_login_code=company_code).first()
     if not company:
         cache.set(throttle_key, attempts + 1, VENDOR_LOGIN_LOCKOUT_SECONDS)
+        cache.set(company_throttle_key, company_attempts + 1, VENDOR_LOGIN_LOCKOUT_SECONDS)
         return JsonResponse({"success": False, "error": "Code entreprise invalide"}, status=400)
 
     matched_agent = None
@@ -67,10 +70,12 @@ def vendor_login(request):
 
     if not matched_agent:
         cache.set(throttle_key, attempts + 1, VENDOR_LOGIN_LOCKOUT_SECONDS)
+        cache.set(company_throttle_key, company_attempts + 1, VENDOR_LOGIN_LOCKOUT_SECONDS)
         return JsonResponse({"success": False, "error": "PIN invalide"}, status=400)
 
     # Connexion réussie : on efface le compteur de tentatives
     cache.delete(throttle_key)
+    cache.delete(company_throttle_key)
     request.session['agent_id'] = matched_agent.id
     return JsonResponse({"success": True, "message": "Connecté", "redirect": "/vendeur/"})
 
@@ -95,6 +100,8 @@ def vendor_invoice_pdf(request, invoice_id):
 @agent_login_required
 def vendor_dashboard(request):
     agent = request.agent
+    today = timezone.now().date()
+    Invoice.objects.filter(company=agent.company, status__in=('pending', 'partial'), due_date__lt=today).update(status='overdue')
     agent_stocks = AgentStock.objects.filter(agent=agent, quantity__gt=0).select_related('product').order_by('product__name')
     clients = Client.objects.filter(company=agent.company)
     recent_sales = Sale.objects.filter(company=agent.company, agent=agent).select_related('invoice', 'client').order_by('-date')[:15]
@@ -156,6 +163,8 @@ def vendor_add_sale(request):
             quantity = int(quantity)
         except (ValueError, TypeError):
             return JsonResponse({"success": False, "error": "quantity doit être un nombre"}, status=400)
+        if quantity <= 0:
+            return JsonResponse({"success": False, "error": "La quantité doit être supérieure à 0"}, status=400)
 
         # Sécurité : le prix vient TOUJOURS du stock personnel du vendeur (fixé par la secrétaire
         # au moment du chargement), jamais de ce que le vendeur envoie, et jamais du prix catalogue.

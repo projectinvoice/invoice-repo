@@ -54,8 +54,15 @@ def add_agent_role(request):
     role_id = request.POST.get("role_id")
     company = request.user.company if hasattr(request.user, 'company') else request.user
 
-    if not name:
+    if not name or not name.strip():
         return JsonResponse({"success": False, "error": "name requis"}, status=400)
+    name = name.strip()
+
+    duplicate_qs = AgentRole.objects.filter(company=company, name__iexact=name)
+    if role_id:
+        duplicate_qs = duplicate_qs.exclude(id=role_id)
+    if duplicate_qs.exists():
+        return JsonResponse({"success": False, "error": f"Le rôle « {name} » existe déjà."}, status=400)
 
     if role_id:
         role = AgentRole.objects.filter(id=role_id, company=company).first()
@@ -83,8 +90,6 @@ def delete_agent_role(request):
     return JsonResponse({"success": False, "error": "Rôle introuvable"}, status=404)
 
 
-@require_http_methods(["GET", "POST"])
-@login_required
 @require_http_methods(["POST"])
 @login_required
 def add_agent(request):

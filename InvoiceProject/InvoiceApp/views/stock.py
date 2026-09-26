@@ -12,7 +12,7 @@ def list_stock_loads(request):
     products = user.products.all()
     engines = user.engines.all()
     agent_stocks = AgentStock.objects.filter(agent__company=user).select_related('agent', 'product').filter(quantity__gt=0).order_by('agent__name', 'product__name')
-    loads = StockLoad.objects.filter(company=user).select_related('agent').prefetch_related('items__product').order_by('-date')[:30]
+    loads = StockLoad.objects.filter(company=user).select_related('agent', 'agent__engine', 'engine').prefetch_related('items__product').order_by('-date')[:30]
     returns = StockReturn.objects.filter(company=user).select_related('agent').prefetch_related('items__product').order_by('-date')[:30]
 
     context = {
@@ -34,12 +34,19 @@ def add_stock_load(request):
     user = request.user
     load_id = request.POST.get("load_id")
     agent_id = request.POST.get("agent_id")
+    engine_id = request.POST.get("engine_id")
     note = request.POST.get("note", "")
     items_payload = request.POST.get("items")
 
     agent = Agent.objects.filter(id=agent_id, company=user).first()
     if not agent:
         return JsonResponse({"success": False, "error": "Agent introuvable"}, status=404)
+
+    engine = None
+    if engine_id:
+        engine = Engine.objects.filter(id=engine_id, company=user).first()
+        if not engine:
+            return JsonResponse({"success": False, "error": "Engin introuvable"}, status=404)
 
     if not items_payload:
         return JsonResponse({"success": False, "error": "Au moins un produit est requis"}, status=400)
@@ -62,6 +69,11 @@ def add_stock_load(request):
             unit_price = Decimal(str(unit_price))
         except (ValueError, TypeError, InvalidOperation):
             return JsonResponse({"success": False, "error": "quantity et unit_price doivent être des nombres"}, status=400)
+
+        if quantity <= 0:
+            return JsonResponse({"success": False, "error": "La quantité doit être supérieure à 0"}, status=400)
+        if unit_price < 0:
+            return JsonResponse({"success": False, "error": "Le prix unitaire ne peut pas être négatif"}, status=400)
 
         product = Product.objects.filter(id=product_id, company=user).first()
         if not product:
@@ -120,10 +132,11 @@ def add_stock_load(request):
                     agent_stock.save(update_fields=['quantity'])
 
             load.agent = agent
+            load.engine = engine
             load.note = note
             load.items.all().delete()
         else:
-            load = StockLoad.objects.create(company=user, agent=agent, note=note)
+            load = StockLoad.objects.create(company=user, agent=agent, engine=engine, note=note)
 
         for product, quantity, unit_price in items:
             product.refresh_from_db(fields=['stock_quantity'])
@@ -241,6 +254,8 @@ def add_stock_return(request):
             quantity = int(quantity)
         except (ValueError, TypeError):
             return JsonResponse({"success": False, "error": "quantity doit être un nombre"}, status=400)
+        if quantity <= 0:
+            return JsonResponse({"success": False, "error": "La quantité doit être supérieure à 0"}, status=400)
 
         agent_stock = AgentStock.objects.filter(agent=agent, product_id=product_id).select_related('product').first()
         if not agent_stock:
@@ -251,11 +266,11 @@ def add_stock_return(request):
     # Validation du stock VENDEUR avant toute écriture. En édition, on remet virtuellement
     # les anciennes quantités retournées dans le stock vendeur avant de comparer.
     stock_preview = {}
-    if stock_return:
+    if stock_return and stock_return.agent_id == agent.id:
         for old_item in old_items:
             agent_stock_old = AgentStock.objects.filter(agent=stock_return.agent, product=old_item.product).first()
-            base = agent_stock_old.quantity if agent_stock_old else 0
-            stock_preview[old_item.product_id] = base - old_item.quantity
+            base = stock_preview.get(old_item.product_id, agent_stock_old.quantity if agent_stock_old else 0)
+            stock_preview[old_item.product_id] = base + old_item.quantity
 
     for agent_stock, quantity in items:
         available = stock_preview.get(agent_stock.product_id, agent_stock.quantity)

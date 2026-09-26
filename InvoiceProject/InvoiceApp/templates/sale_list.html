@@ -355,28 +355,77 @@
 
 <div class="sidebar">
     <div class="sidebar-logo">
-        <div class="logo-mark">S</div>
+        {% if company_logo_url %}
+        <img src="{{ company_logo_url }}" alt="Logo" style="width:36px;height:36px;object-fit:contain;border-radius:10px;background:#fff;padding:4px;">
+        {% else %}
+        <div class="logo-mark">{{ company_name|first|upper }}</div>
+        {% endif %}
         <div class="logo-text">{{ company_name }}</div>
     </div>
 
     <nav class="sidebar-nav">
-        <div class="nav-section-label">Navigation</div>
-        <a href="{% url 'dashboard' %}" class="nav-item"><span class="nav-icon">📊</span> Tableau de bord</a>
-        <a href="{% url 'list_products' %}" class="nav-item"><span class="nav-icon">📦</span> Produits</a>
-        <a href="{% url 'list_clients' %}" class="nav-item"><span class="nav-icon">🤝</span> Clients</a>
-        <a href="{% url 'list_sales' %}" class="nav-item active"><span class="nav-icon">💵</span> Ventes <span class="nav-badge">{{ sales|length }}</span></a>
-        <a href="{% url 'list_agents' %}" class="nav-item"><span class="nav-icon">👥</span> Agents</a>
+        <div class="nav-section-label">Général</div>
+        <a href="{% url 'dashboard' %}" class="nav-item">
+            <span class="nav-icon">📊</span> Tableau de bord
+        </a>
+
+        <div class="nav-section-label">Gestion</div>
+        <a href="{% url 'list_agents' %}" class="nav-item">
+            <span class="nav-icon">👥</span> Agents
+        </a>
+        <a href="{% url 'manage_agent_roles' %}" class="nav-item">
+            <span class="nav-icon">🎭</span> Rôles
+        </a>
+        <a href="{% url 'list_engines' %}" class="nav-item">
+            <span class="nav-icon">⚙️</span> Engins
+        </a>
+        <a href="{% url 'list_stock_loads' %}" class="nav-item">
+            <span class="nav-icon">🚚</span> Stock Vendeurs
+        </a>
+        <a href="{% url 'list_products' %}" class="nav-item">
+            <span class="nav-icon">📦</span> Produits
+        </a>
+
+        <div class="nav-section-label">Commerce</div>
+        <a href="{% url 'list_clients' %}" class="nav-item">
+            <span class="nav-icon">🤝</span> Clients
+        </a>
+        <a href="{% url 'list_suppliers' %}" class="nav-item">
+            <span class="nav-icon">🏭</span> Fournisseurs
+        </a>
+        <a href="{% url 'list_sales' %}" class="nav-item active">
+            <span class="nav-icon">💹</span> Ventes <span class="nav-badge">{{ sales|length }}</span>
+        </a>
+        <a href="{% url 'list_supplies' %}" class="nav-item">
+            <span class="nav-icon">🛒</span> Appros
+        </a>
+        <a href="{% url 'list_invoices' %}" class="nav-item">
+            <span class="nav-icon">🧾</span> Factures
+        </a>
+
+        <div class="nav-section-label">Entreprise</div>
+        <a href="{% url 'company_settings' %}" class="nav-item">
+            <span class="nav-icon">⚙️</span> Paramètres
+        </a>
+        <a href="{% url 'subscription' %}" class="nav-item">
+            <span class="nav-icon">💳</span> Abonnement
+        </a>
+        {% if request.user.is_staff %}
+        <a href="{% url 'promo_codes_admin' %}" class="nav-item">
+            <span class="nav-icon">🎟️</span> Codes promo
+        </a>
+        {% endif %}
     </nav>
 
     <div class="sidebar-footer">
         <div class="user-block">
-            <div class="user-avatar">{{ request.user.first_name|default:request.user.username|slice:':1'|upper }}</div>
+            <div class="user-avatar">{{ company_name|slice:":1"|upper|default:"A" }}</div>
             <div>
-                <div class="user-name">{{ request.user.get_full_name|default:request.user.username }}</div>
-                <div class="user-role">Gestionnaire</div>
+                <div class="user-name">{{ company_name|default:request.user.username }}</div>
+                <div class="user-role">Administrateur</div>
             </div>
         </div>
-        <a href="{% url 'logout' %}" class="logout-btn">Déconnexion</a>
+        <a href="{% url 'logout' %}" class="logout-btn">🚪 Se déconnecter</a>
     </div>
 </div>
 

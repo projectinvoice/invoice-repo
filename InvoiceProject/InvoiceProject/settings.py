@@ -180,9 +180,8 @@ STORAGES = {
         "BACKEND": "django.core.files.storage.FileSystemStorage",
     },
     "staticfiles": {
-        # Ajoute un hash au nom de chaque fichier + compression gzip/brotli,
-        # avec un fallback silencieux si un fichier référencé est manquant.
-        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+        # Compression gzip/brotli avec fallback silencieux si le manifeste n'est pas généré (ex: tests).
+        "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage",
     },
 }
 

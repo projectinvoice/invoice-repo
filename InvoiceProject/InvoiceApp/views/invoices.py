@@ -8,8 +8,11 @@ from ._common import *  # noqa: F401,F403
 @login_required
 def list_invoices(request):
     user = request.user
-    invoices = user.invoices.all()
-    sales = user.sales.all()
+    today = timezone.now().date()
+    # Met à jour automatiquement les factures impayées dont l'échéance est dépassée
+    user.invoices.filter(status__in=('pending', 'partial'), due_date__lt=today).update(status='overdue')
+    invoices = user.invoices.select_related('sale', 'sale__client', 'sale__product').prefetch_related('sale__sale_items__product').all()
+    sales = user.sales.select_related('client', 'product').prefetch_related('sale_items__product').all()
     context = {
         'company_name': user.company_name,
         'company_logo_url': user.logo.url if user.logo else None,
@@ -24,7 +27,7 @@ def list_invoices(request):
 def add_invoice(request):
     invoice_id = request.POST.get("invoice_id")
     sale_id = request.POST.get("sale_id")
-    invoice_number = request.POST.get("invoice_number")
+    invoice_number = (request.POST.get("invoice_number") or "").strip()
     due_date = request.POST.get("due_date")
     status = request.POST.get("status", "pending")
     if not sale_id or not invoice_number or not due_date:
@@ -33,7 +36,18 @@ def add_invoice(request):
     sale = Sale.objects.filter(id=sale_id, company=request.user).first()
     if not sale:
         return JsonResponse({"success": False, "error": "Vente introuvable"}, status=404)
-    
+
+    duplicate_num_qs = Invoice.objects.filter(company=request.user, invoice_number=invoice_number)
+    duplicate_sale_qs = Invoice.objects.filter(company=request.user, sale=sale)
+    if invoice_id:
+        duplicate_num_qs = duplicate_num_qs.exclude(id=invoice_id)
+        duplicate_sale_qs = duplicate_sale_qs.exclude(id=invoice_id)
+
+    if duplicate_num_qs.exists():
+        return JsonResponse({"success": False, "error": f"Le numéro de facture « {invoice_number} » existe déjà."}, status=400)
+    if duplicate_sale_qs.exists():
+        return JsonResponse({"success": False, "error": "Cette vente possède déjà une facture associée."}, status=400)
+
     if invoice_id:
         invoice = Invoice.objects.filter(id=invoice_id, company=request.user).first()
         if not invoice:
@@ -42,15 +56,25 @@ def add_invoice(request):
         invoice.invoice_number = invoice_number
         invoice.due_date = due_date
         invoice.status = status
+        if status == 'paid' and invoice.amount_paid < sale.total_price:
+            diff = sale.total_price - invoice.amount_paid
+            invoice.amount_paid = sale.total_price
+            Payment.objects.create(invoice=invoice, amount=diff, note="Règlement complet (statut Payée)")
+        elif status == 'pending' and invoice.amount_paid >= sale.total_price:
+            invoice.amount_paid = Decimal('0.00')
         invoice.save()
     else:
+        initial_paid = sale.total_price if status == 'paid' else Decimal('0.00')
         invoice = Invoice.objects.create(
             company=request.user,
             sale=sale,
             invoice_number=invoice_number,
             due_date=due_date,
+            amount_paid=initial_paid,
             status=status,
         )
+        if initial_paid > 0:
+            Payment.objects.create(invoice=invoice, amount=initial_paid, note="Paiement comptant")
     return JsonResponse({"success": True, "invoice_id": invoice.id, "message": "Facture enregistrée"})
 
 

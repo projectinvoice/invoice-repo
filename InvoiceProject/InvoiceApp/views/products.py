@@ -27,14 +27,28 @@ def add_product(request):
     stock = request.POST.get("stock") or request.POST.get("stock_quantity", 0)
     image = request.FILES.get("image") if hasattr(request, 'FILES') else None
 
-    if not name or price is None:
+    if not name or price in (None, ""):
         return JsonResponse({"success": False, "error": "name et price requis"}, status=400)
+
+    try:
+        price = Decimal(str(price))
+    except (ValueError, TypeError, InvalidOperation):
+        return JsonResponse({"success": False, "error": "Prix invalide"}, status=400)
+
+    if price < 0:
+        return JsonResponse({"success": False, "error": "Le prix ne peut pas être négatif"}, status=400)
 
     # La devise est celle de l'entreprise, définie une fois à l'inscription :
     # inutile de la redemander à chaque produit
     currency = request.user.default_currency
 
-    stock_quantity = int(stock) if stock not in (None, "", "0") else 0
+    try:
+        stock_quantity = int(stock) if stock not in (None, "", "0") else 0
+    except (ValueError, TypeError):
+        return JsonResponse({"success": False, "error": "Quantité en stock invalide"}, status=400)
+
+    if stock_quantity < 0:
+        return JsonResponse({"success": False, "error": "La quantité en stock ne peut pas être négative"}, status=400)
 
     if product_id:
         try:

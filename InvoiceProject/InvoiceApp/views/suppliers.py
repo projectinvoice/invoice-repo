@@ -21,7 +21,7 @@ def list_suppliers(request):
 @login_required
 def list_supplies(request):
     user = request.user
-    supplies = user.supplies.all()
+    supplies = user.supplies.select_related('supplier', 'product').prefetch_related('items__product').all()
     suppliers = user.suppliers.all()
     products = user.products.all()
     context = {
@@ -118,6 +118,9 @@ def add_supply(request):
         except (ValueError, TypeError):
             return JsonResponse({"success": False, "error": "quantity doit être un nombre"}, status=400)
 
+        if quantity <= 0:
+            return JsonResponse({"success": False, "error": "La quantité doit être supérieure à 0"}, status=400)
+
         product = Product.objects.filter(id=product_id, company=request.user).first()
         if not product:
             return JsonResponse({"success": False, "error": "Produit introuvable"}, status=404)
@@ -129,6 +132,9 @@ def add_supply(request):
                 unit_price = Decimal(str(unit_price))
             except (ValueError, TypeError, InvalidOperation):
                 return JsonResponse({"success": False, "error": "unit_price doit être un nombre"}, status=400)
+
+        if unit_price < 0:
+            return JsonResponse({"success": False, "error": "Le prix unitaire ne peut pas être négatif"}, status=400)
 
         # La devise suit toujours le produit : pas de choix manuel de devise
         items.append((product, quantity, unit_price, product.currency))
