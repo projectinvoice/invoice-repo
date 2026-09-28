@@ -9,3 +9,8 @@ pip install -r requirements.txt
 python manage.py collectstatic --no-input
 
 python manage.py migrate
+
+# Crée un superutilisateur si aucun n'existe (utile car le Shell interactif
+# n'est pas disponible sur le plan Free de Render). Ne fait rien si les
+# variables DJANGO_SUPERUSER_* ne sont pas définies.
+python manage.py create_superuser_if_none_exists
