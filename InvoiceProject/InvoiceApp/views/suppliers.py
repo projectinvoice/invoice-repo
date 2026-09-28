@@ -21,7 +21,7 @@ def list_suppliers(request):
 @login_required
 def list_supplies(request):
     user = request.user
-    supplies = user.supplies.select_related('supplier', 'product').prefetch_related('items__product').all()
+    supplies = user.supplies.select_related('supplier').prefetch_related('supply_items__product').all()
     suppliers = user.suppliers.all()
     products = user.products.all()
     context = {
