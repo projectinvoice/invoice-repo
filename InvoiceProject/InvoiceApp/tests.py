@@ -188,4 +188,85 @@ class SubscriptionReactivationAndStockTests(TestCase):
             'items': json.dumps([{'product_id': product.id, 'quantity': 9}]),
         })
         self.assertEqual(res_edit.status_code, 200)
-        self.assertTrue(res_edit.json()['success'])
+        self.assertTrue(res_edit.json()['success'])
+
+    def test_verify_and_apply_payment_activates_subscription_and_company(self):
+        from unittest.mock import patch, MagicMock
+        from .models import SubscriptionPayment
+        from .views.subscription import _verify_and_apply_payment
+
+        self.assertTrue(self.sub.is_blocked)
+        self.assertFalse(self.company.is_active)
+
+        payment = SubscriptionPayment.objects.create(
+            company=self.company,
+            plan='monthly',
+            amount=6000,
+            transaction_id='SUB-TEST-12345',
+            provider_token='tok_moneyfusion_valid',
+            status='pending',
+        )
+
+        mock_resp = MagicMock()
+        mock_resp.status_code = 200
+        mock_resp.json.return_value = {
+            "statut": True,
+            "data": {
+                "statut": "paid",
+                "moyen": "wave",
+                "numeroTransaction": "TXN-98765",
+            },
+        }
+
+        with patch('InvoiceApp.views.subscription.http_requests.get', return_value=mock_resp):
+            _verify_and_apply_payment(payment)
+
+        payment.refresh_from_db()
+        self.assertEqual(payment.status, 'success')
+        self.assertEqual(payment.payment_method, 'wave')
+        self.assertEqual(payment.operator_id, 'TXN-98765')
+
+        self.company.refresh_from_db()
+        self.sub.refresh_from_db()
+        self.assertTrue(self.company.is_active)
+        self.assertFalse(self.sub.is_blocked)
+        self.assertEqual(self.sub.status, 'active')
+
+    def test_moneyfusion_webhook_session_completed_activates_subscription(self):
+        from .models import SubscriptionPayment
+
+        self.assertTrue(self.sub.is_blocked)
+        self.assertFalse(self.company.is_active)
+
+        payment = SubscriptionPayment.objects.create(
+            company=self.company,
+            plan='monthly',
+            amount=6000,
+            transaction_id='SUB-WEBHOOK-12345',
+            provider_token='tok_webhook_token',
+            status='pending',
+        )
+
+        payload = {
+            "event": "payin.session.completed",
+            "statut": "paid",
+            "tokenPay": "tok_webhook_token",
+            "numeroTransaction": "TXN-WH-111",
+            "moyen": "orange",
+            "personal_Info": [{"userId": str(self.company.id), "orderId": "SUB-WEBHOOK-12345"}],
+        }
+
+        response = self.client.post(
+            reverse('moneyfusion_webhook'),
+            data=json.dumps(payload),
+            content_type='application/json',
+        )
+        self.assertEqual(response.status_code, 200)
+
+        payment.refresh_from_db()
+        self.assertEqual(payment.status, 'success')
+        self.company.refresh_from_db()
+        self.sub.refresh_from_db()
+        self.assertTrue(self.company.is_active)
+        self.assertFalse(self.sub.is_blocked)
+        self.assertEqual(self.sub.status, 'active')

@@ -173,10 +173,13 @@
         .btn-danger:hover { background: rgba(244, 63, 94, 0.28); }
 
         @media (max-width: 900px) {
-            .sidebar { display: none; }
             .main { margin-left: 0; }
-            .topbar { padding: 14px 20px; }
-            .content { padding: 20px; }
+            .topbar { padding: 12px 16px; }
+            .content { padding: 16px 12px; }
+        }
+        @media (max-width: 480px) {
+            .logo-row { flex-direction: column; align-items: flex-start; gap: 10px; }
+            .settings-card { padding: 18px 14px; }
         }
 
         .modal-overlay {
@@ -215,6 +218,7 @@
         }
         .close-btn:hover { color: var(--text-primary); }
     </style>
+    <link rel="stylesheet" href="{% static 'InvoiceApp/css/responsive.css' %}">
 </head>
 <body>
 
@@ -226,6 +230,7 @@
             <div class="logo-mark">{{ company_name|first|upper }}</div>
         {% endif %}
         <div class="logo-text">{{ company_name }}</div>
+        <button type="button" class="sidebar-close-btn" id="sidebarCloseBtn" aria-label="Fermer le menu">&times;</button>
     </div>
 
     <nav class="sidebar-nav">
@@ -293,12 +298,18 @@
         <a href="{% url 'logout' %}" class="logout-btn">🚪 Se déconnecter</a>
     </div>
 </div>
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
 
 <div class="main">
     <div class="topbar">
-        <div>
-            <div class="topbar-title">Paramètres de l'entreprise</div>
-            <div class="topbar-sub">Modifiez vos informations à tout moment</div>
+        <div style="display:flex; align-items:center; gap:12px;">
+            <button type="button" class="sidebar-toggle-btn" id="sidebarToggleBtn" aria-label="Menu de navigation">
+                <span></span><span></span><span></span>
+            </button>
+            <div>
+                <div class="topbar-title">Paramètres de l'entreprise</div>
+                <div class="topbar-sub">Modifiez vos informations à tout moment</div>
+            </div>
         </div>
         <div class="topbar-actions">
             <a href="{% url 'dashboard' %}" class="btn btn-ghost">← Tableau de bord</a>
@@ -594,6 +605,7 @@
     });
 </script>
 
+<script src="{% static 'InvoiceApp/js/responsive.js' %}"></script>
 <script src="{% static 'InvoiceApp/js/ai_assistant.js' %}"></script>
 </body>
 </html>

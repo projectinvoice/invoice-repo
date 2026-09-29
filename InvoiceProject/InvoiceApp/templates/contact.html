@@ -61,6 +61,18 @@
             .footer-grid { grid-template-columns: 1fr; gap: 26px; }
             .footer-bottom { flex-direction: column; align-items: flex-start; }
         }
+        @media (max-width: 480px) {
+            .wrap { padding: 0 16px; }
+            .header-inner { padding: 12px 16px; }
+            .brand { font-size: 15px; }
+            .btn { padding: 8px 14px; font-size: 12.5px; }
+            .card { padding: 18px 16px; }
+            .page-hero { padding: 40px 0 24px; }
+        }
+        @media (max-width: 360px) {
+            .wrap { padding: 0 12px; }
+            .card { padding: 16px 12px; }
+        }
         .contact-layout { display: grid; grid-template-columns: 1fr 1.3fr; gap: 32px; align-items: start; }
         .info-card { display: flex; flex-direction: column; gap: 20px; }
         .info-item { display: flex; gap: 14px; align-items: flex-start; }

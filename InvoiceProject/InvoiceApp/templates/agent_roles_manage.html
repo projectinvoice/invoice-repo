@@ -318,12 +318,12 @@
         .alert-danger { background: rgba(244,63,94,0.15); color: #FECACA; }
 
         @media (max-width: 900px) {
-            .sidebar { display: none; }
             .main { margin-left: 0; }
-            .topbar { padding: 14px 20px; }
-            .content { padding: 20px; }
+            .topbar { padding: 12px 16px; }
+            .content { padding: 16px 12px; }
         }
     </style>
+    <link rel="stylesheet" href="{% static 'InvoiceApp/css/responsive.css' %}">
 </head>
 <body>
 
@@ -335,6 +335,7 @@
         <div class="logo-mark">{{ company_name|first|upper }}</div>
         {% endif %}
         <div class="logo-text">{{ company_name }}</div>
+        <button type="button" class="sidebar-close-btn" id="sidebarCloseBtn" aria-label="Fermer le menu">&times;</button>
     </div>
 
     <nav class="sidebar-nav">
@@ -402,12 +403,18 @@
         <a href="{% url 'logout' %}" class="logout-btn">🚪 Se déconnecter</a>
     </div>
 </div>
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
 
 <div class="main">
     <div class="topbar">
-        <div>
-            <div class="topbar-title">Gestion des rôles d'agent</div>
-            <div class="topbar-sub">{{ agent_roles|length }} rôle{{ agent_roles|length|pluralize }} enregistré{{ agent_roles|length|pluralize }}</div>
+        <div style="display:flex; align-items:center; gap:12px;">
+            <button type="button" class="sidebar-toggle-btn" id="sidebarToggleBtn" aria-label="Menu de navigation">
+                <span></span><span></span><span></span>
+            </button>
+            <div>
+                <div class="topbar-title">Gestion des rôles d'agent</div>
+                <div class="topbar-sub">{{ agent_roles|length }} rôle{{ agent_roles|length|pluralize }} enregistré{{ agent_roles|length|pluralize }}</div>
+            </div>
         </div>
         <div class="topbar-actions">
             <button onclick="openRoleModal(null)" class="btn btn-primary">＋ Ajouter</button>
@@ -634,6 +641,7 @@
         });
     });
 </script>
+<script src="{% static 'InvoiceApp/js/responsive.js' %}"></script>
 <script src="{% static 'InvoiceApp/js/ai_assistant.js' %}"></script>
 </body>
 </html>

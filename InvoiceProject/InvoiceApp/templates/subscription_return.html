@@ -29,6 +29,13 @@
         .btn {
             display: inline-flex; padding: 10px 22px; border-radius: var(--radius-sm);
             background: var(--indigo); color: white; text-decoration: none; font-weight: 600; font-size: 13.5px;
+            justify-content: center;
+        }
+        @media (max-width: 480px) {
+            body { padding: 12px; }
+            .card { padding: 24px 18px; border-radius: 14px; }
+            .title { font-size: 17px; }
+            .btn { width: 100%; min-height: 42px; align-items: center; }
         }
     </style>
 </head>
