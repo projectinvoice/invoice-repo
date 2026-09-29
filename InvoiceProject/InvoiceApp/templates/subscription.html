@@ -181,15 +181,24 @@
         <div class="message error show">Le paiement en ligne MoneyFusion n'est pas encore configuré sur ce serveur. Contactez l'administrateur de la plateforme.</div>
     {% endif %}
 
-    <div class="section-title">Choisissez votre plan</div>
+    <div class="section-title">Choisissez votre plan officiel</div>
+    <div style="font-size:13px; color:var(--text-muted); margin-top:-8px; margin-bottom:18px;">
+        Votre entreprise compte actuellement <strong>{{ current_agents_count }} vendeur{{ current_agents_count|pluralize }}</strong>.
+        Le plan Essentiel est adapté jusqu'à 10 vendeurs. Au-delà, optez pour le plan Business.
+    </div>
     <div class="plans-grid">
         {% for plan in plans %}
-            <div class="plan-card {% if subscription.plan == plan.code %}current{% endif %}">
+            <div class="plan-card {% if subscription.plan == plan.code or subscription.plan == 'monthly' and plan.code == 'essential_monthly' or subscription.plan == 'annual' and plan.code == 'essential_annual' %}current{% endif %}">
                 <div class="plan-name">
                     {{ plan.label }}
-                    {% if subscription.plan == plan.code %}<span class="plan-badge">Plan actuel</span>{% endif %}
+                    {% if subscription.plan == plan.code or subscription.plan == 'monthly' and plan.code == 'essential_monthly' or subscription.plan == 'annual' and plan.code == 'essential_annual' %}
+                        <span class="plan-badge">Plan actuel</span>
+                    {% elif plan.badge %}
+                        <span class="plan-badge" style="background:rgba(16,185,129,0.15); color:var(--emerald);">{{ plan.badge }}</span>
+                    {% endif %}
                 </div>
-                <div class="plan-price">{{ plan.price|floatformat:0 }} FCFA <span>{% if plan.code == 'annual' %}/ an{% else %}/ 30 jours{% endif %}</span></div>
+                <div style="font-size:12.5px; color:var(--text-secondary);">👥 {{ plan.agents_limit }}</div>
+                <div class="plan-price">{{ plan.price|floatformat:0 }} FCFA <span>{% if plan.period == 'annual' %}/ an{% else %}/ 30 jours{% endif %}</span></div>
                 <button type="button" class="btn btn-primary pay-btn" data-plan="{{ plan.code }}" {% if not moneyfusion_configured %}disabled{% endif %}>
                     Payer avec MoneyFusion
                 </button>

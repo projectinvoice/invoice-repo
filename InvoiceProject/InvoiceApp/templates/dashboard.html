@@ -758,6 +758,9 @@
         <a href="{% url 'subscription' %}" class="nav-item">
             <span class="nav-icon">💳</span> Abonnement
         </a>
+        <a href="{% url 'pricing' %}" class="nav-item">
+            <span class="nav-icon">🏷️</span> Tarifs & Plans
+        </a>
         {% if request.user.is_staff %}
         <a href="{% url 'promo_codes_admin' %}" class="nav-item">
             <span class="nav-icon">🎟️</span> Codes promo

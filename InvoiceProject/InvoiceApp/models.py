@@ -17,20 +17,80 @@ CURRENCY_CHOICES = [
 ]
 
 # ═══════════════════════════════════════════════════════════════
-# Abonnement (essai gratuit + plans mensuel / annuel via MoneyFusion)
+# Abonnement (Plans officiels : Essentiel & Business, mensuel / annuel)
 # ═══════════════════════════════════════════════════════════════
 
 SUBSCRIPTION_PLAN_CHOICES = [
-    ('test', 'Test (200 FCFA)'),
-    ('monthly', 'Mensuel'),
-    ('annual', 'Annuel'),
+    # Nouveaux plans officiels avec périodicité explicite
+    ('essential_monthly', 'Essentiel — Mensuel (6 000 FCFA / mois)'),
+    ('essential_annual', 'Essentiel — Annuel (50 000 FCFA / an)'),
+    ('business_monthly', 'Business — Mensuel (8 000 FCFA / mois)'),
+    ('business_annual', 'Business — Annuel (60 000 FCFA / an)'),
+    # Alias de rétrocompatibilité pour les données et abonnements existants
+    ('monthly', 'Essentiel — Mensuel'),
+    ('annual', 'Essentiel — Annuel'),
+    ('test', 'Test temporaire'),
 ]
 
-# Tarifs en Franc CFA (XOF)
+# Tarifs officiels de référence en Franc CFA (XOF)
 SUBSCRIPTION_PLAN_PRICES = {
-    'test': Decimal('200'),
+    'essential_monthly': Decimal('6000'),
+    'essential_annual': Decimal('50000'),
+    'business_monthly': Decimal('8000'),
+    'business_annual': Decimal('60000'),
+    # Alias conservés pour les anciens abonnements
     'monthly': Decimal('6000'),
     'annual': Decimal('50000'),
+    'test': Decimal('200'),
+}
+
+# Configuration structurée des deux plans officiels
+OFFICIAL_PLANS_CONFIG = {
+    'essential': {
+        'name': 'Essentiel',
+        'badge': 'Idéal petites équipes',
+        'target': 'Petites entreprises, grossistes et dépôts ayant une équipe commerciale de 10 vendeurs ou moins.',
+        'max_agents': 10,
+        'prices': {
+            'XOF': {'monthly': 6000, 'annual': 50000, 'currency_label': 'FCFA'},
+            'EUR': {'monthly': 9.15, 'annual': 76.22, 'currency_label': '€'},
+            'USD': {'monthly': 10.00, 'annual': 83.33, 'currency_label': '$'},
+        },
+        'features': [
+            'Jusqu\'à 10 vendeurs maximum',
+            'Facturation commerciale & devis illimités',
+            'Gestion complète du stock & seuils d\'alerte',
+            'Bons de chargement et retours véhicules',
+            'Gestion des clients et des règlements',
+            'Gestion des approvisionnements & fournisseurs',
+            'Tableau de bord de performance et CA en temps réel',
+            'Espace mobile dédié aux vendeurs (codes PIN)',
+            'Assistant intelligent IA intégré (analyse des ventes)',
+            'Exports PDF de toutes vos factures',
+        ],
+        'limits': 'Plafond strict de 10 vendeurs actifs par entreprise.',
+    },
+    'business': {
+        'name': 'Business',
+        'badge': 'Pour équipes en croissance',
+        'target': 'Grossistes, distributeurs et dépôts de cave ayant une équipe commerciale de plus de 10 vendeurs.',
+        'max_agents': None,  # Illimité / plus de 10 vendeurs
+        'prices': {
+            'XOF': {'monthly': 8000, 'annual': 60000, 'currency_label': 'FCFA'},
+            'EUR': {'monthly': 12.20, 'annual': 91.47, 'currency_label': '€'},
+            'USD': {'monthly': 13.33, 'annual': 100.00, 'currency_label': '$'},
+        },
+        'features': [
+            'Plus de 10 vendeurs (vendeurs illimités)',
+            'Toutes les fonctionnalités du plan Essentiel',
+            'Attribution multi-véhicules & gestion de flotte d\'engins',
+            'Rôles personnalisés et permissions d\'agents avancées',
+            'Suivi consolidé des performances des commerciaux',
+            'Gestion multi-fournisseurs et historique complet',
+            'Support client prioritaire',
+        ],
+        'limits': 'Aucune limite sur le nombre de vendeurs.',
+    },
 }
 
 TRIAL_DURATION_DAYS = 7
@@ -534,7 +594,7 @@ class StockReturnItem(models.Model):
 class Subscription(models.Model):
     """Un seul abonnement par entreprise : suit l'essai gratuit, les codes promo et l'accès payant."""
     company = models.OneToOneField(User, on_delete=models.CASCADE, related_name='subscription', verbose_name="Entreprise")
-    plan = models.CharField(max_length=10, choices=SUBSCRIPTION_PLAN_CHOICES, verbose_name="Plan choisi")
+    plan = models.CharField(max_length=30, choices=SUBSCRIPTION_PLAN_CHOICES, verbose_name="Plan choisi")
     trial_end_date = models.DateTimeField(verbose_name="Fin de l'essai gratuit")
     # Date jusqu'à laquelle l'accès payant est valide (rempli/étendu à chaque paiement réussi)
     active_until = models.DateTimeField(null=True, blank=True, verbose_name="Accès payant valide jusqu'au")
@@ -616,6 +676,34 @@ class Subscription(models.Model):
     def days_left_in_trial(self):
         return self.days_left
 
+    @property
+    def is_business_plan(self):
+        """Retourne True si l'entreprise est sur le plan Business."""
+        return self.plan in ('business_monthly', 'business_annual')
+
+    @property
+    def max_agents_allowed(self):
+        """Nombre maximal de vendeurs autorisés :
+        - Plan Essentiel (et essais/anciens plans par défaut) : 10
+        - Plan Business : None (illimité / plus de 10)"""
+        if self.is_business_plan:
+            return None
+        return 10
+
+    def can_add_agent(self):
+        """Vérifie si l'entreprise a le droit d'ajouter un nouveau vendeur selon son plan."""
+        limit = self.max_agents_allowed
+        if limit is None:
+            return True, None
+        current_count = self.company.agents.count()
+        if current_count >= limit:
+            return False, (
+                f"Limite atteinte : le plan Essentiel autorise au maximum {limit} vendeurs. "
+                f"Votre entreprise compte actuellement {current_count} vendeur(s). "
+                f"Pour ajouter des vendeurs supplémentaires, passez au plan Business."
+            )
+        return True, None
+
     def extend_after_payment(self):
         """Étend l'accès payant d'une période (30 jours pour le mensuel/test, 365 pour l'annuel)
         et réactive automatiquement le compte de l'entreprise s'il était désactivé.
@@ -623,7 +711,8 @@ class Subscription(models.Model):
         sinon repart de maintenant."""
         now = timezone.now()
         base = self.active_until if (self.active_until and self.active_until > now) else now
-        delta_days = 365 if self.plan == 'annual' else 30
+        is_annual = self.plan in ('annual', 'essential_annual', 'business_annual')
+        delta_days = 365 if is_annual else 30
         self.active_until = base + timezone.timedelta(days=delta_days)
         self.save(update_fields=['plan', 'active_until', 'updated_at'])
         if self.company_id and not self.company.is_active:
@@ -644,7 +733,7 @@ class SubscriptionPayment(models.Model):
     ]
 
     company = models.ForeignKey(User, on_delete=models.CASCADE, related_name='subscription_payments', verbose_name="Entreprise")
-    plan = models.CharField(max_length=10, choices=SUBSCRIPTION_PLAN_CHOICES, verbose_name="Plan payé")
+    plan = models.CharField(max_length=30, choices=SUBSCRIPTION_PLAN_CHOICES, verbose_name="Plan payé")
     amount = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Montant (FCFA)")
     transaction_id = models.CharField(max_length=100, unique=True, verbose_name="ID de transaction interne")
     provider_token = models.CharField(max_length=150, blank=True, db_index=True, verbose_name="Token MoneyFusion (tokenPay)")

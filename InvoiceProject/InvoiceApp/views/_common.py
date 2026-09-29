@@ -63,6 +63,7 @@ from ..models import (
     SubscriptionPayment,
     SUBSCRIPTION_PLAN_CHOICES,
     SUBSCRIPTION_PLAN_PRICES,
+    OFFICIAL_PLANS_CONFIG,
     TRIAL_DURATION_DAYS,
     PromoCode,
     PromoCodeRedemption,

@@ -269,4 +269,137 @@ class SubscriptionReactivationAndStockTests(TestCase):
         self.sub.refresh_from_db()
         self.assertTrue(self.company.is_active)
         self.assertFalse(self.sub.is_blocked)
-        self.assertEqual(self.sub.status, 'active')
+        self.assertEqual(self.sub.status, 'active')
+
+
+class OfficialPricingAndSellerLimitsTests(TestCase):
+    """Vérifications obligatoires pour les nouveaux tarifs et les limites de vendeurs."""
+
+    def setUp(self):
+        self.User = get_user_model()
+        self.company = self.User.objects.create_user(
+            username='company_pricing',
+            password='Password123!',
+            company_name='Atlas Grossiste SARL',
+            default_currency='XOF',
+            is_active=True,
+        )
+        from .models import Subscription, TRIAL_DURATION_DAYS
+        from django.utils import timezone
+        self.sub = Subscription.objects.create(
+            company=self.company,
+            plan='essential_monthly',
+            trial_end_date=timezone.now() + timezone.timedelta(days=TRIAL_DURATION_DAYS),
+        )
+        self.client.force_login(self.company)
+
+    def test_official_plan_prices_in_models(self):
+        """Vérifie que les tarifs officiels sont exactement ceux exigés :
+        - Essentiel : 6 000 FCFA/mois, 50 000 FCFA/an
+        - Business : 8 000 FCFA/mois, 60 000 FCFA/an"""
+        from .models import SUBSCRIPTION_PLAN_PRICES
+        self.assertEqual(SUBSCRIPTION_PLAN_PRICES['essential_monthly'], Decimal('6000'))
+        self.assertEqual(SUBSCRIPTION_PLAN_PRICES['essential_annual'], Decimal('50000'))
+        self.assertEqual(SUBSCRIPTION_PLAN_PRICES['business_monthly'], Decimal('8000'))
+        self.assertEqual(SUBSCRIPTION_PLAN_PRICES['business_annual'], Decimal('60000'))
+
+    def test_essential_plan_blocks_eleventh_seller(self):
+        """Le plan Essentiel autorise jusqu'à 10 vendeurs et refuse le 11e côté serveur."""
+        from .models import Agent
+        # Création de 10 vendeurs
+        for i in range(1, 11):
+            Agent.objects.create(
+                company=self.company,
+                name=f"Vendeur {i}",
+                phone=f"77000000{i:02d}",
+            )
+
+        self.assertEqual(self.company.agents.count(), 10)
+
+        # Tentative d'ajout du 11e vendeur via l'API add_agent
+        resp = self.client.post(reverse('add_agent'), {
+            'name': 'Vendeur Onzieme',
+            'phone': '779999999',
+        })
+        self.assertEqual(resp.status_code, 403)
+        data = resp.json()
+        self.assertFalse(data['success'])
+        self.assertIn("plan Essentiel autorise au maximum 10 vendeurs", data['error'])
+        self.assertIn("Business", data['error'])
+        self.assertEqual(self.company.agents.count(), 10)
+
+    def test_business_plan_allows_more_than_ten_sellers(self):
+        """Le plan Business permet de dépasser la limite de 10 vendeurs."""
+        from .models import Agent
+        self.sub.plan = 'business_monthly'
+        self.sub.save(update_fields=['plan'])
+
+        for i in range(1, 11):
+            Agent.objects.create(
+                company=self.company,
+                name=f"Vendeur {i}",
+                phone=f"77000000{i:02d}",
+            )
+
+        # Ajout du 11e vendeur sur plan Business
+        resp = self.client.post(reverse('add_agent'), {
+            'name': 'Vendeur Onzieme',
+            'phone': '779999999',
+        })
+        self.assertEqual(resp.status_code, 200)
+        data = resp.json()
+        self.assertTrue(data['success'])
+        self.assertEqual(self.company.agents.count(), 11)
+
+    def test_pricing_page_public_accessibility_and_content(self):
+        """La page pricing.html est accessible publiquement et contient les deux plans,
+        les tarifs officiels en FCFA, le comparatif et la FAQ."""
+        self.client.logout()
+        resp = self.client.get(reverse('pricing'))
+        self.assertEqual(resp.status_code, 200)
+        self.assertTemplateUsed(resp, 'pricing.html')
+        content = resp.content.decode('utf-8')
+
+        # Présence des deux plans officiels
+        self.assertIn("Essentiel", content)
+        self.assertIn("Business", content)
+
+        # Présence des tarifs de référence
+        self.assertIn("6 000", content)
+        self.assertIn("50 000", content)
+        self.assertIn("8 000", content)
+        self.assertIn("60 000", content)
+        self.assertIn("FCFA", content)
+
+        # Présence de la limite de 10 vendeurs
+        self.assertIn("10 vendeurs", content)
+
+        # Présence de la FAQ et des 7 questions fondamentales
+        self.assertIn("Foire aux questions", content)
+        self.assertIn("Quelle est la différence entre les plans Essentiel et Business ?", content)
+        self.assertIn("Qui paie l'abonnement ?", content)
+        self.assertIn("onzième vendeur", content)
+
+    def test_pricing_page_currency_context(self):
+        """La page de tarification respecte le paramètre de devise ou la devise de l'entreprise."""
+        resp_eur = self.client.get(reverse('pricing') + '?currency=EUR')
+        self.assertEqual(resp_eur.status_code, 200)
+        self.assertEqual(resp_eur.context['selected_currency'], 'EUR')
+
+        resp_usd = self.client.get(reverse('pricing') + '?currency=USD')
+        self.assertEqual(resp_usd.status_code, 200)
+        self.assertEqual(resp_usd.context['selected_currency'], 'USD')
+
+    def test_product_pricing_unaffected_by_subscription_changes(self):
+        """Vérifie que les prix des produits commerciaux restent intègres et non affectés."""
+        from .models import Product
+        prod = Product.objects.create(
+            company=self.company,
+            name='Produit Commercial Normal',
+            price=Decimal('1500.00'),
+            currency='XOF',
+            stock_quantity=50,
+        )
+        self.assertEqual(prod.price, Decimal('1500.00'))
+        self.assertEqual(prod.formatted_price, '1 500 FCFA')
+
