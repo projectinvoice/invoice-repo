@@ -225,13 +225,21 @@
 
         /* ── Responsive ── */
         @media (max-width: 480px) {
-            .container { padding: 24px 20px; border-radius: 14px; }
+            body { padding: 12px; }
+            .container { padding: 22px 16px; border-radius: 14px; }
             h1 { font-size: 18px; }
-            .step-title { font-size: 16px; }
-            .nav-row { flex-direction: column; }
-            .nav-row button { width: 100%; }
+            .step-title { font-size: 15px; }
+            .step-hint { font-size: 12px; }
+            .plan-choice-card { padding: 12px 14px; flex-wrap: wrap; gap: 8px; }
+            .nav-row { flex-direction: column; gap: 8px; }
+            .nav-row button { width: 100%; min-height: 42px; }
             .btn-ghost, .btn-skip { order: 2; }
             .btn-primary { order: 1; }
+        }
+        @media (max-width: 360px) {
+            .container { padding: 18px 12px; }
+            .step-icon { font-size: 24px; margin-bottom: 6px; }
+            .plan-choice-price { font-size: 13.5px; }
         }
     </style>
 </head>

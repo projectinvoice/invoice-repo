@@ -124,8 +124,16 @@
         .message.error { background: rgba(244,63,94,0.15); color: #FECACA; }
         .message.success { background: rgba(16,185,129,0.15); color: #A7F3D0; }
 
-        .empty-state { text-align: center; padding: 20px; color: var(--text-muted); font-size: 13px; }
+        @media (max-width: 640px) {
+            .plans-grid { grid-template-columns: 1fr; }
+            .topbar { padding: 12px 16px; flex-direction: column; align-items: flex-start; gap: 10px; }
+            .content { padding: 16px 12px; }
+            .status-card { padding: 16px; flex-direction: column; align-items: flex-start; }
+            .status-card .btn { width: 100%; justify-content: center; }
+            .form-card { padding: 16px 14px; }
+        }
     </style>
+    <link rel="stylesheet" href="{% static 'InvoiceApp/css/responsive.css' %}">
 </head>
 <body>
 
@@ -192,55 +200,59 @@
     <div id="message" class="message"></div>
 
     <div class="section-title">Historique des paiements</div>
-    <table class="history-table">
-        <thead>
-            <tr>
-                <th>Date</th>
-                <th>Plan</th>
-                <th>Montant</th>
-                <th>Statut</th>
-                <th>Moyen</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for payment in recent_payments %}
-            <tr>
-                <td>{{ payment.created_at|date:"d/m/Y H:i" }}</td>
-                <td>{{ payment.get_plan_display }}</td>
-                <td>{{ payment.amount|floatformat:0 }} FCFA</td>
-                <td>
-                    {% if payment.status == 'success' %}<span class="pill pill-success">Réussi</span>
-                    {% elif payment.status == 'pending' %}<span class="pill pill-pending">En attente</span>
-                    {% else %}<span class="pill pill-failed">Échoué</span>{% endif %}
-                </td>
-                <td>{{ payment.payment_method|default:"-" }}</td>
-            </tr>
-            {% empty %}
-            <tr><td colspan="5"><div class="empty-state">Aucun paiement pour l'instant</div></td></tr>
-            {% endfor %}
-        </tbody>
-    </table>
+    <div class="table-card">
+        <table class="history-table">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Plan</th>
+                    <th>Montant</th>
+                    <th>Statut</th>
+                    <th>Moyen</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for payment in recent_payments %}
+                <tr>
+                    <td>{{ payment.created_at|date:"d/m/Y H:i" }}</td>
+                    <td>{{ payment.get_plan_display }}</td>
+                    <td>{{ payment.amount|floatformat:0 }} FCFA</td>
+                    <td>
+                        {% if payment.status == 'success' %}<span class="pill pill-success">Réussi</span>
+                        {% elif payment.status == 'pending' %}<span class="pill pill-pending">En attente</span>
+                        {% else %}<span class="pill pill-failed">Échoué</span>{% endif %}
+                    </td>
+                    <td>{{ payment.payment_method|default:"-" }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="5"><div class="empty-state">Aucun paiement pour l'instant</div></td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 
     {% if promo_redemptions %}
     <div class="section-title" style="margin-top:28px;">Codes promo utilisés</div>
-    <table class="history-table">
-        <thead>
-            <tr>
-                <th>Code</th>
-                <th>Utilisé le</th>
-                <th>Accès offert jusqu'au</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for redemption in promo_redemptions %}
-            <tr>
-                <td>{{ redemption.promo_code.code }}</td>
-                <td>{{ redemption.redeemed_at|date:"d/m/Y H:i" }}</td>
-                <td>{{ redemption.expires_at|date:"d/m/Y" }}</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+    <div class="table-card">
+        <table class="history-table">
+            <thead>
+                <tr>
+                    <th>Code</th>
+                    <th>Utilisé le</th>
+                    <th>Accès offert jusqu'au</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for redemption in promo_redemptions %}
+                <tr>
+                    <td>{{ redemption.promo_code.code }}</td>
+                    <td>{{ redemption.redeemed_at|date:"d/m/Y H:i" }}</td>
+                    <td>{{ redemption.expires_at|date:"d/m/Y" }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
     {% endif %}
 
 </div>

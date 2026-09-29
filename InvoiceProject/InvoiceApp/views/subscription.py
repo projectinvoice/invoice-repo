@@ -224,23 +224,59 @@ def _verify_and_apply_payment(payment):
 @require_http_methods(["POST"])
 def moneyfusion_webhook(request):
     """Webhook appelé par les serveurs de MoneyFusion (webhook_url fourni à l'initialisation)
-    à chaque changement de statut. Ne jamais faire confiance au contenu brut de la requête :
-    on ne l'utilise que pour retrouver la transaction, puis on revérifie via l'API MoneyFusion."""
+    à chaque changement de statut."""
     try:
         body = json.loads(request.body.decode('utf-8'))
     except (ValueError, UnicodeDecodeError):
         body = request.POST
 
     provider_token = body.get("tokenPay") or body.get("token")
-    if not provider_token:
-        return HttpResponse("tokenPay manquant", status=400)
+    event = body.get("event")
+    raw_status = body.get("statut")
 
-    payment = SubscriptionPayment.objects.select_related('company', 'company__subscription').filter(
-        provider_token=provider_token
-    ).first()
+    payment = None
+    if provider_token:
+        payment = SubscriptionPayment.objects.select_related('company', 'company__subscription').filter(
+            provider_token=provider_token
+        ).first()
+
+    # Si non trouvé par token, chercher par orderId dans personal_Info
+    if payment is None and isinstance(body.get("personal_Info"), list) and body["personal_Info"]:
+        order_id = body["personal_Info"][0].get("orderId")
+        if order_id:
+            payment = SubscriptionPayment.objects.select_related('company', 'company__subscription').filter(
+                transaction_id=order_id
+            ).first()
+
     if payment is None:
         return HttpResponse("Transaction inconnue", status=404)
 
+    # Associer le token s'il manquait
+    if provider_token and not payment.provider_token:
+        payment.provider_token = provider_token
+        payment.save(update_fields=['provider_token', 'updated_at'])
+
+    # Si le webhook notifie explicitement le succès
+    if event == "payin.session.completed" or raw_status == "paid":
+        payment.status = 'success'
+        if body.get("numeroTransaction"):
+            payment.operator_id = body.get("numeroTransaction")
+        if body.get("moyen"):
+            payment.payment_method = body.get("moyen")
+        payment.save(update_fields=['status', 'payment_method', 'operator_id', 'updated_at'])
+        subscription, _ = Subscription.objects.get_or_create(
+            company=payment.company,
+            defaults={'plan': payment.plan, 'trial_end_date': timezone.now()},
+        )
+        subscription.plan = payment.plan
+        subscription.extend_after_payment()
+        return HttpResponse("OK")
+    elif event == "payin.session.cancelled" or raw_status in ("failure", "failed", "no paid"):
+        payment.status = 'failed'
+        payment.save(update_fields=['status', 'updated_at'])
+        return HttpResponse("OK")
+
+    # Sinon revérifier via l'API MoneyFusion
     _verify_and_apply_payment(payment)
     return HttpResponse("OK")
 
@@ -248,8 +284,13 @@ def moneyfusion_webhook(request):
 @require_http_methods(["GET", "POST"])
 @login_required
 def moneyfusion_return(request):
-    """Page où le client est redirigé après avoir payé (return_url — MoneyFusion y ajoute ?token=...)."""
-    provider_token = request.GET.get("token") or request.POST.get("token")
+    """Page où le client est redirigé après avoir payé (return_url — MoneyFusion y ajoute ?token=... ou ?tokenPay=...)."""
+    provider_token = (
+        request.GET.get("token")
+        or request.GET.get("tokenPay")
+        or request.POST.get("token")
+        or request.POST.get("tokenPay")
+    )
 
     payment = None
     if provider_token:
@@ -258,6 +299,10 @@ def moneyfusion_return(request):
         ).first()
     if payment is None:
         payment = SubscriptionPayment.objects.filter(company=request.user).order_by('-created_at').first()
+
+    if payment and provider_token and not payment.provider_token:
+        payment.provider_token = provider_token
+        payment.save(update_fields=['provider_token', 'updated_at'])
 
     # MoneyFusion ne garantit pas l'ordre webhook/retour : on revérifie ici aussi par sécurité.
     if payment and payment.status == 'pending':

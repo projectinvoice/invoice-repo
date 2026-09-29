@@ -363,13 +363,13 @@
         .toast.success { border-color: rgba(16,185,129,0.4); color: var(--emerald); }
         .toast.error { border-color: rgba(244,63,94,0.4); color: var(--rose); }
 
-        @media (max-width: 768px) {
-            .sidebar { display: none; }
+        @media (max-width: 900px) {
             .main { margin-left: 0; }
-            .content { padding: 16px; }
+            .content { padding: 16px 12px; }
             .topbar { padding: 12px 16px; }
         }
     </style>
+    <link rel="stylesheet" href="{% static 'InvoiceApp/css/responsive.css' %}">
 </head>
 <body>
 
@@ -382,6 +382,7 @@
         <div class="logo-mark">{{ company_name|first|upper }}</div>
         {% endif %}
         <span class="logo-text">{{ company_name }}</span>
+        <button type="button" class="sidebar-close-btn" id="sidebarCloseBtn" aria-label="Fermer le menu">&times;</button>
     </div>
 
         <nav class="sidebar-nav">
@@ -435,13 +436,19 @@
         <a href="{% url 'logout' %}" class="logout-btn">🚪 Se déconnecter</a>
     </div>
 </aside>
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
 
 <!-- ══════════════ MAIN ══════════════ -->
 <div class="main">
     <header class="topbar">
-        <div>
-            <div class="topbar-title">Agents</div>
-            <div class="topbar-sub">{{ agents_count }} agent{{ agents_count|pluralize }} enregistré{{ agents_count|pluralize }}</div>
+        <div style="display:flex; align-items:center; gap:12px;">
+            <button type="button" class="sidebar-toggle-btn" id="sidebarToggleBtn" aria-label="Menu de navigation">
+                <span></span><span></span><span></span>
+            </button>
+            <div>
+                <div class="topbar-title">Agents</div>
+                <div class="topbar-sub">{{ agents_count }} agent{{ agents_count|pluralize }} enregistré{{ agents_count|pluralize }}</div>
+            </div>
         </div>
         <div class="topbar-actions">
             <button type="button" class="btn btn-primary" onclick="openAgentModal()">+ Ajouter un agent</button>
@@ -817,6 +824,7 @@
     }
 </script>
 
+<script src="{% static 'InvoiceApp/js/responsive.js' %}"></script>
 <script src="{% static 'InvoiceApp/js/ai_assistant.js' %}"></script>
 </body>
 </html>

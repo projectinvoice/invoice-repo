@@ -312,9 +312,29 @@
             .float-card { display: none; }
         }
 
-        @media (max-width: 420px) {
-            .wrap, .hero-grid { padding-left: 18px; padding-right: 18px; }
-            .header-inner { padding: 14px 18px; }
+        @media (max-width: 480px) {
+            .wrap, .hero-grid { padding-left: 14px; padding-right: 14px; }
+            .header-inner { padding: 12px 14px; }
+            .brand { font-size: 15px; }
+            .hero h1 { font-size: 26px; }
+            .hero .lead { font-size: 14.5px; }
+            .badge-pill { font-size: 11.5px; padding: 5px 10px; }
+            .stats-grid { grid-template-columns: 1fr; gap: 20px; }
+            .stat-item h3 { font-size: 26px; }
+            .section-head h2 { font-size: 22px; }
+            .cta-final { padding: 36px 16px; margin: 0 8px 40px; border-radius: 20px; }
+            .cta-final h2 { font-size: 22px; }
+            .cta-final p { font-size: 14px; }
+            .cta-final .btn { width: 100%; }
+            .footer-bottom { flex-direction: column; align-items: flex-start; gap: 10px; }
+            .footer-bottom .legal-links { flex-wrap: wrap; gap: 12px; }
+            .mockup-body { padding: 12px; }
+            .mockup-row { flex-direction: column; gap: 8px; }
+        }
+        @media (max-width: 360px) {
+            .hero h1 { font-size: 23px; }
+            .hero-trust { flex-direction: column; align-items: flex-start; gap: 6px; }
+            .section { padding: 44px 0; }
         }
     </style>
 </head>
