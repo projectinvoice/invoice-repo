@@ -114,3 +114,27 @@ def terms_of_service(request):
 def privacy_policy(request):
     """Politique de confidentialité (contenu statique)."""
     return render(request, 'privacy.html', {'last_updated': '1er septembre 2026'})
+
+
+def pricing_page(request):
+    """Page de tarification officielle (pricing.html) :
+    Présentation multidevise des deux plans (Essentiel & Business),
+    tableau comparatif des fonctionnalités et FAQ complète."""
+    selected_currency = request.GET.get('currency', '').upper()
+    valid_currencies = [code for code, _ in CURRENCY_CHOICES]
+
+    if selected_currency not in valid_currencies:
+        if request.user.is_authenticated and hasattr(request.user, 'default_currency'):
+            selected_currency = request.user.default_currency
+        else:
+            selected_currency = 'XOF'  # Devise de référence par défaut
+
+    context = {
+        'selected_currency': selected_currency,
+        'currencies': CURRENCY_CHOICES,
+        'plans_config': OFFICIAL_PLANS_CONFIG,
+        'is_authenticated': request.user.is_authenticated,
+        'user_company': request.user if request.user.is_authenticated else None,
+        'subscription': getattr(request.user, 'subscription', None) if request.user.is_authenticated else None,
+    }
+    return render(request, 'pricing.html', context)

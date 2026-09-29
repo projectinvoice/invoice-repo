@@ -19,12 +19,53 @@ def subscription_page(request):
     subscription = getattr(request.user, 'subscription', None)
     recent_payments = SubscriptionPayment.objects.filter(company=request.user)[:10]
     promo_redemptions = PromoCodeRedemption.objects.filter(company=request.user).select_related('promo_code')
+    current_agents_count = request.user.agents.count()
     context = {
         'subscription': subscription,
+        'current_agents_count': current_agents_count,
         'plans': [
-            {'code': 'test', 'label': 'Test', 'price': SUBSCRIPTION_PLAN_PRICES['test']},
-            {'code': 'monthly', 'label': 'Mensuel', 'price': SUBSCRIPTION_PLAN_PRICES['monthly']},
-            {'code': 'annual', 'label': 'Annuel', 'price': SUBSCRIPTION_PLAN_PRICES['annual']},
+            {
+                'code': 'essential_monthly',
+                'plan_name': 'Essentiel',
+                'period': 'monthly',
+                'period_label': '30 jours',
+                'label': 'Essentiel — Mensuel',
+                'price': SUBSCRIPTION_PLAN_PRICES['essential_monthly'],
+                'agents_limit': 'Jusqu\'à 10 vendeurs',
+                'is_popular': False,
+            },
+            {
+                'code': 'essential_annual',
+                'plan_name': 'Essentiel',
+                'period': 'annual',
+                'period_label': '1 an',
+                'label': 'Essentiel — Annuel',
+                'price': SUBSCRIPTION_PLAN_PRICES['essential_annual'],
+                'agents_limit': 'Jusqu\'à 10 vendeurs',
+                'badge': 'Économisez 22 000 FCFA',
+                'is_popular': True,
+            },
+            {
+                'code': 'business_monthly',
+                'plan_name': 'Business',
+                'period': 'monthly',
+                'period_label': '30 jours',
+                'label': 'Business — Mensuel',
+                'price': SUBSCRIPTION_PLAN_PRICES['business_monthly'],
+                'agents_limit': 'Plus de 10 vendeurs (illimité)',
+                'is_popular': False,
+            },
+            {
+                'code': 'business_annual',
+                'plan_name': 'Business',
+                'period': 'annual',
+                'period_label': '1 an',
+                'label': 'Business — Annuel',
+                'price': SUBSCRIPTION_PLAN_PRICES['business_annual'],
+                'agents_limit': 'Plus de 10 vendeurs (illimité)',
+                'badge': 'Économisez 36 000 FCFA',
+                'is_popular': False,
+            },
         ],
         'recent_payments': recent_payments,
         'promo_redemptions': promo_redemptions,

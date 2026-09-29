@@ -137,6 +137,20 @@ def add_agent(request):
         except Agent.DoesNotExist:
             return JsonResponse({"success": False, "error": "Agent non trouvé"}, status=404)
     else:
+        # Contrôle strict du nombre de vendeurs selon le plan d'abonnement (côté serveur)
+        subscription = getattr(request.user, 'subscription', None)
+        if subscription:
+            can_add, limit_error = subscription.can_add_agent()
+            if not can_add:
+                return JsonResponse({"success": False, "error": limit_error}, status=403)
+        else:
+            # Sécurité par défaut pour les entreprises sans objet d'abonnement explicite : limite à 10
+            if request.user.agents.count() >= 10:
+                return JsonResponse({
+                    "success": False,
+                    "error": "Limite atteinte : le plan Essentiel autorise au maximum 10 vendeurs. Passez au plan Business pour ajouter plus de vendeurs."
+                }, status=403)
+
         # Création
         agent = Agent(company=request.user, name=name, email=email, phone=phone, role=role, engine=engine)
         if pin:

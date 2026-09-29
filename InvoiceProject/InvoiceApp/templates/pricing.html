@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tarifs & Abonnements — Smart Invoice</title>
+    <link rel="stylesheet" href="{% static 'InvoiceApp/css/responsive.css' %}">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+        :root {
+            --bg-base: #0F1629;
+            --bg-card: #1A2238;
+            --bg-card-hover: #1F2A44;
+            --border: rgba(99, 102, 241, 0.15);
+            --border-hover: rgba(99, 102, 241, 0.45);
+            --indigo: #6366F1;
+            --indigo-light: #818CF8;
+            --violet: #9333EA;
+            --emerald: #10B981;
+            --amber: #F59E0B;
+            --rose: #F43F5E;
+            --sky: #38BDF8;
+            --text-primary: #E2E8F0;
+            --text-secondary: #94A3B8;
+            --text-muted: #64748B;
+            --radius: 20px;
+            --radius-sm: 12px;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-base);
+            color: var(--text-primary);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+        a { color: inherit; }
+
+        .wrap { max-width: 1180px; margin: 0 auto; padding: 0 24px; }
+
+        /* Header Navigation */
+        header {
+            position: sticky; top: 0; z-index: 200;
+            background: rgba(15, 22, 41, 0.85);
+            backdrop-filter: blur(14px);
+            border-bottom: 1px solid var(--border);
+        }
+        .header-inner {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 16px 24px;
+            max-width: 1180px; margin: 0 auto;
+        }
+        .brand { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 17px; text-decoration: none; }
+        .brand-mark {
+            width: 34px; height: 34px; border-radius: 10px;
+            background: linear-gradient(135deg, var(--indigo), var(--violet));
+            display: flex; align-items: center; justify-content: center; font-size: 16px;
+        }
+
+        nav.desktop-nav { display: flex; align-items: center; gap: 6px; }
+        nav.desktop-nav a.nav-link {
+            padding: 9px 14px; border-radius: 999px; text-decoration: none;
+            color: var(--text-secondary); font-size: 13.5px; font-weight: 500;
+            transition: all 0.2s;
+        }
+        nav.desktop-nav a.nav-link:hover, nav.desktop-nav a.nav-link.active {
+            color: var(--text-primary); background: rgba(255,255,255,0.06);
+        }
+
+        .header-actions { display: flex; align-items: center; gap: 10px; }
+        .btn {
+            display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+            padding: 10px 20px; border-radius: 999px; font-size: 13.5px; font-weight: 600;
+            text-decoration: none; border: none; cursor: pointer; transition: all 0.2s;
+            font-family: 'Inter', sans-serif; white-space: nowrap;
+        }
+        .btn-ghost { color: var(--text-primary); background: rgba(255,255,255,0.06); border: 1px solid var(--border); }
+        .btn-ghost:hover { background: rgba(255,255,255,0.12); }
+        .btn-primary { background: linear-gradient(135deg, var(--indigo), var(--violet)); color: white; }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 10px 28px rgba(99,102,241,0.4); }
+
+        /* Page Hero */
+        .pricing-hero { padding: 68px 0 40px; text-align: center; position: relative; }
+        .pricing-hero h1 { font-size: clamp(32px, 5vw, 48px); font-weight: 800; letter-spacing: -0.02em; margin-bottom: 16px; }
+        .pricing-hero h1 .accent {
+            background: linear-gradient(135deg, var(--indigo-light), var(--sky));
+            -webkit-background-clip: text; background-clip: text; color: transparent;
+        }
+        .pricing-hero p.lead { font-size: 17px; color: var(--text-secondary); max-width: 620px; margin: 0 auto 30px; }
+
+        /* Currency Selector & Billing Switch */
+        .controls-row {
+            display: flex; justify-content: center; align-items: center;
+            gap: 24px; flex-wrap: wrap; margin-bottom: 48px;
+        }
+        .control-pill-box {
+            display: inline-flex; align-items: center;
+            background: rgba(255,255,255,0.05); border: 1px solid var(--border);
+            border-radius: 999px; padding: 4px;
+        }
+        .control-pill-btn {
+            background: transparent; border: none; color: var(--text-secondary);
+            font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 600;
+            padding: 8px 16px; border-radius: 999px; cursor: pointer; transition: all 0.2s;
+        }
+        .control-pill-btn.active {
+            background: var(--indigo); color: white; box-shadow: 0 4px 14px rgba(99,102,241,0.35);
+        }
+
+        .currency-label { font-size: 13px; color: var(--text-muted); margin-right: 6px; }
+        .save-badge {
+            background: rgba(16,185,129,0.18); color: var(--emerald);
+            font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 999px;
+            margin-left: 6px;
+        }
+
+        /* Pricing Cards */
+        .pricing-grid {
+            display: grid; grid-template-columns: repeat(2, 1fr);
+            gap: 28px; max-width: 980px; margin: 0 auto 72px;
+            align-items: stretch;
+        }
+        .pricing-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 36px 32px;
+            display: flex; flex-direction: column;
+            position: relative; transition: all 0.25s ease;
+        }
+        .pricing-card:hover {
+            transform: translateY(-4px);
+            border-color: var(--border-hover);
+            box-shadow: 0 20px 48px rgba(0,0,0,0.35);
+        }
+        .pricing-card.featured {
+            border-color: rgba(99,102,241,0.5);
+            background: linear-gradient(180deg, rgba(99,102,241,0.08) 0%, rgba(26,34,56,1) 35%);
+            box-shadow: 0 16px 40px rgba(99,102,241,0.18);
+        }
+        .featured-tag {
+            position: absolute; top: -12px; right: 28px;
+            background: linear-gradient(135deg, var(--indigo), var(--violet));
+            color: white; font-size: 11px; font-weight: 700;
+            padding: 4px 12px; border-radius: 999px; text-transform: uppercase;
+            letter-spacing: 0.06em; box-shadow: 0 4px 12px rgba(99,102,241,0.4);
+        }
+
+        .card-plan-name { font-size: 22px; font-weight: 800; margin-bottom: 6px; }
+        .card-plan-target { font-size: 13.5px; color: var(--text-secondary); margin-bottom: 24px; min-height: 42px; }
+
+        .price-box { margin-bottom: 24px; padding-bottom: 24px; border-bottom: 1px solid var(--border); }
+        .price-amount { font-size: 38px; font-weight: 900; letter-spacing: -0.02em; line-height: 1; }
+        .price-currency { font-size: 22px; font-weight: 700; color: var(--indigo-light); margin-right: 4px; }
+        .price-period { font-size: 14px; font-weight: 500; color: var(--text-muted); margin-left: 4px; }
+        .price-alt-note { font-size: 12px; color: var(--text-muted); margin-top: 8px; }
+
+        .plan-seller-limit-badge {
+            display: inline-flex; align-items: center; gap: 8px;
+            padding: 8px 14px; border-radius: var(--radius-sm);
+            font-size: 13px; font-weight: 700; margin-bottom: 24px;
+        }
+        .limit-essential { background: rgba(56,189,248,0.12); color: var(--sky); border: 1px solid rgba(56,189,248,0.25); }
+        .limit-business { background: rgba(16,185,129,0.12); color: var(--emerald); border: 1px solid rgba(16,185,129,0.25); }
+
+        .features-list { list-style: none; display: flex; flex-direction: column; gap: 13px; margin-bottom: 32px; flex: 1; }
+        .features-list li { display: flex; align-items: flex-start; gap: 10px; font-size: 13.5px; color: var(--text-secondary); }
+        .features-list li .check-icon { color: var(--emerald); font-weight: 800; font-size: 14px; flex-shrink: 0; line-height: 1.5; }
+        .features-list li strong { color: var(--text-primary); }
+
+        .card-btn {
+            width: 100%; padding: 13px 20px; font-size: 14.5px; font-weight: 700;
+            border-radius: var(--radius-sm); text-align: center;
+        }
+
+        /* Multicurrency notice */
+        .currency-notice {
+            max-width: 980px; margin: 0 auto 60px;
+            background: rgba(99,102,241,0.08); border: 1px solid rgba(99,102,241,0.25);
+            border-radius: var(--radius-sm); padding: 16px 20px;
+            display: flex; align-items: center; gap: 14px; font-size: 13px; color: var(--text-secondary);
+        }
+        .currency-notice-icon { font-size: 22px; flex-shrink: 0; }
+        .currency-notice strong { color: var(--text-primary); }
+
+        /* Comparison Table Section */
+        .comparison-section { max-width: 980px; margin: 0 auto 80px; }
+        .comparison-title { font-size: 28px; font-weight: 800; text-align: center; margin-bottom: 12px; }
+        .comparison-sub { font-size: 15px; color: var(--text-secondary); text-align: center; margin-bottom: 36px; }
+
+        .comp-table-wrap {
+            background: var(--bg-card); border: 1px solid var(--border);
+            border-radius: var(--radius); overflow-x: auto; -webkit-overflow-scrolling: touch;
+        }
+        table.comp-table { width: 100%; border-collapse: collapse; min-width: 640px; }
+        table.comp-table th, table.comp-table td {
+            padding: 14px 20px; text-align: left; font-size: 13.5px;
+            border-bottom: 1px solid var(--border);
+        }
+        table.comp-table th {
+            color: var(--text-muted); font-size: 12px; text-transform: uppercase;
+            letter-spacing: 0.06em; background: rgba(255,255,255,0.02);
+        }
+        table.comp-table th.center, table.comp-table td.center { text-align: center; }
+        table.comp-table tr:last-child td { border-bottom: none; }
+        .col-plan-head { font-size: 15px; font-weight: 700; color: var(--text-primary); text-transform: none; letter-spacing: normal; }
+
+        /* FAQ Section */
+        .faq-section { max-width: 860px; margin: 0 auto 90px; }
+        .faq-title { font-size: 28px; font-weight: 800; text-align: center; margin-bottom: 12px; }
+        .faq-sub { font-size: 15px; color: var(--text-secondary); text-align: center; margin-bottom: 36px; }
+
+        .faq-list { display: flex; flex-direction: column; gap: 14px; }
+        .faq-card {
+            background: var(--bg-card); border: 1px solid var(--border);
+            border-radius: var(--radius-sm); padding: 22px 26px;
+        }
+        .faq-q { font-size: 15.5px; font-weight: 700; color: var(--text-primary); margin-bottom: 8px; display: flex; align-items: center; gap: 10px; }
+        .faq-q-icon { color: var(--indigo-light); font-size: 16px; }
+        .faq-a { font-size: 14px; color: var(--text-secondary); line-height: 1.65; }
+        .faq-a strong { color: var(--text-primary); }
+
+        /* Footer */
+        footer { border-top: 1px solid var(--border); padding: 50px 0 26px; }
+        .footer-grid { display: grid; grid-template-columns: 1.4fr repeat(3, 1fr); gap: 32px; margin-bottom: 36px; }
+        .footer-brand .brand { margin-bottom: 12px; }
+        .footer-brand p { font-size: 13px; color: var(--text-muted); max-width: 260px; }
+        .footer-col h4 { font-size: 12.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); margin-bottom: 14px; }
+        .footer-col a { display: block; font-size: 13.5px; color: var(--text-secondary); text-decoration: none; margin-bottom: 10px; }
+        .footer-col a:hover { color: var(--text-primary); }
+        .footer-bottom {
+            display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;
+            border-top: 1px solid var(--border); padding-top: 22px; font-size: 12.5px; color: var(--text-muted);
+        }
+        .footer-bottom .legal-links { display: flex; gap: 18px; }
+        .footer-bottom a { text-decoration: none; color: var(--text-muted); }
+        .footer-bottom a:hover { color: var(--text-secondary); }
+
+        /* Burger & Mobile Nav */
+        .burger {
+            display: none; flex-direction: column; gap: 5px; background: transparent; border: none;
+            cursor: pointer; padding: 8px; flex-shrink: 0;
+        }
+        .burger span { width: 22px; height: 2px; background: var(--text-primary); border-radius: 2px; }
+
+        .mobile-nav {
+            display: none;
+            flex-direction: column;
+            gap: 4px;
+            padding: 12px 24px 18px;
+            border-top: 1px solid var(--border);
+            background: rgba(15,22,41,0.98);
+        }
+        .mobile-nav.open { display: flex; }
+        .mobile-nav a.nav-link { padding: 10px 12px; border-radius: 10px; text-decoration: none; color: var(--text-secondary); font-size: 14px; font-weight: 500; }
+        .mobile-nav a.nav-link:hover, .mobile-nav a.nav-link.active { background: rgba(255,255,255,0.06); color: var(--text-primary); }
+        .mobile-nav .btn { margin-top: 8px; width: 100%; justify-content: center; }
+
+        /* Responsive Breakpoints */
+        @media (max-width: 900px) {
+            nav.desktop-nav { display: none; }
+            .burger { display: flex; }
+            .header-actions .btn { display: none; }
+            .pricing-grid { grid-template-columns: 1fr; max-width: 540px; margin-left: auto; margin-right: auto; }
+            .footer-grid { grid-template-columns: 1fr 1fr; }
+        }
+        @media (max-width: 680px) {
+            .controls-row { flex-direction: column; gap: 14px; align-items: center; }
+            .control-pill-box { max-width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+            .pricing-card { padding: 28px 22px; }
+            .price-amount { font-size: 34px; }
+            .comparison-title, .faq-title { font-size: 24px; }
+            .comp-table-wrap { margin: 0 -4px; border-radius: var(--radius-sm); }
+            table.comp-table th, table.comp-table td { padding: 12px 14px; font-size: 13px; }
+            .footer-grid { grid-template-columns: 1fr; gap: 28px; }
+            .footer-bottom { flex-direction: column; align-items: flex-start; gap: 10px; }
+        }
+        @media (max-width: 480px) {
+            .wrap { padding: 0 16px; }
+            .header-inner { padding: 12px 16px; }
+            .pricing-hero { padding: 36px 0 20px; }
+            .pricing-hero h1 { font-size: 26px; }
+            .pricing-hero p.lead { font-size: 14px; margin-bottom: 24px; }
+            .pricing-grid { gap: 20px; margin-bottom: 48px; }
+            .pricing-card { padding: 22px 16px; border-radius: var(--radius-sm); }
+            .card-plan-name { font-size: 20px; }
+            .card-plan-target { font-size: 12.5px; min-height: auto; margin-bottom: 16px; }
+            .price-box { margin-bottom: 18px; padding-bottom: 18px; }
+            .price-amount { font-size: 30px; }
+            .price-currency { font-size: 18px; }
+            .plan-seller-limit-badge { font-size: 12px; padding: 6px 12px; margin-bottom: 18px; width: 100%; justify-content: center; }
+            .features-list { gap: 11px; margin-bottom: 24px; }
+            .features-list li { font-size: 12.5px; }
+            .card-btn { padding: 12px 16px; font-size: 13.5px; }
+            .currency-notice { padding: 14px 16px; flex-direction: column; align-items: flex-start; gap: 10px; font-size: 12px; }
+            .control-pill-btn { padding: 7px 12px; font-size: 12px; }
+            .faq-card { padding: 16px 18px; }
+            .faq-q { font-size: 14px; }
+            .faq-a { font-size: 13px; }
+        }
+        @media (max-width: 360px) {
+            .wrap { padding: 0 10px; }
+            .header-inner { padding: 10px 12px; }
+            .brand { font-size: 15px; }
+            .brand-mark { width: 30px; height: 30px; font-size: 14px; }
+            .pricing-card { padding: 18px 12px; }
+            .price-amount { font-size: 26px; }
+            .price-currency { font-size: 16px; }
+            .control-pill-box { padding: 2px; }
+            .control-pill-btn { padding: 6px 9px; font-size: 11px; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ══════════════════════════════════ NAVBAR ══════════════════════════════════ -->
+    <header>
+        <div class="header-inner">
+            <a href="{% url 'landing' %}" class="brand">
+                <div class="brand-mark">📦</div>
+                Smart Invoice
+            </a>
+
+            <nav class="desktop-nav">
+                <a href="{% url 'landing' %}#features" class="nav-link">Fonctionnalités</a>
+                <a href="{% url 'landing' %}#how-it-works" class="nav-link">Comment ça marche</a>
+                <a href="{% url 'pricing' %}" class="nav-link active">Tarifs</a>
+                <a href="{% url 'landing' %}#testimonials" class="nav-link">Avis clients</a>
+            </nav>
+
+            <div class="header-actions">
+                {% if is_authenticated %}
+                    <a href="{% url 'dashboard' %}" class="btn btn-ghost">Tableau de bord</a>
+                    <a href="{% url 'subscription' %}" class="btn btn-primary">Mon abonnement</a>
+                {% else %}
+                    <a href="{% url 'login' %}" class="btn btn-ghost">Se connecter</a>
+                    <a href="{% url 'register' %}" class="btn btn-primary">Essai gratuit 7j</a>
+                {% endif %}
+                <button class="burger" id="pricingBurgerBtn" aria-label="Menu de navigation">
+                    <span></span><span></span><span></span>
+                </button>
+            </div>
+        </div>
+
+        <div class="mobile-nav" id="pricingMobileNav">
+            <a href="{% url 'landing' %}#features" class="nav-link">Fonctionnalités</a>
+            <a href="{% url 'landing' %}#how-it-works" class="nav-link">Comment ça marche</a>
+            <a href="{% url 'pricing' %}" class="nav-link active">Tarifs</a>
+            <a href="{% url 'landing' %}#testimonials" class="nav-link">Avis clients</a>
+            {% if is_authenticated %}
+                <a href="{% url 'dashboard' %}" class="btn btn-ghost">Tableau de bord</a>
+                <a href="{% url 'subscription' %}" class="btn btn-primary">Mon abonnement</a>
+            {% else %}
+                <a href="{% url 'login' %}" class="btn btn-ghost">Se connecter</a>
+                <a href="{% url 'register' %}" class="btn btn-primary">Essai gratuit 7j</a>
+            {% endif %}
+        </div>
+    </header>
+
+    <div class="wrap">
+        <!-- ══════════════════════════════════ HERO ══════════════════════════════════ -->
+        <section class="pricing-hero">
+            <h1>Tarifs simples, clairs et <span class="accent">adaptés à votre équipe</span></h1>
+            <p class="lead">
+                Choisissez l'offre qui correspond à la taille de votre force de vente.
+                L'entreprise paie l'abonnement global, vos vendeurs ne paient rien individuellement.
+            </p>
+
+            <!-- Contrôles : Devises et Périodicité -->
+            <div class="controls-row">
+                <!-- Sélecteur de Devise -->
+                <div style="display:flex; align-items:center;">
+                    <span class="currency-label">Devise :</span>
+                    <div class="control-pill-box" id="currencySelector">
+                        {% for code, label in currencies %}
+                        <button type="button" class="control-pill-btn {% if selected_currency == code %}active{% endif %}" data-currency="{{ code }}">
+                            {{ code }}
+                        </button>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Bascule Mensuel / Annuel -->
+                <div class="control-pill-box" id="periodSelector">
+                    <button type="button" class="control-pill-btn active" data-period="monthly">Facturation mensuelle</button>
+                    <button type="button" class="control-pill-btn" data-period="annual">
+                        Facturation annuelle <span class="save-badge">Économisez ~17%</span>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- ══════════════════════════════════ CARTES DES PLANS ══════════════════════════════════ -->
+        <div class="pricing-grid">
+
+            <!-- CARTE PLAN ESSENTIEL -->
+            <div class="pricing-card">
+                <div class="card-plan-name">Plan Essentiel</div>
+                <div class="card-plan-target">
+                    Conçu pour les petites entreprises, grossistes et dépôts gérant une équipe commerciale de 10 vendeurs ou moins.
+                </div>
+
+                <div class="plan-seller-limit-badge limit-essential">
+                    👥 Jusqu'à 10 vendeurs maximum
+                </div>
+
+                <div class="price-box">
+                    <div>
+                        <span class="price-amount" id="priceEssential">6 000</span>
+                        <span class="price-currency" id="currencySymbolEssential">FCFA</span>
+                        <span class="price-period" id="periodLabelEssential">/ mois</span>
+                    </div>
+                    <div class="price-alt-note" id="altPriceEssential">Soit 50 000 FCFA / an en paiement annuel</div>
+                </div>
+
+                <ul class="features-list">
+                    <li><span class="check-icon">✓</span> <span><strong>10 vendeurs maximum</strong> par entreprise</span></li>
+                    <li><span class="check-icon">✓</span> <span>Facturation & devis illimités</span></li>
+                    <li><span class="check-icon">✓</span> <span>Gestion de stock & alertes de rupture</span></li>
+                    <li><span class="check-icon">✓</span> <span>Bons de chargement et retours véhicules</span></li>
+                    <li><span class="check-icon">✓</span> <span>Gestion des clients et des impayés</span></li>
+                    <li><span class="check-icon">✓</span> <span>Gestion des approvisionnements & fournisseurs</span></li>
+                    <li><span class="check-icon">✓</span> <span>Tableau de bord de performance et CA</span></li>
+                    <li><span class="check-icon">✓</span> <span>Espace mobile dédié aux vendeurs (codes PIN)</span></li>
+                    <li><span class="check-icon">✓</span> <span>Assistant IA intégré (analyses intelligentes)</span></li>
+                </ul>
+
+                {% if is_authenticated %}
+                    <a href="{% url 'subscription' %}" class="btn btn-ghost card-btn">Choisir le plan Essentiel</a>
+                {% else %}
+                    <a href="{% url 'register' %}" class="btn btn-ghost card-btn">Démarrer l'essai Essentiel (7j gratuits)</a>
+                {% endif %}
+            </div>
+
+            <!-- CARTE PLAN BUSINESS -->
+            <div class="pricing-card featured">
+                <div class="featured-tag">Équipes en croissance</div>
+                <div class="card-plan-name">Plan Business</div>
+                <div class="card-plan-target">
+                    Idéal pour les grossistes, distributeurs et dépôts de cave ayant une équipe commerciale de plus de 10 vendeurs.
+                </div>
+
+                <div class="plan-seller-limit-badge limit-business">
+                    👥 Plus de 10 vendeurs (vendeurs illimités)
+                </div>
+
+                <div class="price-box">
+                    <div>
+                        <span class="price-amount" id="priceBusiness">8 000</span>
+                        <span class="price-currency" id="currencySymbolBusiness">FCFA</span>
+                        <span class="price-period" id="periodLabelBusiness">/ mois</span>
+                    </div>
+                    <div class="price-alt-note" id="altPriceBusiness">Soit 60 000 FCFA / an en paiement annuel</div>
+                </div>
+
+                <ul class="features-list">
+                    <li><span class="check-icon">✓</span> <span><strong>Plus de 10 vendeurs autorisés</strong> (sans plafond)</span></li>
+                    <li><span class="check-icon">✓</span> <span><strong>Toutes les fonctionnalités</strong> du plan Essentiel</span></li>
+                    <li><span class="check-icon">✓</span> <span>Gestion de flotte d'engins & attributions multi-véhicules</span></li>
+                    <li><span class="check-icon">✓</span> <span>Rôles d'agents personnalisés et permissions avancées</span></li>
+                    <li><span class="check-icon">✓</span> <span>Suivi consolidé des performances des commerciaux</span></li>
+                    <li><span class="check-icon">✓</span> <span>Historique multi-fournisseurs et exports complets</span></li>
+                    <li><span class="check-icon">✓</span> <span>Support client prioritaire</span></li>
+                </ul>
+
+                {% if is_authenticated %}
+                    <a href="{% url 'subscription' %}" class="btn btn-primary card-btn">Choisir le plan Business</a>
+                {% else %}
+                    <a href="{% url 'register' %}" class="btn btn-primary card-btn">Démarrer l'essai Business (7j gratuits)</a>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Notification de Transparence Multidevise -->
+        <div class="currency-notice">
+            <div class="currency-notice-icon">ℹ️</div>
+            <div>
+                <strong>Information sur la facturation multidevise :</strong>
+                Les tarifs de référence officiels de Smart Invoice sont fixés en <strong>Franc CFA (XOF)</strong>.
+                Pour votre confort, l'équivalence indicative dans les autres devises (EUR, USD) est calculée sur la base des taux de référence officiels.
+                Les paiements en ligne et Mobile Money sont traités via MoneyFusion au tarif officiel de référence en FCFA.
+            </div>
+        </div>
+
+        <!-- ══════════════════════════════════ TABLEAU COMPARATIF ══════════════════════════════════ -->
+        <section class="comparison-section">
+            <h2 class="comparison-title">Comparatif détaillé des offres</h2>
+            <p class="comparison-sub">Toutes les fonctionnalités indispensables pour piloter votre activité commerciale de bout en bout.</p>
+
+            <div class="comp-table-wrap">
+                <table class="comp-table">
+                    <thead>
+                        <tr>
+                            <th>Fonctionnalité</th>
+                            <th class="center col-plan-head">Essentiel</th>
+                            <th class="center col-plan-head" style="color:var(--indigo-light);">Business</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Nombre de vendeurs actifs</strong></td>
+                            <td class="center">10 maximum</td>
+                            <td class="center"><strong>Plus de 10 (illimité)</strong></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Tarif mensuel de base</strong></td>
+                            <td class="center">6 000 FCFA / mois</td>
+                            <td class="center">8 000 FCFA / mois</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Tarif annuel de base</strong></td>
+                            <td class="center">50 000 FCFA / an</td>
+                            <td class="center">60 000 FCFA / an</td>
+                        </tr>
+                        <tr>
+                            <td>Facturation commerciale & devis PDF</td>
+                            <td class="center">✓ Illimité</td>
+                            <td class="center">✓ Illimité</td>
+                        </tr>
+                        <tr>
+                            <td>Gestion du stock & alertes de seuils</td>
+                            <td class="center">✓ Inclus</td>
+                            <td class="center">✓ Inclus</td>
+                        </tr>
+                        <tr>
+                            <td>Bons de chargement et retours</td>
+                            <td class="center">✓ Inclus</td>
+                            <td class="center">✓ Inclus</td>
+                        </tr>
+                        <tr>
+                            <td>Suivi des règlements & impayés clients</td>
+                            <td class="center">✓ Inclus</td>
+                            <td class="center">✓ Inclus</td>
+                        </tr>
+                        <tr>
+                            <td>Espace mobile dédié aux vendeurs (PIN)</td>
+                            <td class="center">✓ Inclus</td>
+                            <td class="center">✓ Inclus</td>
+                        </tr>
+                        <tr>
+                            <td>Assistant intelligent IA (analyses & requêtes)</td>
+                            <td class="center">✓ Inclus</td>
+                            <td class="center">✓ Inclus</td>
+                        </tr>
+                        <tr>
+                            <td>Gestion de flotte d'engins / véhicules</td>
+                            <td class="center">✓ Standard</td>
+                            <td class="center">✓ Avancée</td>
+                        </tr>
+                        <tr>
+                            <td>Support technique</td>
+                            <td class="center">Standard</td>
+                            <td class="center"><strong>Prioritaire</strong></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- ══════════════════════════════════ FAQ ══════════════════════════════════ -->
+        <section class="faq-section">
+            <h2 class="faq-title">Foire aux questions (FAQ)</h2>
+            <p class="faq-sub">Tout ce que vous devez savoir sur le fonctionnement des abonnements Smart Invoice.</p>
+
+            <div class="faq-list">
+                <!-- Question 1 -->
+                <div class="faq-card">
+                    <div class="faq-q"><span class="faq-q-icon">❓</span> 1. Quelle est la différence entre les plans Essentiel et Business ?</div>
+                    <div class="faq-a">
+                        La différence principale réside dans <strong>la taille de votre équipe commerciale</strong> :
+                        le plan <strong>Essentiel</strong> est conçu pour les entreprises comptant jusqu'à <strong>10 vendeurs</strong>.
+                        Le plan <strong>Business</strong> est requis et dimensionné pour les entreprises disposant de <strong>plus de 10 vendeurs</strong>, avec un support prioritaire et des fonctionnalités avancées pour gérer une flotte commerciale plus large.
+                    </div>
+                </div>
+
+                <!-- Question 2 -->
+                <div class="faq-card">
+                    <div class="faq-q"><span class="faq-q-icon">❓</span> 2. Qui paie l'abonnement ?</div>
+                    <div class="faq-a">
+                        <strong>C'est l'entreprise qui paie l'abonnement global</strong>. Les vendeurs ne paient rien individuellement. L'administrateur crée les accès de ses vendeurs, leur attribue un rôle et un code PIN sécurisé pour leur espace mobile.
+                    </div>
+                </div>
+
+                <!-- Question 3 -->
+                <div class="faq-card">
+                    <div class="faq-q"><span class="faq-q-icon">❓</span> 3. Que se passe-t-il lorsqu'une entreprise veut ajouter un onzième vendeur ?</div>
+                    <div class="faq-a">
+                        Si votre entreprise est sur le plan <strong>Essentiel</strong>, l'ajout d'un 11e vendeur est <strong>automatiquement bloqué côté serveur</strong>. Un message clair vous invite à passer au plan <strong>Business</strong>. Vos vendeurs déjà enregistrés restent actifs et aucune donnée n'est supprimée.
+                    </div>
+                </div>
+
+                <!-- Question 4 -->
+                <div class="faq-card">
+                    <div class="faq-q"><span class="faq-q-icon">❓</span> 4. Peut-on passer du plan Essentiel au plan Business ?</div>
+                    <div class="faq-a">
+                        <strong>Oui, à tout moment</strong>. Depuis votre espace <em>Abonnement</em>, vous pouvez souscrire au plan Business en choisissant la formule mensuelle ou annuelle. Le nouvel abonnement s'applique immédiatement et débloque le plafond de vendeurs.
+                    </div>
+                </div>
+
+                <!-- Question 5 -->
+                <div class="faq-card">
+                    <div class="faq-q"><span class="faq-q-icon">❓</span> 5. Quelle est la différence entre un paiement mensuel et annuel ?</div>
+                    <div class="faq-a">
+                        Le paiement mensuel offre un accès pour 30 jours (6 000 FCFA pour Essentiel, 8 000 FCFA pour Business).
+                        Le paiement annuel offre un accès de 365 jours complets (50 000 FCFA pour Essentiel, 60 000 FCFA pour Business), vous permettant d'économiser près de 2 mois d'abonnement sur l'année.
+                    </div>
+                </div>
+
+                <!-- Question 6 -->
+                <div class="faq-card">
+                    <div class="faq-q"><span class="faq-q-icon">❓</span> 6. Comment les devises sont-elles gérées ?</div>
+                    <div class="faq-a">
+                        Smart Invoice gère trois devises : <strong>XOF (Franc CFA)</strong>, <strong>EUR (€)</strong> et <strong>USD ($)</strong> pour la tenue de vos stocks et de vos factures commerciales.
+                        Pour les abonnements au SaaS, les tarifs de référence sont fixés en <strong>Franc CFA (XOF)</strong>. L'affichage en EUR et USD sur cette page est fourni à titre indicatif selon les taux de parité officiels. Les paiements réels sont exécutés en FCFA via les moyens de paiement locaux (Mobile Money).
+                    </div>
+                </div>
+
+                <!-- Question 7 -->
+                <div class="faq-card">
+                    <div class="faq-q"><span class="faq-q-icon">❓</span> 7. Comment se déroule le renouvellement de l'abonnement ?</div>
+                    <div class="faq-a">
+                        Vous pouvez renouveler votre abonnement à tout moment depuis la page <em>Abonnement</em> de votre tableau de bord. Si vous payez par anticipation, la nouvelle période s'ajoute automatiquement à la suite de votre période en cours sans perdre aucun jour. Si votre période a expiré, le paiement réactive immédiatement l'accès complet à vos données.
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- ══════════════════════════════════ FOOTER ══════════════════════════════════ -->
+    <footer>
+        <div class="wrap">
+            <div class="footer-grid">
+                <div class="footer-brand">
+                    <div class="brand"><div class="brand-mark">📦</div> Smart Invoice</div>
+                    <p>La plateforme de gestion commerciale pensée pour les grossistes, commerçants et dépôts.</p>
+                </div>
+                <div class="footer-col">
+                    <h4>Produit</h4>
+                    <a href="{% url 'landing' %}#features">Fonctionnalités</a>
+                    <a href="{% url 'landing' %}#how-it-works">Comment ça marche</a>
+                    <a href="{% url 'pricing' %}">Tarifs & Abonnements</a>
+                    <a href="{% url 'register' %}">Essai gratuit</a>
+                </div>
+                <div class="footer-col">
+                    <h4>Accès</h4>
+                    <a href="{% url 'login' %}">Connexion entreprise</a>
+                    <a href="{% url 'vendor_login' %}">Connexion vendeur</a>
+                    <a href="{% url 'register' %}">Créer un compte</a>
+                </div>
+                <div class="footer-col">
+                    <h4>Ressources</h4>
+                    <a href="{% url 'help_center' %}">Centre d'aide</a>
+                    <a href="{% url 'contact' %}">Contact</a>
+                    <a href="{% url 'service_status' %}">Statut du service</a>
+                </div>
+            </div>
+
+            <div class="footer-bottom">
+                <div>&copy; 2026 Smart Invoice. Tous droits réservés.</div>
+                <div class="legal-links">
+                    <a href="{% url 'terms_of_service' %}">Conditions d'utilisation</a>
+                    <a href="{% url 'privacy_policy' %}">Confidentialité</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Script de Bascule Multidevise & Périodicité -->
+    <script>
+        const plansData = {
+            essential: {
+                XOF: { monthly: '6 000', annual: '50 000', symbol: 'FCFA', altAnnual: 'Soit 50 000 FCFA / an en paiement annuel', altMonthly: 'Soit 6 000 FCFA / mois en paiement mensuel' },
+                EUR: { monthly: '9.15', annual: '76.22', symbol: '€', altAnnual: 'Soit ~76,22 € / an (50 000 FCFA)', altMonthly: 'Soit ~9,15 € / mois (6 000 FCFA)' },
+                USD: { monthly: '10.00', annual: '83.33', symbol: '$', altAnnual: 'Soit ~$83.33 / an (50 000 FCFA)', altMonthly: 'Soit ~$10.00 / mois (6 000 FCFA)' }
+            },
+            business: {
+                XOF: { monthly: '8 000', annual: '60 000', symbol: 'FCFA', altAnnual: 'Soit 60 000 FCFA / an en paiement annuel', altMonthly: 'Soit 8 000 FCFA / mois en paiement mensuel' },
+                EUR: { monthly: '12.20', annual: '91.47', symbol: '€', altAnnual: 'Soit ~91,47 € / an (60 000 FCFA)', altMonthly: 'Soit ~12,20 € / mois (8 000 FCFA)' },
+                USD: { monthly: '13.33', annual: '100.00', symbol: '$', altAnnual: 'Soit ~$100.00 / an (60 000 FCFA)', altMonthly: 'Soit ~$13.33 / mois (8 000 FCFA)' }
+            }
+        };
+
+        let currentCurrency = '{{ selected_currency|default:"XOF" }}';
+        let currentPeriod = 'monthly';
+
+        function updatePricingDisplay() {
+            const ess = plansData.essential[currentCurrency] || plansData.essential['XOF'];
+            const bus = plansData.business[currentCurrency] || plansData.business['XOF'];
+
+            const isAnnual = currentPeriod === 'annual';
+            const periodSuffix = isAnnual ? '/ an' : '/ mois';
+
+            document.getElementById('priceEssential').textContent = isAnnual ? ess.annual : ess.monthly;
+            document.getElementById('currencySymbolEssential').textContent = ess.symbol;
+            document.getElementById('periodLabelEssential').textContent = periodSuffix;
+            document.getElementById('altPriceEssential').textContent = isAnnual ? ess.altMonthly : ess.altAnnual;
+
+            document.getElementById('priceBusiness').textContent = isAnnual ? bus.annual : bus.monthly;
+            document.getElementById('currencySymbolBusiness').textContent = bus.symbol;
+            document.getElementById('periodLabelBusiness').textContent = periodSuffix;
+            document.getElementById('altPriceBusiness').textContent = isAnnual ? bus.altMonthly : bus.altAnnual;
+        }
+
+        // Gestionnaires d'événements pour le sélecteur de devises
+        document.querySelectorAll('#currencySelector .control-pill-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('#currencySelector .control-pill-btn').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                currentCurrency = this.dataset.currency;
+                updatePricingDisplay();
+            });
+        });
+
+        // Gestionnaires d'événements pour le sélecteur de périodicité
+        document.querySelectorAll('#periodSelector .control-pill-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('#periodSelector .control-pill-btn').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                currentPeriod = this.dataset.period;
+                updatePricingDisplay();
+            });
+        });
+
+        // Initialisation de l'affichage
+        updatePricingDisplay();
+
+        // Burger menu mobile
+        const pricingBurgerBtn = document.getElementById('pricingBurgerBtn');
+        const pricingMobileNav = document.getElementById('pricingMobileNav');
+        if (pricingBurgerBtn && pricingMobileNav) {
+            pricingBurgerBtn.addEventListener('click', () => {
+                pricingMobileNav.classList.toggle('open');
+            });
+            pricingMobileNav.querySelectorAll('a').forEach(link => {
+                link.addEventListener('click', () => pricingMobileNav.classList.remove('open'));
+            });
+        }
+    </script>
+</body>
+</html>
