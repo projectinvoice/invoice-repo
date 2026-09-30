@@ -349,7 +349,20 @@
                         <td>{{ sale.date|date:"d/m/Y H:i" }}</td>
                         <td style="display:flex; gap:6px; flex-wrap:wrap;">
                             {% if sale.invoice %}
-                            <a href="{% url 'vendor_invoice_pdf' sale.invoice.id %}" target="_blank" class="btn btn-ghost btn-sm">📄 PDF</a>
+                            <a href="{% url 'vendor_invoice_pdf' sale.invoice.id %}" target="_blank" class="btn btn-ghost btn-sm" title="Télécharger le PDF A5">📄 PDF</a>
+                            <button type="button" class="btn btn-ghost btn-sm share-sale-btn"
+                                    data-invoice-id="{{ sale.invoice.id }}"
+                                    data-invoice-number="{{ sale.invoice.invoice_number|escapejs }}"
+                                    data-client-name="{{ sale.client.shop_name|default:sale.client.name|escapejs }}"
+                                    data-client-phone="{{ sale.client.phone|default:''|escapejs }}"
+                                    data-client-email="{{ sale.client.email|default:''|escapejs }}"
+                                    data-total="{{ sale.formatted_total_price|escapejs }}"
+                                    data-balance="{{ sale.invoice.formatted_balance_due|escapejs }}"
+                                    data-is-paid="{% if sale.invoice.status == 'paid' %}true{% else %}false{% endif %}"
+                                    data-pdf-url="{% url 'vendor_invoice_pdf' sale.invoice.id %}"
+                                    data-send-email-url="{% url 'vendor_send_invoice_email' sale.invoice.id %}"
+                                    data-company-name="{{ company_name|escapejs }}"
+                                    data-date="{{ sale.invoice.issued_date|date:'d/m/Y' }}">📤 Partager</button>
                             {% if sale.invoice.balance_due > 0 %}
                             <button type="button" class="btn btn-primary btn-sm" onclick="openPaymentModal('{{ sale.invoice.id }}', '{{ sale.client.name|escapejs }}', '{{ sale.invoice.formatted_balance_due|escapejs }}')">💰 Encaisser</button>
                             {% endif %}
@@ -446,15 +459,85 @@
     </div>
 </div>
 
-<!-- MODAL CONFIRMATION FACTURE -->
+<!-- MODAL PARTAGE ET EXPÉDITION FACTURE -->
 <div class="modal-overlay" id="invoiceModal">
-    <div class="modal-box" style="text-align:center;">
-        <div class="modal-icon">✅</div>
-        <div class="modal-title" style="margin-bottom: 8px;">Vente enregistrée</div>
-        <p style="color: var(--text-secondary); font-size: 13.5px; margin-bottom: 6px;">Facture générée automatiquement :</p>
-        <p style="font-size: 20px; font-weight: 800; color: var(--indigo-light); margin-bottom: 20px;" id="generatedInvoiceNumber"></p>
-        <a href="#" id="downloadInvoiceLink" target="_blank" class="btn btn-ghost" style="width:100%; margin-bottom:10px; justify-content:center;">📄 Télécharger la facture PDF</a>
-        <button type="button" class="btn btn-primary" style="width:100%;" onclick="closeInvoiceModal()">OK</button>
+    <div class="modal-box" style="max-width: 490px;">
+        <div class="modal-header">
+            <div class="modal-title" style="display:flex; align-items:center; gap:8px;">
+                <span>🧾</span> <span id="shareModalTitle">Facture émise</span>
+            </div>
+            <button type="button" class="modal-close" onclick="closeInvoiceModal()">&times;</button>
+        </div>
+
+        <!-- Récapitulatif facture -->
+        <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border); border-radius: 12px; padding: 14px; margin-bottom: 16px;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                <div>
+                    <div style="font-size: 16px; font-weight: 800; color: var(--indigo-light);" id="generatedInvoiceNumber"></div>
+                    <div style="font-size: 13px; color: var(--text-secondary); margin-top: 2px;" id="shareClientName"></div>
+                </div>
+                <div style="text-align: right;">
+                    <div style="font-size: 15px; font-weight: 700; color: var(--text-primary);" id="shareTotalAmount"></div>
+                    <div style="font-size: 11.5px; margin-top: 2px;" id="shareStatusBadge"></div>
+                </div>
+            </div>
+            <div style="display:flex; justify-content:space-between; font-size: 11.5px; color: var(--text-muted); border-top: 1px dashed var(--border); padding-top: 6px; margin-top: 8px;">
+                <span id="shareIssuedDate"></span>
+                <span id="shareBalanceDue"></span>
+            </div>
+        </div>
+
+        <!-- 3 Canaux de partage / expédition -->
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+            <!-- 1. Téléchargement PDF A5 -->
+            <div style="background: rgba(99, 102, 241, 0.05); border: 1px solid rgba(99, 102, 241, 0.2); border-radius: 10px; padding: 12px; display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+                <div>
+                    <div style="font-weight: 600; font-size: 13px; color: var(--text-primary);">📄 Document PDF (Format A5)</div>
+                    <div style="font-size: 11px; color: var(--text-muted);">Format commercial compact officiel (148 × 210 mm)</div>
+                </div>
+                <a href="#" id="downloadInvoiceLink" target="_blank" class="btn btn-ghost btn-sm" style="border: 1px solid var(--border); white-space: nowrap;">
+                    ⬇️ Télécharger
+                </a>
+            </div>
+
+            <!-- 2. Partage WhatsApp -->
+            <div style="background: rgba(16, 185, 129, 0.05); border: 1px solid rgba(16, 185, 129, 0.25); border-radius: 10px; padding: 12px;">
+                <div style="font-weight: 600; font-size: 13px; color: #10B981; margin-bottom: 4px; display:flex; align-items:center; gap:6px;">
+                    <span>💬 Partager sur WhatsApp</span>
+                </div>
+                <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">
+                    Partage natif avec PDF joint sur mobile, ou ouverture directe de WhatsApp avec message prérempli.
+                </div>
+                <div style="display: flex; gap: 8px;">
+                    <input type="tel" id="shareWhatsAppPhone" class="form-control" style="font-size: 12.5px; padding: 6px 10px;" placeholder="Ex: 77 123 45 67 ou +221...">
+                    <button type="button" id="shareWhatsAppBtn" class="btn btn-sm" style="background: #10B981; color: white; white-space: nowrap; font-weight:600;">
+                        Partager
+                    </button>
+                </div>
+                <div id="shareWhatsAppFeedback" style="font-size: 11px; display: none; margin-top: 6px;"></div>
+            </div>
+
+            <!-- 3. Envoi par Email -->
+            <div style="background: rgba(56, 189, 248, 0.05); border: 1px solid rgba(56, 189, 248, 0.25); border-radius: 10px; padding: 12px;">
+                <div style="font-weight: 600; font-size: 13px; color: var(--sky); margin-bottom: 4px; display:flex; align-items:center; gap:6px;">
+                    <span>✉️ Envoyer par Email</span>
+                </div>
+                <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">
+                    Expédié par le serveur avec la facture A5 attachée en pièce jointe PDF.
+                </div>
+                <div style="display: flex; gap: 8px;">
+                    <input type="email" id="shareEmailInput" class="form-control" style="font-size: 12.5px; padding: 6px 10px;" placeholder="client@domaine.com">
+                    <button type="button" id="shareEmailBtn" class="btn btn-sm" style="background: var(--sky); color: #0F172A; white-space: nowrap; font-weight:700;">
+                        Envoyer
+                    </button>
+                </div>
+                <div id="shareEmailFeedback" style="font-size: 11px; display: none; margin-top: 6px;"></div>
+            </div>
+        </div>
+
+        <div style="margin-top: 16px; text-align: right;">
+            <button type="button" class="btn btn-primary" style="width: 100%;" onclick="closeInvoiceModal()">Terminer</button>
+        </div>
     </div>
 </div>
 
@@ -493,6 +576,8 @@
     ];
 
     const invoicePdfUrlTemplate = "{% url 'vendor_invoice_pdf' 999999999 %}";
+    const vendorSendEmailUrlTemplate = "{% url 'vendor_send_invoice_email' 999999999 %}";
+    const COMPANY_NAME = "{{ company_name|escapejs }}";
 
     const csrfToken = document.querySelector('#saleForm [name=csrfmiddlewaretoken]').value;
 
@@ -654,9 +739,21 @@
 
             if (response.ok && data.success) {
                 closeSaleModal();
-                document.getElementById('generatedInvoiceNumber').textContent = data.invoice_number;
-                document.getElementById('downloadInvoiceLink').href = invoicePdfUrlTemplate.replace('999999999', data.invoice_id);
-                document.getElementById('invoiceModal').classList.add('open');
+                openShareModal({
+                    invoiceId: data.invoice_id,
+                    invoiceNumber: data.invoice_number,
+                    clientName: data.client_name,
+                    clientPhone: data.client_phone,
+                    clientEmail: data.client_email,
+                    totalPrice: data.formatted_total_price,
+                    balanceDue: data.formatted_balance_due,
+                    isPaid: data.is_paid,
+                    pdfUrl: invoicePdfUrlTemplate.replace('999999999', data.invoice_id),
+                    sendEmailUrl: vendorSendEmailUrlTemplate.replace('999999999', data.invoice_id),
+                    companyName: data.company_name || COMPANY_NAME,
+                    date: data.issued_date,
+                    isNewSale: true
+                });
             } else {
                 errorBox.textContent = data.error || 'Une erreur est survenue';
                 errorBox.style.display = 'block';
@@ -671,9 +768,184 @@
         }
     });
 
+    let activeShareData = null;
+
+    function cleanWhatsAppPhone(phone) {
+        if (!phone) return '';
+        let p = String(phone).trim().replace(/[\s\-\(\)\.]/g, '');
+        if (p.startsWith('+')) p = p.substring(1);
+        if (/^(70|75|76|77|78)\d{7}$/.test(p)) {
+            p = '221' + p;
+        }
+        return p;
+    }
+
+    function openShareModal(data) {
+        activeShareData = data;
+        document.getElementById('generatedInvoiceNumber').textContent = data.invoiceNumber;
+        document.getElementById('shareClientName').textContent = 'Client : ' + (data.clientName || 'Client comptoir');
+        document.getElementById('shareTotalAmount').textContent = data.totalPrice;
+
+        const badge = document.getElementById('shareStatusBadge');
+        if (data.isPaid) {
+            badge.textContent = 'Payée';
+            badge.className = 'status-badge status-paid';
+        } else {
+            badge.textContent = 'Solde : ' + data.balanceDue;
+            badge.className = 'status-badge status-partial';
+        }
+
+        document.getElementById('shareIssuedDate').textContent = 'Émise le : ' + (data.date || '');
+        document.getElementById('shareBalanceDue').textContent = data.isPaid ? 'Règlement complet' : ('Reste : ' + data.balanceDue);
+
+        document.getElementById('downloadInvoiceLink').href = data.pdfUrl;
+
+        document.getElementById('shareWhatsAppPhone').value = data.clientPhone || '';
+        const waFeedback = document.getElementById('shareWhatsAppFeedback');
+        waFeedback.style.display = 'none';
+        waFeedback.textContent = '';
+
+        document.getElementById('shareEmailInput').value = data.clientEmail || '';
+        const emailFeedback = document.getElementById('shareEmailFeedback');
+        emailFeedback.style.display = 'none';
+        emailFeedback.textContent = '';
+
+        document.getElementById('invoiceModal').classList.add('open');
+    }
+
+    document.querySelectorAll('.share-sale-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            openShareModal({
+                invoiceId: this.dataset.invoiceId,
+                invoiceNumber: this.dataset.invoiceNumber,
+                clientName: this.dataset.clientName,
+                clientPhone: this.dataset.clientPhone,
+                clientEmail: this.dataset.clientEmail,
+                totalPrice: this.dataset.total,
+                balanceDue: this.dataset.balance,
+                isPaid: this.dataset.isPaid === 'true',
+                pdfUrl: this.dataset.pdfUrl,
+                sendEmailUrl: this.dataset.sendEmailUrl,
+                companyName: this.dataset.companyName,
+                date: this.dataset.date,
+                isNewSale: false
+            });
+        });
+    });
+
+    document.getElementById('shareWhatsAppBtn').addEventListener('click', async function() {
+        if (!activeShareData) return;
+        const feedback = document.getElementById('shareWhatsAppFeedback');
+        feedback.style.display = 'block';
+        feedback.style.color = '#94A3B8';
+        feedback.textContent = 'Préparation du message...';
+
+        const rawPhone = document.getElementById('shareWhatsAppPhone').value;
+        const phone = cleanWhatsAppPhone(rawPhone);
+
+        let text = `Bonjour ${activeShareData.clientName},\n\n`;
+        text += `Voici votre facture *${activeShareData.invoiceNumber}* émise le ${activeShareData.date} par *${activeShareData.companyName}*.\n\n`;
+        text += `• Montant total : *${activeShareData.totalPrice}*\n`;
+        if (activeShareData.isPaid) {
+            text += `• Statut : *Payée en totalité* ✅\n\n`;
+        } else {
+            text += `• Reste à payer : *${activeShareData.balanceDue}*\n\n`;
+        }
+        text += `Facture commerciale compacte A5 jointe.\nMerci pour votre confiance !`;
+
+        if (navigator.share && navigator.canShare) {
+            try {
+                const resp = await fetch(activeShareData.pdfUrl);
+                const blob = await resp.blob();
+                const file = new File([blob], `${activeShareData.invoiceNumber}.pdf`, { type: 'application/pdf' });
+                if (navigator.canShare({ files: [file] })) {
+                    await navigator.share({
+                        title: `Facture ${activeShareData.invoiceNumber}`,
+                        text: text,
+                        files: [file]
+                    });
+                    feedback.style.color = '#10B981';
+                    feedback.textContent = 'Partage ouvert dans votre application.';
+                    return;
+                }
+            } catch (err) {
+                if (err.name === 'AbortError') {
+                    feedback.textContent = 'Partage annulé.';
+                    return;
+                }
+            }
+        }
+
+        const dlLink = document.createElement('a');
+        dlLink.href = activeShareData.pdfUrl;
+        dlLink.download = `${activeShareData.invoiceNumber}.pdf`;
+        document.body.appendChild(dlLink);
+        dlLink.click();
+        document.body.removeChild(dlLink);
+
+        const waUrl = phone
+            ? `https://wa.me/${phone}?text=${encodeURIComponent(text)}`
+            : `https://wa.me/?text=${encodeURIComponent(text)}`;
+
+        window.open(waUrl, '_blank');
+        feedback.style.color = '#10B981';
+        feedback.textContent = 'Facture PDF téléchargée & redirection WhatsApp lancée.';
+    });
+
+    document.getElementById('shareEmailBtn').addEventListener('click', async function() {
+        if (!activeShareData) return;
+        const emailInput = document.getElementById('shareEmailInput');
+        const feedback = document.getElementById('shareEmailFeedback');
+        const btn = document.getElementById('shareEmailBtn');
+        const email = emailInput.value.trim();
+
+        if (!email || !email.includes('@')) {
+            feedback.style.display = 'block';
+            feedback.style.color = '#F43F5E';
+            feedback.textContent = 'Veuillez saisir une adresse email valide.';
+            emailInput.focus();
+            return;
+        }
+
+        btn.disabled = true;
+        const oldText = btn.textContent;
+        btn.textContent = 'Envoi…';
+        feedback.style.display = 'block';
+        feedback.style.color = '#94A3B8';
+        feedback.textContent = 'Génération du PDF A5 et envoi du courriel...';
+
+        const formData = new FormData();
+        formData.append('recipient_email', email);
+
+        try {
+            const resp = await fetch(activeShareData.sendEmailUrl, {
+                method: 'POST',
+                body: formData,
+                headers: { 'X-CSRFToken': csrfToken },
+                credentials: 'same-origin'
+            });
+            const resData = await resp.json();
+            if (resp.ok && resData.success) {
+                feedback.style.color = '#10B981';
+                feedback.textContent = '✅ ' + (resData.message || 'Facture envoyée avec succès !');
+            } else {
+                feedback.style.color = '#F43F5E';
+                feedback.textContent = '⚠️ ' + (resData.error || "Erreur lors de l'envoi.");
+            }
+        } catch (err) {
+            feedback.style.color = '#F43F5E';
+            feedback.textContent = "⚠️ Erreur réseau ou serveur.";
+        } finally {
+            btn.disabled = false;
+            btn.textContent = oldText;
+        }
+    });
+
     function closeInvoiceModal() {
         document.getElementById('invoiceModal').classList.remove('open');
-        location.reload();
+        if (activeShareData && activeShareData.isNewSale) {
+            location.reload();
+        }
     }
 
     function openPaymentModal(invoiceId, clientName, balanceDue) {

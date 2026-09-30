@@ -2,7 +2,7 @@
 Espace vendeur (agents) : authentification separee par code entreprise + PIN.
 """
 from ._common import *  # noqa: F401,F403
-from .invoices import _render_invoice_pdf
+from .invoices import _render_invoice_pdf, _send_invoice_email_core
 from django.core.cache import cache
 
 VENDOR_LOGIN_MAX_ATTEMPTS = 5
@@ -258,7 +258,42 @@ def vendor_add_sale(request):
         "sale_id": sale.id,
         "invoice_number": invoice.invoice_number,
         "invoice_id": invoice.id,
-    }) 
+        "client_name": client.shop_name or client.name,
+        "client_phone": client.phone or "",
+        "client_email": client.email or "",
+        "total_price": str(sale.total_price),
+        "formatted_total_price": sale.formatted_total_price,
+        "amount_paid": str(invoice.amount_paid),
+        "formatted_amount_paid": invoice.formatted_amount_paid,
+        "balance_due": str(invoice.balance_due),
+        "formatted_balance_due": invoice.formatted_balance_due,
+        "currency": sale.currency,
+        "is_paid": invoice.status == 'paid',
+        "company_name": company.company_name,
+        "issued_date": invoice.issued_date.strftime('%d/%m/%Y'),
+    })
+
+
+@require_http_methods(["POST"])
+@agent_login_required
+def vendor_send_invoice_email(request, invoice_id):
+    """Envoi de facture par email déclenché par un vendeur (agent)."""
+    invoice = Invoice.objects.filter(id=invoice_id, company=request.agent.company).select_related(
+        'sale', 'sale__client', 'company'
+    ).first()
+    if not invoice:
+        return JsonResponse({"success": False, "error": "Facture introuvable"}, status=404)
+
+    recipient_email = request.POST.get("recipient_email", "").strip()
+    custom_message = request.POST.get("message", "").strip()
+
+    if not recipient_email:
+        return JsonResponse({"success": False, "error": "L'adresse email du destinataire est requise."}, status=400)
+
+    success, msg = _send_invoice_email_core(invoice, recipient_email, custom_message)
+    if success:
+        return JsonResponse({"success": True, "message": msg})
+    return JsonResponse({"success": False, "error": msg}, status=500)
 
 
 @require_http_methods(["POST"])

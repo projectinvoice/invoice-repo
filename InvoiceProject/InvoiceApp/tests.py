@@ -402,4 +402,220 @@ class OfficialPricingAndSellerLimitsTests(TestCase):
         )
         self.assertEqual(prod.price, Decimal('1500.00'))
         self.assertEqual(prod.formatted_price, '1 500 FCFA')
+
+
+class InvoiceEnhancementTests(TestCase):
+    def setUp(self):
+        self.User = get_user_model()
+        self.company = self.User.objects.create_user(
+            username='company_a', password='password123',
+            company_name='Entreprise A', company_email='contact@entreprise-a.com',
+            phone='+221770000000', agent_login_code='COMPA'
+        )
+        self.other_company = self.User.objects.create_user(
+            username='company_b', password='password123',
+            company_name='Entreprise B', company_email='contact@entreprise-b.com',
+            phone='+221779999999', agent_login_code='COMPB'
+        )
+
+        from .models import Client, Product, Sale, SaleItem, Invoice, Agent, AgentRole
+        self.client_a = Client.objects.create(
+            company=self.company, name='Moussa Diop',
+            shop_name='Boutique Keur Moussa',
+            phone='+221771234567', email='moussa@example.com',
+            address='Dakar Plateau'
+        )
+        self.product_1 = Product.objects.create(
+            company=self.company, name='Sac de Riz 50kg',
+            price=Decimal('17500.00'), currency='XOF', stock_quantity=100
+        )
+        self.product_2 = Product.objects.create(
+            company=self.company, name='Bidon Huile 5L',
+            price=Decimal('5000.00'), currency='XOF', stock_quantity=50
+        )
+
+        self.role = AgentRole.objects.create(company=self.company, name='Vendeur')
+        self.agent = Agent.objects.create(
+            company=self.company, name='Agent Amadou', role=self.role, is_active=True
+        )
+        self.agent.set_pin('1234')
+        self.agent.save()
+
+        # Création d'une vente et facture pour l'Entreprise A
+        self.sale = Sale.objects.create(
+            company=self.company, client=self.client_a, agent=self.agent,
+            currency='XOF', total_price=Decimal('45000.00')
+        )
+        SaleItem.objects.create(
+            sale=self.sale, product=self.product_1, quantity=2,
+            unit_price=Decimal('17500.00'), total_price=Decimal('35000.00'), currency='XOF'
+        )
+        SaleItem.objects.create(
+            sale=self.sale, product=self.product_2, quantity=2,
+            unit_price=Decimal('5000.00'), total_price=Decimal('10000.00'), currency='XOF'
+        )
+
+        from django.utils import timezone
+        from datetime import timedelta
+        self.invoice = Invoice.objects.create(
+            company=self.company, sale=self.sale,
+            invoice_number='FAC-2026-TEST01',
+            due_date=timezone.now().date() + timedelta(days=15),
+            amount_paid=Decimal('20000.00'),
+            status='partial'
+        )
+
+    def test_invoice_pdf_a5_generation_and_download(self):
+        """Vérifie la génération du PDF A5 et son téléchargement."""
+        from .views.invoices import _build_invoice_pdf_bytes
+        pdf_bytes = _build_invoice_pdf_bytes(self.invoice)
+        self.assertTrue(len(pdf_bytes) > 1000)
+        self.assertTrue(pdf_bytes.startswith(b'%PDF'))
+
+        # Téléchargement via l'URL admin
+        self.client.force_login(self.company)
+        resp = self.client.get(reverse('invoice_pdf', args=[self.invoice.id]))
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp['Content-Type'], 'application/pdf')
+        self.assertIn(f'filename="{self.invoice.invoice_number}.pdf"', resp['Content-Disposition'])
+
+    def test_invoice_pdf_multi_item_pagination(self):
+        """Vérifie que la pagination A5 gère sans crash un grand nombre d'articles."""
+        from .models import Product, SaleItem
+        from .views.invoices import _build_invoice_pdf_bytes
+
+        # Ajouter 15 articles supplémentaires pour forcer le saut de page A5
+        for i in range(15):
+            prod = Product.objects.create(
+                company=self.company, name=f'Produit Divers {i+1}',
+                price=Decimal('1000.00'), currency='XOF', stock_quantity=10
+            )
+            SaleItem.objects.create(
+                sale=self.sale, product=prod, quantity=1,
+                unit_price=Decimal('1000.00'), total_price=Decimal('1000.00'), currency='XOF'
+            )
+
+        pdf_bytes = _build_invoice_pdf_bytes(self.invoice)
+        self.assertTrue(len(pdf_bytes) > 2000)
+        self.assertTrue(pdf_bytes.startswith(b'%PDF'))
+
+    def test_admin_send_invoice_email_success(self):
+        """L'administrateur peut envoyer la facture par email avec la pièce jointe PDF A5."""
+        from django.core import mail
+        self.client.force_login(self.company)
+        mail.outbox.clear()
+
+        resp = self.client.post(
+            reverse('send_invoice_email', args=[self.invoice.id]),
+            {'recipient_email': 'client.test@domaine.com', 'message': 'Paiement attendu sous quinzaine.'}
+        )
+        self.assertEqual(resp.status_code, 200)
+        data = resp.json()
+        self.assertTrue(data['success'])
+        self.assertIn("Facture envoyée avec succès", data['message'])
+
+        # Vérification du courriel envoyé
+        self.assertEqual(len(mail.outbox), 1)
+        sent_email = mail.outbox[0]
+        self.assertIn(self.invoice.invoice_number, sent_email.subject)
+        self.assertIn(self.company.company_name, sent_email.subject)
+        self.assertEqual(sent_email.to, ['client.test@domaine.com'])
+        self.assertIn('Paiement attendu sous quinzaine.', sent_email.body)
+        self.assertEqual(len(sent_email.attachments), 1)
+        att_name, att_bytes, att_mime = sent_email.attachments[0]
+        self.assertEqual(att_name, f"Facture_{self.invoice.invoice_number}.pdf")
+        self.assertEqual(att_mime, 'application/pdf')
+        self.assertTrue(att_bytes.startswith(b'%PDF'))
+
+    def test_admin_send_invoice_email_tenant_isolation(self):
+        """Une autre entreprise ne peut pas envoyer ou accéder à la facture de l'entreprise A."""
+        self.client.force_login(self.other_company)
+        resp = self.client.post(
+            reverse('send_invoice_email', args=[self.invoice.id]),
+            {'recipient_email': 'hacker@example.com'}
+        )
+        self.assertEqual(resp.status_code, 404)
+        data = resp.json()
+        self.assertFalse(data['success'])
+
+    def test_admin_send_invoice_email_validation(self):
+        """Rejet en cas d'adresse email invalide ou vide."""
+        self.client.force_login(self.company)
+        resp = self.client.post(
+            reverse('send_invoice_email', args=[self.invoice.id]),
+            {'recipient_email': 'pas-un-email'}
+        )
+        self.assertEqual(resp.status_code, 500)
+        self.assertFalse(resp.json()['success'])
+
+        resp_empty = self.client.post(
+            reverse('send_invoice_email', args=[self.invoice.id]),
+            {'recipient_email': ''}
+        )
+        self.assertEqual(resp_empty.status_code, 400)
+        self.assertFalse(resp_empty.json()['success'])
+
+    def test_vendor_send_invoice_email_success(self):
+        """Un vendeur connecté peut envoyer par email la facture de son entreprise."""
+        from django.core import mail
+        mail.outbox.clear()
+
+        # Connexion de l'agent dans la session
+        session = self.client.session
+        session['agent_id'] = self.agent.id
+        session.save()
+
+        resp = self.client.post(
+            reverse('vendor_send_invoice_email', args=[self.invoice.id]),
+            {'recipient_email': 'client.vendeur@domaine.com'}
+        )
+        self.assertEqual(resp.status_code, 200)
+        self.assertTrue(resp.json()['success'])
+        self.assertEqual(len(mail.outbox), 1)
+        sent = mail.outbox[0]
+        self.assertEqual(sent.to, ['client.vendeur@domaine.com'])
+        self.assertEqual(len(sent.attachments), 1)
+
+    def test_vendor_send_invoice_email_tenant_isolation(self):
+        """Un agent d'une autre entreprise ne peut pas envoyer la facture de l'entreprise A."""
+        from .models import AgentRole, Agent
+        other_role = AgentRole.objects.create(company=self.other_company, name='Vendeur')
+        other_agent = Agent.objects.create(company=self.other_company, name='Agent B', role=other_role, is_active=True)
+
+        session = self.client.session
+        session['agent_id'] = other_agent.id
+        session.save()
+
+        resp = self.client.post(
+            reverse('vendor_send_invoice_email', args=[self.invoice.id]),
+            {'recipient_email': 'cible@domaine.com'}
+        )
+        self.assertEqual(resp.status_code, 404)
+        self.assertFalse(resp.json()['success'])
+
+    def test_vendor_add_sale_returns_enriched_post_sale_payload(self):
+        """Vérifie que la création d'une vente par un vendeur renvoie les données nécessaires pour le partage immédiat."""
+        from .models import AgentStock
+        AgentStock.objects.create(agent=self.agent, product=self.product_1, quantity=10, unit_price=Decimal('17500.00'))
+
+        session = self.client.session
+        session['agent_id'] = self.agent.id
+        session.save()
+
+        sale_items = json.dumps([{'product_id': self.product_1.id, 'quantity': 1}])
+        resp = self.client.post(reverse('vendor_add_sale'), {
+            'client_id': self.client_a.id,
+            'sale_items': sale_items,
+            'payment_type': 'full'
+        })
+        self.assertEqual(resp.status_code, 200)
+        data = resp.json()
+        self.assertTrue(data['success'])
+        self.assertIn('invoice_number', data)
+        self.assertIn('client_phone', data)
+        self.assertEqual(data['client_phone'], '+221771234567')
+        self.assertIn('formatted_total_price', data)
+        self.assertIn('formatted_balance_due', data)
+        self.assertTrue(data['is_paid'])
+
 
