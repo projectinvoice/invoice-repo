@@ -91,6 +91,10 @@ urlpatterns = [
     path('record-invoice-payment/', invoice_views.record_invoice_payment, name='record_invoice_payment'),
     path('invoices/<int:invoice_id>/pdf/', invoice_views.invoice_pdf, name='invoice_pdf'),
     path('invoices/<int:invoice_id>/send-email/', invoice_views.send_invoice_email, name='send_invoice_email'),
+    path('invoices/<int:invoice_id>/send-whatsapp/', invoice_views.send_invoice_whatsapp_api, name='send_invoice_whatsapp'),
+
+    # WhatsApp Business Cloud API — Webhook officiel Meta (GET challenge / POST accusés)
+    path('api/whatsapp/webhook/', invoice_views.whatsapp_webhook, name='whatsapp_webhook'),
 
     # Espace vendeur (agents) — authentification séparée par code entreprise + PIN
     path('vendeur/login/', invoice_views.vendor_login, name='vendor_login'),
@@ -99,6 +103,7 @@ urlpatterns = [
     path('vendeur/vente/', invoice_views.vendor_add_sale, name='vendor_add_sale'),
     path('vendeur/factures/<int:invoice_id>/pdf/', invoice_views.vendor_invoice_pdf, name='vendor_invoice_pdf'),
     path('vendeur/factures/<int:invoice_id>/send-email/', invoice_views.vendor_send_invoice_email, name='vendor_send_invoice_email'),
+    path('vendeur/factures/<int:invoice_id>/send-whatsapp/', invoice_views.vendor_send_invoice_whatsapp_api, name='vendor_send_invoice_whatsapp'),
     path('vendeur/paiement/', invoice_views.vendor_add_payment, name='vendor_add_payment'),
 
     # Stock vendeur (chargement / retour de tournée) — géré par l'admin

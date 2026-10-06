@@ -426,6 +426,18 @@ class Invoice(models.Model):
         ('overdue', 'En retard')
     ], default='pending', verbose_name="Statut")
 
+    # Suivi WhatsApp Business Cloud API (officiel Meta)
+    whatsapp_message_id = models.CharField(max_length=120, blank=True, null=True, verbose_name="ID message WhatsApp Meta")
+    whatsapp_delivery_status = models.CharField(max_length=20, choices=[
+        ('pending', 'En attente'),
+        ('sent', 'Envoyé'),
+        ('delivered', 'Remis'),
+        ('read', 'Lu'),
+        ('failed', 'Échec'),
+    ], blank=True, null=True, verbose_name="Statut remise WhatsApp")
+    whatsapp_delivered_at = models.DateTimeField(blank=True, null=True, verbose_name="Date de remise WhatsApp")
+    whatsapp_read_at = models.DateTimeField(blank=True, null=True, verbose_name="Date de lecture WhatsApp")
+
     def __str__(self):
         return f"Facture {self.invoice_number} ({self.company.company_name})"
 
@@ -461,6 +473,17 @@ class Invoice(models.Model):
             self.status = 'overdue' if is_past_due else 'partial'
         else:
             self.status = 'paid'
+
+    @property
+    def whatsapp_status_label(self):
+        labels = {
+            'sent': '✓ Envoyé',
+            'delivered': '✓✓ Remis',
+            'read': '✓✓ Lu',
+            'failed': '✕ Échec',
+            'pending': '⏳ En cours',
+        }
+        return labels.get(self.whatsapp_delivery_status, '')
 
     class Meta:
         verbose_name = "Facture"

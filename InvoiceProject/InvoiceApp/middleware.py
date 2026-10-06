@@ -38,6 +38,7 @@ class SubscriptionAccessMiddleware:
             is_allowed = (
                 path in ALLOWED_EXACT_PATHS_WHEN_BLOCKED
                 or any(path.startswith(prefix) for prefix in ALLOWED_PATH_PREFIXES_WHEN_BLOCKED)
+                or path.endswith('/pdf/')
             )
             if not is_allowed:
                 if request.method in ("POST", "PUT", "PATCH", "DELETE"):

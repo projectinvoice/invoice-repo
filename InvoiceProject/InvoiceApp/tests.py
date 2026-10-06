@@ -618,4 +618,186 @@ class InvoiceEnhancementTests(TestCase):
         self.assertIn('formatted_balance_due', data)
         self.assertTrue(data['is_paid'])
 
+
+class WhatsAppCloudApiTests(TestCase):
+    def setUp(self):
+        from unittest.mock import patch
+        self.User = get_user_model()
+        self.company = self.User.objects.create_user(
+            username='wa_company_a', password='password123',
+            company_name='Keur Entreprise', phone='+221770000000',
+            agent_login_code='WACOMP'
+        )
+        self.other_company = self.User.objects.create_user(
+            username='wa_company_b', password='password123',
+            company_name='Autre Entreprise', phone='+221779999999'
+        )
+
+        from .models import Client, Product, Sale, SaleItem, Invoice, Agent, AgentRole
+        self.client_obj = Client.objects.create(
+            company=self.company, name='Babacar Ndiaye',
+            phone='+221 77 987 65 43', email='babacar@example.com'
+        )
+        self.product = Product.objects.create(
+            company=self.company, name='Huile 5L',
+            price=Decimal('5000.00'), currency='XOF', stock_quantity=20
+        )
+        self.role = AgentRole.objects.create(company=self.company, name='Commercial')
+        self.agent = Agent.objects.create(
+            company=self.company, name='Vendeur Wa', role=self.role, is_active=True
+        )
+
+        self.sale = Sale.objects.create(
+            company=self.company, client=self.client_obj, agent=self.agent,
+            currency='XOF', total_price=Decimal('10000.00')
+        )
+        SaleItem.objects.create(
+            sale=self.sale, product=self.product, quantity=2,
+            unit_price=Decimal('5000.00'), total_price=Decimal('10000.00'), currency='XOF'
+        )
+        from django.utils import timezone
+        from datetime import timedelta
+        self.invoice = Invoice.objects.create(
+            company=self.company, sale=self.sale,
+            invoice_number='FAC-WA-001',
+            due_date=timezone.now().date() + timedelta(days=7),
+            amount_paid=Decimal('10000.00'),
+            status='paid'
+        )
+
+    def test_clean_phone_for_whatsapp(self):
+        """Vérifie le formatage des numéros de téléphone pour l'API Meta."""
+        from .services.whatsapp import clean_phone_for_whatsapp
+        self.assertEqual(clean_phone_for_whatsapp('77 123 45 67'), '221771234567')
+        self.assertEqual(clean_phone_for_whatsapp('+221 77 123 45 67'), '221771234567')
+        self.assertEqual(clean_phone_for_whatsapp('+33 6 12 34 56 78'), '33612345678')
+        self.assertEqual(clean_phone_for_whatsapp(''), '')
+
+    def test_whatsapp_webhook_get_challenge_verification(self):
+        """Vérifie l'échange de vérification de webhook Meta (GET)."""
+        from django.conf import settings
+        token = settings.WHATSAPP_VERIFY_TOKEN
+
+        # Succès : token valide
+        resp = self.client.get(reverse('whatsapp_webhook') + f"?hub.mode=subscribe&hub.verify_token={token}&hub.challenge=test_challenge_12345")
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.content.decode('utf-8'), 'test_challenge_12345')
+
+        # Échec : token invalide
+        resp_bad = self.client.get(reverse('whatsapp_webhook') + "?hub.mode=subscribe&hub.verify_token=wrong_token&hub.challenge=test")
+        self.assertEqual(resp_bad.status_code, 403)
+
+    def test_whatsapp_webhook_post_delivery_statuses(self):
+        """Vérifie la mise à jour automatique des statuts 'delivered' et 'read' via le webhook."""
+        self.invoice.whatsapp_message_id = 'wamid.TEST_MESSAGE_ID_001'
+        self.invoice.whatsapp_delivery_status = 'sent'
+        self.invoice.save()
+
+        # Événement 1 : Remis sur le téléphone (delivered)
+        payload_delivered = {
+            "entry": [{
+                "changes": [{
+                    "value": {
+                        "statuses": [{
+                            "id": "wamid.TEST_MESSAGE_ID_001",
+                            "status": "delivered",
+                            "timestamp": "1710000000"
+                        }]
+                    }
+                }]
+            }]
+        }
+        resp = self.client.post(
+            reverse('whatsapp_webhook'),
+            data=json.dumps(payload_delivered),
+            content_type="application/json"
+        )
+        self.assertEqual(resp.status_code, 200)
+
+        self.invoice.refresh_from_db()
+        self.assertEqual(self.invoice.whatsapp_delivery_status, 'delivered')
+        self.assertIsNotNone(self.invoice.whatsapp_delivered_at)
+        self.assertEqual(self.invoice.whatsapp_status_label, '✓✓ Remis')
+
+        # Événement 2 : Lu par le destinataire (read)
+        payload_read = {
+            "entry": [{
+                "changes": [{
+                    "value": {
+                        "statuses": [{
+                            "id": "wamid.TEST_MESSAGE_ID_001",
+                            "status": "read",
+                            "timestamp": "1710000100"
+                        }]
+                    }
+                }]
+            }]
+        }
+        resp_read = self.client.post(
+            reverse('whatsapp_webhook'),
+            data=json.dumps(payload_read),
+            content_type="application/json"
+        )
+        self.assertEqual(resp_read.status_code, 200)
+
+        self.invoice.refresh_from_db()
+        self.assertEqual(self.invoice.whatsapp_delivery_status, 'read')
+        self.assertIsNotNone(self.invoice.whatsapp_read_at)
+        self.assertEqual(self.invoice.whatsapp_status_label, '✓✓ Lu')
+
+    def test_admin_send_whatsapp_client_fallback_when_unconfigured(self):
+        """Si l'API Cloud n'a pas de token configuré, le backend renvoie le signal client_fallback."""
+        self.client.force_login(self.company)
+        with self.settings(WHATSAPP_TOKEN='', WHATSAPP_PHONE_NUMBER_ID=''):
+            resp = self.client.post(
+                reverse('send_invoice_whatsapp', args=[self.invoice.id]),
+                {'phone': '771234567'}
+            )
+            self.assertEqual(resp.status_code, 200)
+            data = resp.json()
+            self.assertTrue(data['success'])
+            self.assertEqual(data['mode'], 'client_fallback')
+
+    def test_admin_send_whatsapp_cloud_api_success(self):
+        """Si l'API Cloud est configurée, le backend envoie directement le PDF via Meta."""
+        from unittest.mock import patch, MagicMock
+        self.client.force_login(self.company)
+
+        with self.settings(WHATSAPP_TOKEN='mock_meta_token', WHATSAPP_PHONE_NUMBER_ID='123456789'):
+            # Mock de requests.post pour l'upload media et l'envoi de message
+            def mock_requests_post(url, *args, **kwargs):
+                mock_resp = MagicMock()
+                mock_resp.status_code = 200
+                if '/media' in url:
+                    mock_resp.json.return_value = {"id": "meta_media_98765"}
+                elif '/messages' in url:
+                    mock_resp.json.return_value = {"messages": [{"id": "wamid.NEW_META_WAMID_123"}]}
+                return mock_resp
+
+            with patch('requests.post', side_effect=mock_requests_post):
+                resp = self.client.post(
+                    reverse('send_invoice_whatsapp', args=[self.invoice.id]),
+                    {'phone': '77 987 65 43'}
+                )
+                self.assertEqual(resp.status_code, 200)
+                data = resp.json()
+                self.assertTrue(data['success'])
+                self.assertEqual(data['mode'], 'cloud_api')
+                self.assertEqual(data['message_id'], 'wamid.NEW_META_WAMID_123')
+
+                self.invoice.refresh_from_db()
+                self.assertEqual(self.invoice.whatsapp_message_id, 'wamid.NEW_META_WAMID_123')
+                self.assertEqual(self.invoice.whatsapp_delivery_status, 'sent')
+                self.assertEqual(self.invoice.whatsapp_status_label, '✓ Envoyé')
+
+    def test_whatsapp_tenant_isolation(self):
+        """Une autre entreprise ne peut pas envoyer la facture d'une entreprise différente."""
+        self.client.force_login(self.other_company)
+        resp = self.client.post(
+            reverse('send_invoice_whatsapp', args=[self.invoice.id]),
+            {'phone': '770000000'}
+        )
+        self.assertEqual(resp.status_code, 404)
+
+
 

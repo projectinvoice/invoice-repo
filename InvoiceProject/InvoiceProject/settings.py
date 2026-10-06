@@ -19,7 +19,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Charge les variables définies dans le fichier .env à la racine du projet
 # (créé côté serveur, jamais versionné — voir .env.example pour le modèle).
-load_dotenv(BASE_DIR / '.env')
+load_dotenv(BASE_DIR / '.env', override=True)
 
 # ═══════════════════════════════════════════════════════════════
 # Assistant IA (Gemini) — bouton flottant présent sur les pages de l'app
@@ -251,6 +251,15 @@ SUPPORT_EMAIL = os.environ.get('SUPPORT_EMAIL', DEFAULT_FROM_EMAIL)
 # Durée de validité d'un lien de réinitialisation de mot de passe (en secondes).
 # 86400 = 24 heures.
 PASSWORD_RESET_TIMEOUT = int(os.environ.get('PASSWORD_RESET_TIMEOUT', '86400'))
+
+# ═══════════════════════════════════════════════════════════════
+# Configuration WhatsApp Business Cloud API (Meta Graph API)
+# ═══════════════════════════════════════════════════════════════
+WHATSAPP_TOKEN = os.environ.get('WHATSAPP_TOKEN', '')
+WHATSAPP_PHONE_NUMBER_ID = os.environ.get('WHATSAPP_PHONE_NUMBER_ID', '')
+WHATSAPP_BUSINESS_ACCOUNT_ID = os.environ.get('WHATSAPP_BUSINESS_ACCOUNT_ID', '')
+WHATSAPP_VERIFY_TOKEN = os.environ.get('WHATSAPP_VERIFY_TOKEN', 'smart_invoice_meta_verify_token_2026')
+WHATSAPP_API_VERSION = os.environ.get('WHATSAPP_API_VERSION', 'v18.0')
 
 # ═══════════════════════════════════════════════════════════════
 # Sécurité production — actif uniquement quand DEBUG=False (via .env)

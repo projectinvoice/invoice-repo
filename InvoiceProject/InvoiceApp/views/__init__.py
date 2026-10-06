@@ -19,3 +19,4 @@ from .invoices import list_invoices, add_invoice, delete_invoice, record_invoice
 from .vendor import generate_invoice_number, agent_login_required, vendor_login, vendor_logout, vendor_invoice_pdf, vendor_dashboard, vendor_add_sale, vendor_add_payment, vendor_send_invoice_email
 from .stock import list_stock_loads, add_stock_load, delete_stock_load, add_stock_return, delete_stock_return
 from .public import help_center, contact, service_status, terms_of_service, privacy_policy, pricing_page
+from .whatsapp import whatsapp_webhook, send_invoice_whatsapp_api, vendor_send_invoice_whatsapp_api
