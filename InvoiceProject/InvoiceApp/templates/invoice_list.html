@@ -365,17 +365,21 @@
                             <a href="{% url 'invoice_pdf' invoice.id %}" class="btn btn-ghost btn-sm" target="_blank" title="Télécharger le PDF A5">📄 PDF</a>
                             <button type="button" class="btn btn-ghost btn-sm share-invoice-btn"
                                     data-invoice-id="{{ invoice.id }}"
-                                    data-invoice-number="{{ invoice.invoice_number|escapejs }}"
-                                    data-client-name="{{ invoice.sale.client.shop_name|default:invoice.sale.client.name|escapejs }}"
-                                    data-client-phone="{{ invoice.sale.client.phone|default:''|escapejs }}"
-                                    data-client-email="{{ invoice.sale.client.email|default:''|escapejs }}"
-                                    data-total="{{ invoice.sale.formatted_total_price|escapejs }}"
-                                    data-balance="{{ invoice.formatted_balance_due|escapejs }}"
+                                    data-invoice-number="{{ invoice.invoice_number }}"
+                                    data-client-name="{{ invoice.sale.client.shop_name|default:invoice.sale.client.name }}"
+                                    data-client-phone="{{ invoice.sale.client.phone|default:'' }}"
+                                    data-client-email="{{ invoice.sale.client.email|default:'' }}"
+                                    data-total="{{ invoice.sale.formatted_total_price }}"
+                                    data-balance="{{ invoice.formatted_balance_due }}"
                                     data-is-paid="{% if invoice.status == 'paid' %}true{% else %}false{% endif %}"
                                     data-pdf-url="{% url 'invoice_pdf' invoice.id %}"
                                     data-send-email-url="{% url 'send_invoice_email' invoice.id %}"
-                                    data-company-name="{{ company_name|escapejs }}"
+                                    data-send-whatsapp-url="{% url 'send_invoice_whatsapp' invoice.id %}"
+                                    data-company-name="{{ company_name }}"
                                     data-date="{{ invoice.issued_date|date:'d/m/Y' }}">📤 Partager</button>
+                            {% if invoice.whatsapp_status_label %}
+                            <span class="status-pill" style="background: rgba(16,185,129,0.15); color: #10B981; font-size:11px;" title="Statut WhatsApp Meta">{{ invoice.whatsapp_status_label }}</span>
+                            {% endif %}
                             {% if invoice.status != "paid" and invoice.balance_due > 0 %}
                             <button type="button" class="btn btn-ghost btn-sm pay-invoice-btn"
                                     data-invoice-id="{{ invoice.id }}"
@@ -768,9 +772,11 @@
         if (!phone) return '';
         let p = String(phone).trim().replace(/[\s\-\(\)\.]/g, '');
         if (p.startsWith('+')) p = p.substring(1);
-        if (/^(70|75|76|77|78)\d{7}$/.test(p)) {
-            p = '221' + p;
-        }
+        if (p.startsWith('00')) p = p.substring(2);
+        if (p.length >= 11 && !p.startsWith('0')) return p;
+        if (p.length === 8 && /^[0567]\d{7}$/.test(p)) return '226' + p;
+        if (p.length === 9 && /^(70|75|76|77|78)\d{7}$/.test(p)) return '221' + p;
+        if (p.length === 10 && /^(01|05|07)\d{8}$/.test(p)) return '225' + p;
         return p;
     }
 
@@ -828,6 +834,7 @@
                 isPaid: this.dataset.isPaid === 'true',
                 pdfUrl: this.dataset.pdfUrl,
                 sendEmailUrl: this.dataset.sendEmailUrl,
+                sendWhatsAppUrl: this.dataset.sendWhatsappUrl,
                 companyName: this.dataset.companyName,
                 date: this.dataset.date
             });
@@ -837,61 +844,132 @@
     document.getElementById('adminShareWhatsAppBtn').addEventListener('click', async function() {
         if (!activeAdminShareData) return;
         const feedback = document.getElementById('adminShareWhatsAppFeedback');
+        const btn = document.getElementById('adminShareWhatsAppBtn');
         feedback.style.display = 'block';
         feedback.style.color = '#94A3B8';
-        feedback.textContent = 'Préparation du message...';
+        feedback.textContent = 'Connexion à WhatsApp...';
 
         const rawPhone = document.getElementById('adminShareWhatsAppPhone').value;
         const phone = cleanWhatsAppPhone(rawPhone);
 
-        let text = `Bonjour ${activeAdminShareData.clientName},\n\n`;
-        text += `Voici votre facture *${activeAdminShareData.invoiceNumber}* émise le ${activeAdminShareData.date} par *${activeAdminShareData.companyName}*.\n\n`;
-        text += `• Montant total : *${activeAdminShareData.totalPrice}*\n`;
-        if (activeAdminShareData.isPaid) {
-            text += `• Statut : *Payée en totalité* ✅\n\n`;
-        } else {
-            text += `• Reste à payer : *${activeAdminShareData.balanceDue}*\n\n`;
-        }
-        text += `Facture commerciale compacte A5 jointe.\nMerci pour votre confiance !`;
+        btn.disabled = true;
+        const oldText = btn.textContent;
+        btn.textContent = 'Envoi…';
 
-        if (navigator.share && navigator.canShare) {
+        async function triggerManualAdminFallbackShare() {
+            btn.disabled = true;
+            feedback.style.display = 'block';
+            feedback.style.color = '#94A3B8';
+            feedback.textContent = 'Préparation du partage...';
+
+            let text = `Bonjour ${activeAdminShareData.clientName},\n\n`;
+            text += `Voici votre facture *${activeAdminShareData.invoiceNumber}* émise le ${activeAdminShareData.date} par *${activeAdminShareData.companyName}*.\n\n`;
+            text += `• Montant total : *${activeAdminShareData.totalPrice}*\n`;
+            if (activeAdminShareData.isPaid) {
+                text += `• Statut : *Payée en totalité* ✅\n\n`;
+            } else {
+                text += `• Reste à payer : *${activeAdminShareData.balanceDue}*\n\n`;
+            }
+            text += `Facture commerciale compacte A5 jointe.\nMerci pour votre confiance !`;
+
+            const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+            // Sur mobile uniquement : partage natif qui attache directement le PDF
+            if (isMobile && navigator.share && navigator.canShare) {
+                try {
+                    const resp = await fetch(activeAdminShareData.pdfUrl, { credentials: 'same-origin' });
+                    const cType = resp.headers.get('content-type') || '';
+                    if (!resp.ok || !cType.includes('pdf')) {
+                        throw new Error('Le serveur n’a pas renvoyé de fichier PDF');
+                    }
+                    const blob = await resp.blob();
+                    const file = new File([blob], `${activeAdminShareData.invoiceNumber}.pdf`, { type: 'application/pdf' });
+                    if (navigator.canShare({ files: [file] })) {
+                        await navigator.share({
+                            title: `Facture ${activeAdminShareData.invoiceNumber}`,
+                            text: text,
+                            files: [file]
+                        });
+                        feedback.style.color = '#10B981';
+                        feedback.textContent = 'Partage ouvert dans votre application.';
+                        btn.disabled = false;
+                        btn.textContent = oldText;
+                        return;
+                    }
+                } catch (err) {
+                    if (err.name === 'AbortError') {
+                        feedback.textContent = 'Partage annulé.';
+                        btn.disabled = false;
+                        btn.textContent = oldText;
+                        return;
+                    }
+                }
+            }
+
+            // Sur PC / Desktop : téléchargement automatique du PDF et ouverture directe de la discussion WhatsApp du client
+            const dlLink = document.createElement('a');
+            dlLink.href = activeAdminShareData.pdfUrl;
+            dlLink.download = `${activeAdminShareData.invoiceNumber}.pdf`;
+            document.body.appendChild(dlLink);
+            dlLink.click();
+            document.body.removeChild(dlLink);
+
+            const waUrl = phone
+                ? `https://wa.me/${phone}?text=${encodeURIComponent(text)}`
+                : `https://wa.me/?text=${encodeURIComponent(text)}`;
+
+            window.open(waUrl, '_blank');
+            feedback.style.color = '#10B981';
+            feedback.textContent = phone
+                ? 'Discussion WhatsApp du client ouverte & PDF téléchargé.'
+                : 'WhatsApp ouvert & PDF téléchargé.';
+            btn.disabled = false;
+            btn.textContent = oldText;
+        }
+
+        // 1. Tentative d'envoi automatique via l'API officielle Meta WhatsApp Cloud si configurée
+        if (activeAdminShareData.sendWhatsAppUrl) {
             try {
-                const resp = await fetch(activeAdminShareData.pdfUrl);
-                const blob = await resp.blob();
-                const file = new File([blob], `${activeAdminShareData.invoiceNumber}.pdf`, { type: 'application/pdf' });
-                if (navigator.canShare({ files: [file] })) {
-                    await navigator.share({
-                        title: `Facture ${activeAdminShareData.invoiceNumber}`,
-                        text: text,
-                        files: [file]
-                    });
+                const formData = new FormData();
+                formData.append('phone', phone);
+                const respApi = await fetch(activeAdminShareData.sendWhatsAppUrl, {
+                    method: 'POST',
+                    body: formData,
+                    headers: { 'X-CSRFToken': csrfToken },
+                    credentials: 'same-origin'
+                });
+                const resJson = await respApi.json();
+
+                if (respApi.ok && resJson.success && resJson.mode === 'cloud_api') {
                     feedback.style.color = '#10B981';
-                    feedback.textContent = 'Partage ouvert dans votre application.';
+                    feedback.textContent = '✅ ' + (resJson.message || 'Facture expédiée via WhatsApp Business !');
+                    btn.disabled = false;
+                    btn.textContent = oldText;
+                    return;
+                }
+
+                if (resJson && resJson.mode === 'cloud_api' && !resJson.success) {
+                    btn.disabled = false;
+                    btn.textContent = oldText;
+                    feedback.style.color = '#EF4444';
+                    const errMsg = resJson.error || 'Erreur lors de l’envoi.';
+                    if (errMsg.includes('131030')) {
+                        feedback.innerHTML = '⚠️ Ce numéro n’est pas encore enregistré dans la liste des numéros autorisés sur Meta for Developers.<br><button type="button" id="useAdminFallbackShareBtn" style="margin-top:6px; background:transparent; border:1px solid rgba(255,255,255,0.2); color:#60A5FA; padding:3px 8px; border-radius:6px; cursor:pointer; font-size:12px;">📲 Utiliser le partage WhatsApp manuel</button>';
+                    } else {
+                        feedback.innerHTML = '❌ ' + errMsg + '<br><button type="button" id="useAdminFallbackShareBtn" style="margin-top:6px; background:transparent; border:1px solid rgba(255,255,255,0.2); color:#60A5FA; padding:3px 8px; border-radius:6px; cursor:pointer; font-size:12px;">📲 Utiliser le partage WhatsApp manuel</button>';
+                    }
+                    document.getElementById('useAdminFallbackShareBtn')?.addEventListener('click', triggerManualAdminFallbackShare);
                     return;
                 }
             } catch (err) {
-                if (err.name === 'AbortError') {
-                    feedback.textContent = 'Partage annulé.';
-                    return;
-                }
+                console.log('Erreur appel API Meta WhatsApp:', err);
             }
         }
 
-        const dlLink = document.createElement('a');
-        dlLink.href = activeAdminShareData.pdfUrl;
-        dlLink.download = `${activeAdminShareData.invoiceNumber}.pdf`;
-        document.body.appendChild(dlLink);
-        dlLink.click();
-        document.body.removeChild(dlLink);
-
-        const waUrl = phone
-            ? `https://wa.me/${phone}?text=${encodeURIComponent(text)}`
-            : `https://wa.me/?text=${encodeURIComponent(text)}`;
-
-        window.open(waUrl, '_blank');
-        feedback.style.color = '#10B981';
-        feedback.textContent = 'Facture PDF téléchargée & redirection WhatsApp lancée.';
+        // 2. Bascule transparente vers Web Share API / wa.me uniquement si le Cloud API n'est pas configuré
+        await triggerManualAdminFallbackShare();
     });
+
 
     document.getElementById('adminShareEmailBtn').addEventListener('click', async function() {
         if (!activeAdminShareData) return;
