@@ -799,5 +799,137 @@ class WhatsAppCloudApiTests(TestCase):
         )
         self.assertEqual(resp.status_code, 404)
 
+    def test_whatsapp_ui_hidden_when_unconfigured(self):
+        """Quand la clé WHATSAPP_TOKEN n'est pas définie dans l'environnement, la section WhatsApp est cachée."""
+        self.client.force_login(self.company)
+        with self.settings(WHATSAPP_TOKEN=''):
+            resp = self.client.get(reverse('list_invoices'))
+            self.assertEqual(resp.status_code, 200)
+            self.assertFalse(resp.context.get('whatsapp_enabled', False))
+            self.assertNotContains(resp, "Partager sur WhatsApp")
+
+    def test_whatsapp_ui_visible_when_token_configured(self):
+        """Quand la clé WHATSAPP_TOKEN est présente dans l'environnement, la section WhatsApp est affichée."""
+        self.client.force_login(self.company)
+        with self.settings(WHATSAPP_TOKEN='test_token_secret_123'):
+            resp = self.client.get(reverse('list_invoices'))
+            self.assertEqual(resp.status_code, 200)
+            self.assertTrue(resp.context.get('whatsapp_enabled', False))
+            self.assertContains(resp, "Partager sur WhatsApp")
+
+
+class AuditSecurityAndDataIntegrityTests(TestCase):
+    def setUp(self):
+        self.User = get_user_model()
+        self.company_a = self.User.objects.create_user(
+            username='company_a@test.com', email='company_a@test.com', password='password123',
+            company_name='Company Alpha', default_currency='EUR'
+        )
+        self.company_b = self.User.objects.create_user(
+            username='company_b@test.com', email='company_b@test.com', password='password123',
+            company_name='Company Beta', default_currency='EUR'
+        )
+        self.client_a = Client.objects.create(company=self.company_a, name='Client A')
+        self.product_a = Product.objects.create(company=self.company_a, name='Product A', price='20.00', stock_quantity=10)
+        self.client_b = Client.objects.create(company=self.company_b, name='Client B')
+
+    def test_cannot_delete_client_with_sales(self):
+        """Un client avec des ventes enregistrées ne peut pas être supprimé (protège l'historique de facturation)."""
+        from .models import Invoice, Payment
+        self.client.force_login(self.company_a)
+        sale = Sale.objects.create(company=self.company_a, client=self.client_a)
+        SaleItem.objects.create(sale=sale, product=self.product_a, quantity=2, unit_price='20.00')
+
+        resp = self.client.post(reverse('delete_client'), {'client_id': self.client_a.id})
+        self.assertEqual(resp.status_code, 400)
+        data = resp.json()
+        self.assertFalse(data['success'])
+        self.assertIn("ventes ou factures lui sont associées", data['error'])
+        self.assertTrue(Client.objects.filter(id=self.client_a.id).exists())
+
+    def test_cannot_delete_product_with_sales(self):
+        """Un produit lié à des ventes passées ne peut pas être supprimé."""
+        self.client.force_login(self.company_a)
+        sale = Sale.objects.create(company=self.company_a, client=self.client_a)
+        SaleItem.objects.create(sale=sale, product=self.product_a, quantity=1, unit_price='20.00')
+
+        resp = self.client.post(reverse('delete_product'), {'product_id': self.product_a.id})
+        self.assertEqual(resp.status_code, 400)
+        data = resp.json()
+        self.assertFalse(data['success'])
+        self.assertIn("ventes, approvisionnements ou chargements", data['error'])
+        self.assertTrue(Product.objects.filter(id=self.product_a.id).exists())
+
+    def test_cannot_delete_supplier_with_supplies(self):
+        """Un fournisseur avec des approvisionnements ne peut pas être supprimé."""
+        from .models import Supplier, Supply
+        supplier = Supplier.objects.create(company=self.company_a, name='Supplier X')
+        Supply.objects.create(company=self.company_a, supplier=supplier)
+
+        self.client.force_login(self.company_a)
+        resp = self.client.post(reverse('delete_supplier'), {'supplier_id': supplier.id})
+        self.assertEqual(resp.status_code, 400)
+        data = resp.json()
+        self.assertFalse(data['success'])
+        self.assertIn("approvisionnements lui sont associés", data['error'])
+        self.assertTrue(Supplier.objects.filter(id=supplier.id).exists())
+
+    def test_cannot_delete_agent_with_stock_or_sales(self):
+        """Un agent détenant du stock ou lié à des ventes ne peut pas être supprimé."""
+        from .models import Agent, AgentStock
+        agent = Agent.objects.create(company=self.company_a, name='Agent Mohamed')
+        AgentStock.objects.create(agent=agent, product=self.product_a, quantity=5, unit_price='20.00')
+
+        self.client.force_login(self.company_a)
+        resp = self.client.post(reverse('delete_agent'), {'agent_id': agent.id})
+        self.assertEqual(resp.status_code, 400)
+        data = resp.json()
+        self.assertFalse(data['success'])
+        self.assertIn("stock personnel", data['error'])
+        self.assertTrue(Agent.objects.filter(id=agent.id).exists())
+
+    def test_cannot_delete_invoice_with_recorded_payments(self):
+        """Une facture ayant des règlements partiels ou complets ne peut pas être supprimée."""
+        from .models import Invoice, Payment
+        from django.utils import timezone
+        sale = Sale.objects.create(company=self.company_a, client=self.client_a)
+        SaleItem.objects.create(sale=sale, product=self.product_a, quantity=2, unit_price='20.00')
+        invoice = Invoice.objects.create(
+            company=self.company_a, sale=sale, invoice_number='FAC-2026-00001',
+            due_date=timezone.now().date(), amount_paid=Decimal('20.00'), status='partial'
+        )
+        Payment.objects.create(invoice=invoice, amount=Decimal('20.00'), note='Acompte')
+
+        self.client.force_login(self.company_a)
+        resp = self.client.post(reverse('delete_invoice'), {'invoice_id': invoice.id})
+        self.assertEqual(resp.status_code, 400)
+        data = resp.json()
+        self.assertFalse(data['success'])
+        self.assertIn("versements ou paiements", data['error'])
+        self.assertTrue(Invoice.objects.filter(id=invoice.id).exists())
+
+    def test_tenant_isolation_on_cross_company_delete(self):
+        """Une entreprise A ne peut pas supprimer un client appartenant à une entreprise B."""
+        self.client.force_login(self.company_a)
+        resp = self.client.post(reverse('delete_client'), {'client_id': self.client_b.id})
+        self.assertEqual(resp.status_code, 200)
+        self.assertTrue(Client.objects.filter(id=self.client_b.id).exists())
+
+    def test_delete_sale_replenishes_vendor_stock_when_agent_sale(self):
+        """Quand une vente réalisée par un vendeur est annulée/supprimée, le stock retourne chez le vendeur."""
+        from .models import Agent, AgentStock
+        agent = Agent.objects.create(company=self.company_a, name='Vendor Ali')
+        agent_stock = AgentStock.objects.create(agent=agent, product=self.product_a, quantity=2, unit_price='20.00')
+        sale = Sale.objects.create(company=self.company_a, client=self.client_a, agent=agent)
+        SaleItem.objects.create(sale=sale, product=self.product_a, quantity=3, unit_price='20.00')
+
+        self.client.force_login(self.company_a)
+        resp = self.client.post(reverse('delete_sale'), {'sale_id': sale.id})
+        self.assertEqual(resp.status_code, 200)
+        agent_stock.refresh_from_db()
+        self.assertEqual(agent_stock.quantity, 5)  # 2 restants + 3 récrédités
+
+
+
 
 

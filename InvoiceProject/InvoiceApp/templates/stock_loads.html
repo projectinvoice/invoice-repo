@@ -111,7 +111,19 @@
             font-size: 13.5px; font-family: 'Inter', sans-serif; outline: none;
         }
         .form-control:focus, .form-select:focus { border-color: var(--indigo); }
-        .form-select { cursor: pointer; }
+        .form-select, select {
+            cursor: pointer;
+            color-scheme: dark;
+        }
+        .form-select option, select option {
+            background-color: #1E293B !important;
+            color: #F8FAFC !important;
+            padding: 8px 12px;
+        }
+        .form-select optgroup, select optgroup {
+            background-color: #0F172A !important;
+            color: #94A3B8 !important;
+        }
         .form-error { color: var(--rose); font-size: 12px; margin-top: 4px; display: none; }
 
         .cart-row { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; }
@@ -529,10 +541,10 @@
         const container = document.getElementById('loadCartContainer');
         const row = document.createElement('div');
         row.className = 'cart-row';
-        const options = PRODUCTS.map(p => `<option value="${p.id}" data-price="${p.price}">${p.name} (stock magasin: ${p.stock})</option>`).join('');
+        const options = PRODUCTS.map(p => `<option value="${p.id}" data-price="${p.price}" style="background-color: #1E293B !important; color: #FFFFFF !important;">${p.name} (stock magasin: ${p.stock})</option>`).join('');
         row.innerHTML = `
-            <select class="form-select load-product" required>
-                <option value="">Produit...</option>
+            <select class="form-select load-product" style="color-scheme: dark !important; background-color: #1E293B !important; color: #FFFFFF !important;" required>
+                <option value="" style="background-color: #1E293B !important; color: #94A3B8 !important;">Produit...</option>
                 ${options}
             </select>
             <input type="number" class="form-control load-qty" min="1" value="${prefill ? prefill.quantity : 1}" required placeholder="Qté">

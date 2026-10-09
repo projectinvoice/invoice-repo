@@ -102,6 +102,7 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'InvoiceApp.context_processors.subscription_context',
+                'InvoiceApp.context_processors.whatsapp_context',
             ],
         },
     },
@@ -243,6 +244,13 @@ SENDGRID_SANDBOX_MODE_IN_DEBUG = os.environ.get('SENDGRID_SANDBOX_MODE_IN_DEBUG'
 SENDGRID_TRACK_EMAIL_OPENS = os.environ.get('SENDGRID_TRACK_EMAIL_OPENS', 'True') == 'True'
 SENDGRID_TRACK_CLICKS_HTML = os.environ.get('SENDGRID_TRACK_CLICKS_HTML', 'True') == 'True'
 SENDGRID_TRACK_CLICKS_PLAIN = os.environ.get('SENDGRID_TRACK_CLICKS_PLAIN', 'True') == 'True'
+
+# Configuration SMTP standard (si EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend')
+EMAIL_HOST = os.environ.get('EMAIL_HOST', 'smtp.gmail.com')
+EMAIL_PORT = int(os.environ.get('EMAIL_PORT', '587'))
+EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', 'True') == 'True'
+EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')
+EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
 
 # Adresse qui reçoit les messages envoyés depuis le formulaire de contact public.
 # Par défaut, identique à DEFAULT_FROM_EMAIL si non précisée.

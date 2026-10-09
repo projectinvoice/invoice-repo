@@ -220,16 +220,21 @@ def vendor_add_sale(request):
         sale = Sale.objects.create(company=company, client=client, agent=agent)
 
         for agent_stock, quantity in items:
-            agent_stock.refresh_from_db(fields=['quantity'])
-            agent_stock.quantity -= quantity
-            agent_stock.save(update_fields=['quantity'])
+            locked_agent_stock = AgentStock.objects.select_for_update().select_related('product').get(id=agent_stock.id)
+            if locked_agent_stock.quantity < quantity:
+                return JsonResponse({
+                    "success": False,
+                    "error": f"Stock insuffisant pour {locked_agent_stock.product.name} (disponible : {locked_agent_stock.quantity})"
+                }, status=400)
+            locked_agent_stock.quantity -= quantity
+            locked_agent_stock.save(update_fields=['quantity'])
 
             SaleItem.objects.create(
                 sale=sale,
-                product=agent_stock.product,
+                product=locked_agent_stock.product,
                 quantity=quantity,
-                unit_price=agent_stock.unit_price,
-                currency=agent_stock.currency,
+                unit_price=locked_agent_stock.unit_price,
+                currency=locked_agent_stock.currency,
             )
 
         sale.save()
@@ -317,17 +322,18 @@ def vendor_add_payment(request):
 
     if amount <= 0:
         return JsonResponse({"success": False, "error": "Le montant doit être supérieur à 0"}, status=400)
-    if amount > invoice.balance_due:
-        return JsonResponse({
-            "success": False,
-            "error": f"Le montant dépasse le solde restant ({invoice.formatted_balance_due})"
-        }, status=400)
-
     with transaction.atomic():
-        Payment.objects.create(invoice=invoice, amount=amount, recorded_by_agent=agent, note="Versement enregistré par le vendeur")
-        invoice.amount_paid += amount
-        invoice.refresh_status()
-        invoice.save(update_fields=['amount_paid', 'status'])
+        locked_invoice = Invoice.objects.select_for_update().select_related('sale').get(id=invoice.id)
+        if amount > locked_invoice.balance_due:
+            return JsonResponse({
+                "success": False,
+                "error": f"Le montant dépasse le solde restant ({locked_invoice.formatted_balance_due})"
+            }, status=400)
+        Payment.objects.create(invoice=locked_invoice, amount=amount, recorded_by_agent=agent, note="Versement enregistré par le vendeur")
+        locked_invoice.amount_paid += amount
+        locked_invoice.refresh_status()
+        locked_invoice.save(update_fields=['amount_paid', 'status'])
+        invoice = locked_invoice
 
     return JsonResponse({
         "success": True,

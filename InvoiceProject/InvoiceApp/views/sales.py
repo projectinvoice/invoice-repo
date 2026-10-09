@@ -177,9 +177,9 @@ def add_sale(request):
     with transaction.atomic():
         if sale:
             for old_item in old_items:
-                old_item.product.refresh_from_db(fields=['stock_quantity'])
-                old_item.product.stock_quantity += old_item.quantity
-                old_item.product.save(update_fields=['stock_quantity'])
+                locked_old_prod = Product.objects.select_for_update().get(id=old_item.product_id)
+                locked_old_prod.stock_quantity += old_item.quantity
+                locked_old_prod.save(update_fields=['stock_quantity'])
             sale.client = client
             sale.agent = agent
             sale.sale_items.all().delete()
@@ -187,13 +187,18 @@ def add_sale(request):
             sale = Sale.objects.create(company=request.user, client=client, agent=agent)
 
         for product, quantity, unit_price, item_currency in items:
-            product.refresh_from_db(fields=['stock_quantity'])
-            product.stock_quantity -= quantity
-            product.save(update_fields=['stock_quantity'])
+            locked_prod = Product.objects.select_for_update().get(id=product.id)
+            if locked_prod.stock_quantity < quantity:
+                return JsonResponse({
+                    "success": False,
+                    "error": f"Stock insuffisant pour {locked_prod.name} (disponible : {locked_prod.stock_quantity})"
+                }, status=400)
+            locked_prod.stock_quantity -= quantity
+            locked_prod.save(update_fields=['stock_quantity'])
 
             SaleItem.objects.create(
                 sale=sale,
-                product=product,
+                product=locked_prod,
                 quantity=quantity,
                 unit_price=unit_price,
                 currency=item_currency,
@@ -249,12 +254,19 @@ def delete_sale(request):
         return JsonResponse({"success": False, "error": "Vente introuvable"}, status=404)
 
     with transaction.atomic():
-        # Recrédite le stock de chaque produit avant de supprimer la vente,
-        # sinon les quantités vendues restent définitivement déduites du stock.
+        # Recrédite le stock selon la provenance (stock vendeur ou magasin central)
         for item in sale.sale_items.select_related('product').all():
-            item.product.refresh_from_db(fields=['stock_quantity'])
-            item.product.stock_quantity += item.quantity
-            item.product.save(update_fields=['stock_quantity'])
+            if sale.agent:
+                agent_stock, _ = AgentStock.objects.select_for_update().get_or_create(
+                    agent=sale.agent, product=item.product,
+                    defaults={'quantity': 0, 'unit_price': item.unit_price, 'currency': item.currency}
+                )
+                agent_stock.quantity += item.quantity
+                agent_stock.save(update_fields=['quantity'])
+            else:
+                locked_product = Product.objects.select_for_update().get(id=item.product.id)
+                locked_product.stock_quantity += item.quantity
+                locked_product.save(update_fields=['stock_quantity'])
         sale.delete()
 
     return JsonResponse({"success": True, "message": "Vente supprimée"})

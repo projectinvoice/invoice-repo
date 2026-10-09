@@ -165,7 +165,24 @@ def delete_agent(request):
     agent_id = request.POST.get("agent_id")
     if not agent_id:
         return JsonResponse({"success": False, "error": "agent_id requis"}, status=400)
-    Agent.objects.filter(id=agent_id, company=request.user).delete()
+    
+    agent = Agent.objects.filter(id=agent_id, company=request.user).first()
+    if not agent:
+        return JsonResponse({"success": True, "message": "Agent supprimé"})
+        
+    if agent.stocks.filter(quantity__gt=0).exists():
+        return JsonResponse({
+            "success": False,
+            "error": f"Impossible de supprimer {agent.name} car il détient encore du stock personnel. Enregistrez d'abord un retour de stock."
+        }, status=400)
+        
+    if agent.stock_loads.exists() or agent.stock_returns.exists() or agent.sales.exists():
+        return JsonResponse({
+            "success": False,
+            "error": f"Impossible de supprimer {agent.name} car des ventes ou chargements de stock lui sont associés dans l'historique."
+        }, status=400)
+        
+    agent.delete()
     return JsonResponse({"success": True, "message": "Agent supprimé"})
 
 

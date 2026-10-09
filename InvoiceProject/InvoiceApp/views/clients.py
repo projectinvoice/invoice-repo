@@ -62,5 +62,16 @@ def delete_client(request):
     client_id = request.POST.get("client_id")
     if not client_id:
         return JsonResponse({"success": False, "error": "client_id requis"}, status=400)
-    Client.objects.filter(id=client_id, company=request.user).delete()
+    
+    client = Client.objects.filter(id=client_id, company=request.user).first()
+    if not client:
+        return JsonResponse({"success": True, "message": "Client supprimé"})
+        
+    if client.sales.exists():
+        return JsonResponse({
+            "success": False,
+            "error": "Impossible de supprimer ce client car des ventes ou factures lui sont associées."
+        }, status=400)
+        
+    client.delete()
     return JsonResponse({"success": True, "message": "Client supprimé"})
