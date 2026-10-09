@@ -204,3 +204,38 @@ html, body {
         width: 250px !important;
     }
 }
+
+/* ── LISIBILITÉ UNIVERSELLE DES MENUS DÉROULANTS (SELECT & OPTIONS) ── */
+select, .form-select, .cart-product, .load-product, .filter-select {
+    color-scheme: dark !important;
+    background-color: #1E293B !important;
+    color: #FFFFFF !important;
+}
+
+option,
+select option,
+.form-select option,
+.cart-product option,
+.load-product option,
+.filter-select option {
+    background-color: #1E293B !important;
+    color: #FFFFFF !important;
+    font-weight: 500 !important;
+    padding: 8px 12px !important;
+}
+
+optgroup,
+select optgroup,
+.form-select optgroup {
+    background-color: #0F172A !important;
+    color: #94A3B8 !important;
+    font-weight: 700 !important;
+}
+
+option:checked,
+option:hover,
+select option:checked,
+.form-select option:checked {
+    background-color: #4F46E5 !important;
+    color: #FFFFFF !important;
+}

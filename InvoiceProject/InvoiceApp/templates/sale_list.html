@@ -313,6 +313,19 @@
             border-color: var(--indigo);
             box-shadow: 0 0 0 3px rgba(99,102,241,0.15);
         }
+        .form-select, select {
+            cursor: pointer;
+            color-scheme: dark;
+        }
+        .form-select option, select option {
+            background-color: #1E293B !important;
+            color: #F8FAFC !important;
+            padding: 8px 12px;
+        }
+        .form-select optgroup, select optgroup {
+            background-color: #0F172A !important;
+            color: #94A3B8 !important;
+        }
         .tabs { display: flex; gap: 6px; margin-bottom: 14px; }
         .tab-btn {
             flex: 1; padding: 8px; border-radius: 10px; text-align: center;
@@ -648,7 +661,7 @@
         const productOptions = [{% for product in products %}{ value: '{{ product.id }}', label: '{{ product.name|escapejs }}', price: '{{ product.price|escapejs }}' }{% if not forloop.last %},{% endif %}{% endfor %}];
         const optionHtml = productOptions.map(option => {
             const selected = String(productId) === String(option.value) ? ' selected' : '';
-            return `<option value="${option.value}"${selected}>${option.label}</option>`;
+            return `<option value="${option.value}"${selected} style="background-color: #1E293B !important; color: #FFFFFF !important;">${option.label}</option>`;
         }).join('');
 
         const productLookup = Object.fromEntries(productOptions.map(option => [String(option.value), option.price || '']));
@@ -656,8 +669,8 @@
         row.innerHTML = `
             <div class="row">
                 <div class="col-md-4">
-                    <select class="form-select" required>
-                        <option value="">Sélectionner un produit...</option>
+                    <select class="form-select" style="color-scheme: dark !important; background-color: #1E293B !important; color: #FFFFFF !important;" required>
+                        <option value="" style="background-color: #1E293B !important; color: #94A3B8 !important;">Sélectionner un produit...</option>
                         ${optionHtml}
                     </select>
                 </div>

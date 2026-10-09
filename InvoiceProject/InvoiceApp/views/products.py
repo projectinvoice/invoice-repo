@@ -83,5 +83,18 @@ def delete_product(request):
     product_id = request.POST.get("product_id")
     if not product_id:
         return JsonResponse({"success": False, "error": "product_id requis"}, status=400)
-    Product.objects.filter(id=product_id, company=request.user).delete()
+    
+    product = Product.objects.filter(id=product_id, company=request.user).first()
+    if not product:
+        return JsonResponse({"success": True, "message": "Produit supprimé"})
+        
+    if (product.sales.exists() or product.sale_items.exists() or
+        product.supply_items.exists() or product.stock_load_items.exists() or
+        product.agent_stocks.filter(quantity__gt=0).exists()):
+        return JsonResponse({
+            "success": False,
+            "error": "Impossible de supprimer ce produit car des ventes, approvisionnements ou chargements de stock y font référence."
+        }, status=400)
+        
+    product.delete()
     return JsonResponse({"success": True, "message": "Produit supprimé"})

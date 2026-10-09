@@ -303,7 +303,19 @@
             outline: none; transition: border-color 0.2s;
         }
         .form-control:focus, .form-select:focus { border-color: var(--indigo); }
-        .form-select { cursor: pointer; }
+        .form-select, select {
+            cursor: pointer;
+            color-scheme: dark;
+        }
+        .form-select option, select option {
+            background-color: #1E293B !important;
+            color: #F8FAFC !important;
+            padding: 8px 12px;
+        }
+        .form-select optgroup, select optgroup {
+            background-color: #0F172A !important;
+            color: #94A3B8 !important;
+        }
         .form-error { color: var(--rose); font-size: 12px; margin-top: 4px; display: none; }
 
         /* ── MODALS ── */

@@ -204,6 +204,19 @@
         .form-label { display: block; margin-bottom: 6px; color: var(--text-secondary); font-size: 13px; font-weight: 600; }
         .form-control, .form-select { width: 100%; background: rgba(255,255,255,0.04); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; color: var(--text-primary); outline: none; }
         .form-control:focus, .form-select:focus { border-color: var(--indigo); box-shadow: 0 0 0 3px rgba(99,102,241,0.15); }
+        .form-select, select {
+            cursor: pointer;
+            color-scheme: dark;
+        }
+        .form-select option, select option {
+            background-color: #1E293B !important;
+            color: #F8FAFC !important;
+            padding: 8px 12px;
+        }
+        .form-select optgroup, select optgroup {
+            background-color: #0F172A !important;
+            color: #94A3B8 !important;
+        }
         .mb-3 { margin-bottom: 14px; }
         .d-flex { display: flex; gap: 10px; flex-wrap: wrap; }
         .alert { padding: 10px 12px; border-radius: 10px; margin-top: 12px; }
@@ -343,7 +356,7 @@
                         <td class="invoice-number">{{ invoice.invoice_number }}</td>
                         <td>
                             {% if invoice.sale %}
-                                <div class="invoice-muted">{{ invoice.sale.client.name }} — {{ invoice.sale.item_names|default:invoice.sale.product.name }}</div>
+                                <div class="invoice-muted">{{ invoice.sale.client.name }} — {{ invoice.sale.item_names }}</div>
                             {% else %}
                                 <span class="invoice-muted">-</span>
                             {% endif %}
@@ -377,7 +390,7 @@
                                     data-send-whatsapp-url="{% url 'send_invoice_whatsapp' invoice.id %}"
                                     data-company-name="{{ company_name }}"
                                     data-date="{{ invoice.issued_date|date:'d/m/Y' }}">📤 Partager</button>
-                            {% if invoice.whatsapp_status_label %}
+                            {% if whatsapp_enabled and invoice.whatsapp_status_label %}
                             <span class="status-pill" style="background: rgba(16,185,129,0.15); color: #10B981; font-size:11px;" title="Statut WhatsApp Meta">{{ invoice.whatsapp_status_label }}</span>
                             {% endif %}
                             {% if invoice.status != "paid" and invoice.balance_due > 0 %}
@@ -428,7 +441,7 @@
                 <select class="form-select" id="sale" name="sale_id" required>
                     <option value="">Sélectionner une vente...</option>
                     {% for sale in sales %}
-                        <option value="{{ sale.id }}">{{ sale.client.name }} — {{ sale.item_names|default:sale.product.name }} ({{ sale.formatted_total_price }})</option>
+                        <option value="{{ sale.id }}">{{ sale.client.name }} — {{ sale.item_names }} ({{ sale.formatted_total_price }})</option>
                     {% endfor %}
                 </select>
             </div>
@@ -542,6 +555,7 @@
                 </a>
             </div>
 
+            {% if whatsapp_enabled %}
             <!-- 2. Partage WhatsApp -->
             <div style="background: rgba(16, 185, 129, 0.05); border: 1px solid rgba(16, 185, 129, 0.25); border-radius: 10px; padding: 12px;">
                 <div style="font-weight: 600; font-size: 13px; color: #10B981; margin-bottom: 4px; display:flex; align-items:center; gap:6px;">
@@ -558,10 +572,11 @@
                 </div>
                 <div id="adminShareWhatsAppFeedback" style="font-size: 11px; display: none; margin-top: 6px;"></div>
             </div>
+            {% endif %}
 
             <!-- 3. Envoi par Email -->
             <div style="background: rgba(56, 189, 248, 0.05); border: 1px solid rgba(56, 189, 248, 0.25); border-radius: 10px; padding: 12px;">
-                <div style="font-weight: 600; font-size: 13px; color: var(--sky); margin-bottom: 4px; display:flex; align-items:center; gap:6px;">
+                <div style="font-weight: 600; font-size: 13px; color: #38BDF8; margin-bottom: 4px; display:flex; align-items:center; gap:6px;">
                     <span>✉️ Envoyer par Email</span>
                 </div>
                 <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">
@@ -569,7 +584,7 @@
                 </div>
                 <div style="display: flex; gap: 8px;">
                     <input type="email" id="adminShareEmailInput" class="form-control" style="font-size: 12.5px; padding: 6px 10px;" placeholder="client@domaine.com">
-                    <button type="button" id="adminShareEmailBtn" class="btn btn-sm" style="background: var(--sky); color: #0F172A; white-space: nowrap; font-weight:700;">
+                    <button type="button" id="adminShareEmailBtn" class="btn btn-sm" style="background: #0284C7; color: #ffffff; white-space: nowrap; font-weight: 600; padding: 7px 16px; border-radius: 6px; border: none; cursor: pointer;">
                         Envoyer
                     </button>
                 </div>
@@ -800,10 +815,13 @@
 
         document.getElementById('adminShareDownloadPdfBtn').href = data.pdfUrl;
 
-        document.getElementById('adminShareWhatsAppPhone').value = data.clientPhone || '';
+        const waPhoneEl = document.getElementById('adminShareWhatsAppPhone');
+        if (waPhoneEl) waPhoneEl.value = data.clientPhone || '';
         const waFeedback = document.getElementById('adminShareWhatsAppFeedback');
-        waFeedback.style.display = 'none';
-        waFeedback.textContent = '';
+        if (waFeedback) {
+            waFeedback.style.display = 'none';
+            waFeedback.textContent = '';
+        }
 
         document.getElementById('adminShareEmailInput').value = data.clientEmail || '';
         const emailFeedback = document.getElementById('adminShareEmailFeedback');
@@ -841,134 +859,149 @@
         });
     });
 
-    document.getElementById('adminShareWhatsAppBtn').addEventListener('click', async function() {
-        if (!activeAdminShareData) return;
-        const feedback = document.getElementById('adminShareWhatsAppFeedback');
-        const btn = document.getElementById('adminShareWhatsAppBtn');
-        feedback.style.display = 'block';
-        feedback.style.color = '#94A3B8';
-        feedback.textContent = 'Connexion à WhatsApp...';
-
-        const rawPhone = document.getElementById('adminShareWhatsAppPhone').value;
-        const phone = cleanWhatsAppPhone(rawPhone);
-
-        btn.disabled = true;
-        const oldText = btn.textContent;
-        btn.textContent = 'Envoi…';
-
-        async function triggerManualAdminFallbackShare() {
-            btn.disabled = true;
-            feedback.style.display = 'block';
-            feedback.style.color = '#94A3B8';
-            feedback.textContent = 'Préparation du partage...';
-
-            let text = `Bonjour ${activeAdminShareData.clientName},\n\n`;
-            text += `Voici votre facture *${activeAdminShareData.invoiceNumber}* émise le ${activeAdminShareData.date} par *${activeAdminShareData.companyName}*.\n\n`;
-            text += `• Montant total : *${activeAdminShareData.totalPrice}*\n`;
-            if (activeAdminShareData.isPaid) {
-                text += `• Statut : *Payée en totalité* ✅\n\n`;
-            } else {
-                text += `• Reste à payer : *${activeAdminShareData.balanceDue}*\n\n`;
+    const adminWaBtn = document.getElementById('adminShareWhatsAppBtn');
+    if (adminWaBtn) {
+        adminWaBtn.addEventListener('click', async function() {
+            if (!activeAdminShareData) return;
+            const feedback = document.getElementById('adminShareWhatsAppFeedback');
+            const btn = adminWaBtn;
+            if (feedback) {
+                feedback.style.display = 'block';
+                feedback.style.color = '#94A3B8';
+                feedback.textContent = 'Connexion à WhatsApp...';
             }
-            text += `Facture commerciale compacte A5 jointe.\nMerci pour votre confiance !`;
 
-            const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+            const rawPhone = document.getElementById('adminShareWhatsAppPhone')?.value || '';
+            const phone = cleanWhatsAppPhone(rawPhone);
 
-            // Sur mobile uniquement : partage natif qui attache directement le PDF
-            if (isMobile && navigator.share && navigator.canShare) {
-                try {
-                    const resp = await fetch(activeAdminShareData.pdfUrl, { credentials: 'same-origin' });
-                    const cType = resp.headers.get('content-type') || '';
-                    if (!resp.ok || !cType.includes('pdf')) {
-                        throw new Error('Le serveur n’a pas renvoyé de fichier PDF');
+            btn.disabled = true;
+            const oldText = btn.textContent;
+            btn.textContent = 'Envoi…';
+
+            async function triggerManualAdminFallbackShare() {
+                btn.disabled = true;
+                if (feedback) {
+                    feedback.style.display = 'block';
+                    feedback.style.color = '#94A3B8';
+                    feedback.textContent = 'Préparation du partage...';
+                }
+
+                let text = `Bonjour ${activeAdminShareData.clientName},\n\n`;
+                text += `Voici votre facture *${activeAdminShareData.invoiceNumber}* émise le ${activeAdminShareData.date} par *${activeAdminShareData.companyName}*.\n\n`;
+                text += `• Montant total : *${activeAdminShareData.totalPrice}*\n`;
+                if (activeAdminShareData.isPaid) {
+                    text += `• Statut : *Payée en totalité* ✅\n\n`;
+                } else {
+                    text += `• Reste à payer : *${activeAdminShareData.balanceDue}*\n\n`;
+                }
+                text += `Facture commerciale compacte A5 jointe.\nMerci pour votre confiance !`;
+
+                const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+                // Sur mobile uniquement : partage natif qui attache directement le PDF
+                if (isMobile && navigator.share && navigator.canShare) {
+                    try {
+                        const resp = await fetch(activeAdminShareData.pdfUrl, { credentials: 'same-origin' });
+                        const cType = resp.headers.get('content-type') || '';
+                        if (!resp.ok || !cType.includes('pdf')) {
+                            throw new Error('Le serveur n’a pas renvoyé de fichier PDF');
+                        }
+                        const blob = await resp.blob();
+                        const file = new File([blob], `${activeAdminShareData.invoiceNumber}.pdf`, { type: 'application/pdf' });
+                        if (navigator.canShare({ files: [file] })) {
+                            await navigator.share({
+                                title: `Facture ${activeAdminShareData.invoiceNumber}`,
+                                text: text,
+                                files: [file]
+                            });
+                            if (feedback) {
+                                feedback.style.color = '#10B981';
+                                feedback.textContent = 'Partage ouvert dans votre application.';
+                            }
+                            btn.disabled = false;
+                            btn.textContent = oldText;
+                            return;
+                        }
+                    } catch (err) {
+                        if (err.name === 'AbortError') {
+                            if (feedback) feedback.textContent = 'Partage annulé.';
+                            btn.disabled = false;
+                            btn.textContent = oldText;
+                            return;
+                        }
                     }
-                    const blob = await resp.blob();
-                    const file = new File([blob], `${activeAdminShareData.invoiceNumber}.pdf`, { type: 'application/pdf' });
-                    if (navigator.canShare({ files: [file] })) {
-                        await navigator.share({
-                            title: `Facture ${activeAdminShareData.invoiceNumber}`,
-                            text: text,
-                            files: [file]
-                        });
-                        feedback.style.color = '#10B981';
-                        feedback.textContent = 'Partage ouvert dans votre application.';
+                }
+
+                // Sur PC / Desktop : téléchargement automatique du PDF et ouverture directe de la discussion WhatsApp du client
+                const dlLink = document.createElement('a');
+                dlLink.href = activeAdminShareData.pdfUrl;
+                dlLink.download = `${activeAdminShareData.invoiceNumber}.pdf`;
+                document.body.appendChild(dlLink);
+                dlLink.click();
+                document.body.removeChild(dlLink);
+
+                const waUrl = phone
+                    ? `https://wa.me/${phone}?text=${encodeURIComponent(text)}`
+                    : `https://wa.me/?text=${encodeURIComponent(text)}`;
+
+                window.open(waUrl, '_blank');
+                if (feedback) {
+                    feedback.style.color = '#10B981';
+                    feedback.textContent = phone
+                        ? 'Discussion WhatsApp du client ouverte & PDF téléchargé.'
+                        : 'WhatsApp ouvert & PDF téléchargé.';
+                }
+                btn.disabled = false;
+                btn.textContent = oldText;
+            }
+
+            // 1. Tentative d'envoi automatique via l'API officielle Meta WhatsApp Cloud si configurée
+            if (activeAdminShareData.sendWhatsAppUrl) {
+                try {
+                    const formData = new FormData();
+                    formData.append('phone', phone);
+                    const respApi = await fetch(activeAdminShareData.sendWhatsAppUrl, {
+                        method: 'POST',
+                        body: formData,
+                        headers: { 'X-CSRFToken': csrfToken },
+                        credentials: 'same-origin'
+                    });
+                    const resJson = await respApi.json();
+
+                    if (respApi.ok && resJson.success && resJson.mode === 'cloud_api') {
+                        if (feedback) {
+                            feedback.style.color = '#10B981';
+                            feedback.textContent = '✅ ' + (resJson.message || 'Facture expédiée via WhatsApp Business !');
+                        }
                         btn.disabled = false;
                         btn.textContent = oldText;
+                        return;
+                    }
+
+                    if (resJson && resJson.mode === 'cloud_api' && !resJson.success) {
+                        btn.disabled = false;
+                        btn.textContent = oldText;
+                        if (feedback) {
+                            feedback.style.color = '#EF4444';
+                            const errMsg = resJson.error || 'Erreur lors de l’envoi.';
+                            if (errMsg.includes('131030')) {
+                                feedback.innerHTML = '⚠️ Ce numéro n’est pas encore enregistré dans la liste des numéros autorisés sur Meta for Developers.<br><button type="button" id="useAdminFallbackShareBtn" style="margin-top:6px; background:transparent; border:1px solid rgba(255,255,255,0.2); color:#60A5FA; padding:3px 8px; border-radius:6px; cursor:pointer; font-size:12px;">📲 Utiliser le partage WhatsApp manuel</button>';
+                            } else {
+                                feedback.innerHTML = '❌ ' + errMsg + '<br><button type="button" id="useAdminFallbackShareBtn" style="margin-top:6px; background:transparent; border:1px solid rgba(255,255,255,0.2); color:#60A5FA; padding:3px 8px; border-radius:6px; cursor:pointer; font-size:12px;">📲 Utiliser le partage WhatsApp manuel</button>';
+                            }
+                            document.getElementById('useAdminFallbackShareBtn')?.addEventListener('click', triggerManualAdminFallbackShare);
+                        }
                         return;
                     }
                 } catch (err) {
-                    if (err.name === 'AbortError') {
-                        feedback.textContent = 'Partage annulé.';
-                        btn.disabled = false;
-                        btn.textContent = oldText;
-                        return;
-                    }
+                    console.log('Erreur appel API Meta WhatsApp:', err);
                 }
             }
 
-            // Sur PC / Desktop : téléchargement automatique du PDF et ouverture directe de la discussion WhatsApp du client
-            const dlLink = document.createElement('a');
-            dlLink.href = activeAdminShareData.pdfUrl;
-            dlLink.download = `${activeAdminShareData.invoiceNumber}.pdf`;
-            document.body.appendChild(dlLink);
-            dlLink.click();
-            document.body.removeChild(dlLink);
-
-            const waUrl = phone
-                ? `https://wa.me/${phone}?text=${encodeURIComponent(text)}`
-                : `https://wa.me/?text=${encodeURIComponent(text)}`;
-
-            window.open(waUrl, '_blank');
-            feedback.style.color = '#10B981';
-            feedback.textContent = phone
-                ? 'Discussion WhatsApp du client ouverte & PDF téléchargé.'
-                : 'WhatsApp ouvert & PDF téléchargé.';
-            btn.disabled = false;
-            btn.textContent = oldText;
-        }
-
-        // 1. Tentative d'envoi automatique via l'API officielle Meta WhatsApp Cloud si configurée
-        if (activeAdminShareData.sendWhatsAppUrl) {
-            try {
-                const formData = new FormData();
-                formData.append('phone', phone);
-                const respApi = await fetch(activeAdminShareData.sendWhatsAppUrl, {
-                    method: 'POST',
-                    body: formData,
-                    headers: { 'X-CSRFToken': csrfToken },
-                    credentials: 'same-origin'
-                });
-                const resJson = await respApi.json();
-
-                if (respApi.ok && resJson.success && resJson.mode === 'cloud_api') {
-                    feedback.style.color = '#10B981';
-                    feedback.textContent = '✅ ' + (resJson.message || 'Facture expédiée via WhatsApp Business !');
-                    btn.disabled = false;
-                    btn.textContent = oldText;
-                    return;
-                }
-
-                if (resJson && resJson.mode === 'cloud_api' && !resJson.success) {
-                    btn.disabled = false;
-                    btn.textContent = oldText;
-                    feedback.style.color = '#EF4444';
-                    const errMsg = resJson.error || 'Erreur lors de l’envoi.';
-                    if (errMsg.includes('131030')) {
-                        feedback.innerHTML = '⚠️ Ce numéro n’est pas encore enregistré dans la liste des numéros autorisés sur Meta for Developers.<br><button type="button" id="useAdminFallbackShareBtn" style="margin-top:6px; background:transparent; border:1px solid rgba(255,255,255,0.2); color:#60A5FA; padding:3px 8px; border-radius:6px; cursor:pointer; font-size:12px;">📲 Utiliser le partage WhatsApp manuel</button>';
-                    } else {
-                        feedback.innerHTML = '❌ ' + errMsg + '<br><button type="button" id="useAdminFallbackShareBtn" style="margin-top:6px; background:transparent; border:1px solid rgba(255,255,255,0.2); color:#60A5FA; padding:3px 8px; border-radius:6px; cursor:pointer; font-size:12px;">📲 Utiliser le partage WhatsApp manuel</button>';
-                    }
-                    document.getElementById('useAdminFallbackShareBtn')?.addEventListener('click', triggerManualAdminFallbackShare);
-                    return;
-                }
-            } catch (err) {
-                console.log('Erreur appel API Meta WhatsApp:', err);
-            }
-        }
-
-        // 2. Bascule transparente vers Web Share API / wa.me uniquement si le Cloud API n'est pas configuré
-        await triggerManualAdminFallbackShare();
-    });
+            // 2. Bascule transparente vers Web Share API / wa.me uniquement si le Cloud API n'est pas configuré
+            await triggerManualAdminFallbackShare();
+        });
+    }
 
 
     document.getElementById('adminShareEmailBtn').addEventListener('click', async function() {

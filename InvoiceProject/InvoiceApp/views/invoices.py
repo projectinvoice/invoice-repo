@@ -84,7 +84,18 @@ def delete_invoice(request):
     invoice_id = request.POST.get("invoice_id")
     if not invoice_id:
         return JsonResponse({"success": False, "error": "invoice_id requis"}, status=400)
-    Invoice.objects.filter(id=invoice_id, company=request.user).delete()
+    
+    invoice = Invoice.objects.filter(id=invoice_id, company=request.user).first()
+    if not invoice:
+        return JsonResponse({"success": True, "message": "Facture supprimée"})
+        
+    if invoice.amount_paid > 0 or invoice.payments.exists():
+        return JsonResponse({
+            "success": False,
+            "error": "Impossible de supprimer une facture ayant des versements ou paiements enregistrés."
+        }, status=400)
+        
+    invoice.delete()
     return JsonResponse({"success": True, "message": "Facture supprimée"})
 
 
@@ -108,19 +119,21 @@ def record_invoice_payment(request):
 
     if amount <= 0:
         return JsonResponse({"success": False, "error": "Le montant doit être supérieur à 0"}, status=400)
-    if amount > invoice.balance_due:
-        return JsonResponse({
-            "success": False,
-            "error": f"Le montant dépasse le solde restant ({invoice.formatted_balance_due})"
-        }, status=400)
 
     note = request.POST.get("note", "")
 
     with transaction.atomic():
-        Payment.objects.create(invoice=invoice, amount=amount, note=note)
-        invoice.amount_paid += amount
-        invoice.refresh_status()
-        invoice.save(update_fields=['amount_paid', 'status'])
+        locked_invoice = Invoice.objects.select_for_update().select_related('sale').get(id=invoice.id)
+        if amount > locked_invoice.balance_due:
+            return JsonResponse({
+                "success": False,
+                "error": f"Le montant dépasse le solde restant ({locked_invoice.formatted_balance_due})"
+            }, status=400)
+        Payment.objects.create(invoice=locked_invoice, amount=amount, note=note)
+        locked_invoice.amount_paid += amount
+        locked_invoice.refresh_status()
+        locked_invoice.save(update_fields=['amount_paid', 'status'])
+        invoice = locked_invoice
 
     return JsonResponse({
         "success": True,
@@ -495,7 +508,12 @@ def _send_invoice_email_core(invoice, recipient_email, custom_message=""):
         email_msg.send(fail_silently=False)
         return True, f"Facture envoyée avec succès par email à {recipient_email}."
     except Exception as e:
-        return False, f"Échec de l'envoi de l'email : {str(e)}"
+        err_msg = str(e)
+        if "401" in err_msg or "Unauthorized" in err_msg:
+            err_msg = "Clé API d'envoi d'emails invalide, révoquée ou expirée (SendGrid 401 Unauthorized). Veuillez renouveler votre SENDGRID_API_KEY."
+        elif "Connection refused" in err_msg:
+            err_msg = "Impossible de joindre le serveur d'envoi d'emails. Vérifiez la connexion réseau."
+        return False, f"Échec de l'envoi de l'email : {err_msg}"
 
 
 @require_http_methods(["POST"])

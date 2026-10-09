@@ -76,7 +76,18 @@ def delete_supplier(request):
     supplier_id = request.POST.get("supplier_id")
     if not supplier_id:
         return JsonResponse({"success": False, "error": "supplier_id requis"}, status=400)
-    Supplier.objects.filter(id=supplier_id, company=request.user).delete()
+    
+    supplier = Supplier.objects.filter(id=supplier_id, company=request.user).first()
+    if not supplier:
+        return JsonResponse({"success": True, "message": "Fournisseur supprimé"})
+        
+    if supplier.supplies.exists():
+        return JsonResponse({
+            "success": False,
+            "error": "Impossible de supprimer ce fournisseur car des approvisionnements lui sont associés."
+        }, status=400)
+        
+    supplier.delete()
     return JsonResponse({"success": True, "message": "Fournisseur supprimé"})
 
 
