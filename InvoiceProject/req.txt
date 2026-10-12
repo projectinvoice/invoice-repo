@@ -1,8 +1,10 @@
 asgiref==3.11.1
+boto3==1.43.111
 certifi==2026.7.22
 charset-normalizer==3.4.9
 dj-database-url==2.3.0
 Django==6.0.6
+django-storages==1.14.6
 git-filter-repo==2.47.0
 gunicorn==23.0.0
 idna==3.19

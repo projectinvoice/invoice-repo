@@ -176,23 +176,85 @@ STATIC_URL = 'static/'
 # (obligatoire en production ; sert de racine à WhiteNoise).
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
-STORAGES = {
-    "default": {
-        "BACKEND": "django.core.files.storage.FileSystemStorage",
-    },
-    "staticfiles": {
-        # Compression gzip/brotli avec fallback silencieux si le manifeste n'est pas généré (ex: tests).
-        "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage",
-    },
-}
+# ═══════════════════════════════════════════════════════════════
+# Stockage des fichiers médias (Cloudflare R2 / S3 compatible)
+# ═══════════════════════════════════════════════════════════════
+# En production sur Render (disque éphémère), Cloudflare R2 permet de
+# conserver durablement les images des produits et les logos d'entreprise.
+# Si les variables d'environnement R2 ne sont pas configurées (ex: en local),
+# le système bascule automatiquement et de manière transparente sur le
+# stockage local FileSystemStorage.
 
-# Media files (upload d'images pour logo et produits)
-# ⚠️ Comme pour SQLite, ces fichiers uploadés sont perdus à chaque déploiement sur un
-# Web Service Render standard (disque éphémère). Pour les conserver durablement, montez
-# un "Persistent Disk" Render sur MEDIA_ROOT, ou migrez vers un stockage externe
-# (Cloudinary, S3, etc.). Dites-le-moi si vous voulez que je mette ça en place.
-MEDIA_URL = '/media/'
+CLOUDFLARE_R2_BUCKET_NAME = os.environ.get('CLOUDFLARE_R2_BUCKET_NAME')
+CLOUDFLARE_R2_ACCOUNT_ID = os.environ.get('CLOUDFLARE_R2_ACCOUNT_ID')
+CLOUDFLARE_R2_ACCESS_KEY_ID = os.environ.get('CLOUDFLARE_R2_ACCESS_KEY_ID') or os.environ.get('AWS_ACCESS_KEY_ID')
+CLOUDFLARE_R2_SECRET_ACCESS_KEY = os.environ.get('CLOUDFLARE_R2_SECRET_ACCESS_KEY') or os.environ.get('AWS_SECRET_ACCESS_KEY')
+CLOUDFLARE_R2_CUSTOM_DOMAIN = os.environ.get('CLOUDFLARE_R2_CUSTOM_DOMAIN')
+CLOUDFLARE_R2_ENDPOINT_URL = os.environ.get('CLOUDFLARE_R2_ENDPOINT_URL')
+
+# Nettoyage du domaine personnalisé si renseigné avec http(s)://
+if CLOUDFLARE_R2_CUSTOM_DOMAIN:
+    CLOUDFLARE_R2_CUSTOM_DOMAIN = (
+        CLOUDFLARE_R2_CUSTOM_DOMAIN.replace('https://', '')
+        .replace('http://', '')
+        .strip('/')
+    )
+
+# Construction automatique de l'endpoint R2 standard si seul l'Account ID est fourni
+if not CLOUDFLARE_R2_ENDPOINT_URL and CLOUDFLARE_R2_ACCOUNT_ID:
+    CLOUDFLARE_R2_ENDPOINT_URL = f"https://{CLOUDFLARE_R2_ACCOUNT_ID}.r2.cloudflarestorage.com"
+
+USE_CLOUDFLARE_R2 = bool(
+    CLOUDFLARE_R2_BUCKET_NAME
+    and CLOUDFLARE_R2_ACCESS_KEY_ID
+    and CLOUDFLARE_R2_SECRET_ACCESS_KEY
+    and CLOUDFLARE_R2_ENDPOINT_URL
+)
+
+# Configuration du stockage local par défaut
 MEDIA_ROOT = BASE_DIR / 'media'
+MEDIA_URL = '/media/'
+
+if USE_CLOUDFLARE_R2:
+    if 'storages' not in INSTALLED_APPS:
+        INSTALLED_APPS.append('storages')
+
+    r2_storage_options = {
+        "access_key": CLOUDFLARE_R2_ACCESS_KEY_ID,
+        "secret_key": CLOUDFLARE_R2_SECRET_ACCESS_KEY,
+        "bucket_name": CLOUDFLARE_R2_BUCKET_NAME,
+        "endpoint_url": CLOUDFLARE_R2_ENDPOINT_URL,
+        "region_name": "auto",
+        "default_acl": None,  # Obligatoire pour Cloudflare R2 (ne supporte pas les ACL S3)
+        "signature_version": "s3v4",
+        "file_overwrite": False,
+        "querystring_auth": False if CLOUDFLARE_R2_CUSTOM_DOMAIN else True,
+        "url_protocol": "https:",
+    }
+    if CLOUDFLARE_R2_CUSTOM_DOMAIN:
+        r2_storage_options["custom_domain"] = CLOUDFLARE_R2_CUSTOM_DOMAIN
+        MEDIA_URL = f"https://{CLOUDFLARE_R2_CUSTOM_DOMAIN}/"
+    else:
+        MEDIA_URL = f"{CLOUDFLARE_R2_ENDPOINT_URL}/{CLOUDFLARE_R2_BUCKET_NAME}/"
+
+    STORAGES = {
+        "default": {
+            "BACKEND": "storages.backends.s3.S3Storage",
+            "OPTIONS": r2_storage_options,
+        },
+        "staticfiles": {
+            "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage",
+        },
+    }
+else:
+    STORAGES = {
+        "default": {
+            "BACKEND": "django.core.files.storage.FileSystemStorage",
+        },
+        "staticfiles": {
+            "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage",
+        },
+    }
 
 # Configuration de l'authentification
 LOGIN_URL = '/login/'
