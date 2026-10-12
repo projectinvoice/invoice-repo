@@ -45,6 +45,7 @@ def add_sale(request):
     if payment_type not in ("full", "credit", "partial"):
         payment_type = "full"
 
+ 
     if not client_id and not new_client_name:
         return JsonResponse({"success": False, "error": "Sélectionnez un client ou renseignez son nom"}, status=400)
 

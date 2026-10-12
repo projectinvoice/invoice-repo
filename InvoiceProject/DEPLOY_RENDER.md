@@ -14,7 +14,7 @@
 
 ⚠️ **Points d'attention propres à Render (disque éphémère) :**
 - **SQLite** : ne pas l'utiliser en prod, il serait effacé à chaque déploiement → utilisez la base **Postgres** (gratuite) créée par `render.yaml`.
-- **Fichiers médias** (logos d'entreprise, images produits uploadés via `ImageField`) : eux aussi perdus à chaque déploiement sur un Web Service standard. Pour les rendre durables, deux options — un **Persistent Disk** Render (payant, simple) ou un stockage externe type **Cloudinary/S3** (gratuit, plus robuste). Dites-moi si vous voulez que je mette en place l'une des deux.
+- **Fichiers médias** (logos d'entreprise, images produits) : désormais gérés via **Cloudflare R2** (compatible S3, sans frais de bande passante). Consultez le fichier `README.md` pour le guide pas-à-pas de configuration.
 
 ## Étapes de déploiement
 

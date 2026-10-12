@@ -221,9 +221,22 @@ def _build_invoice_pdf_bytes(invoice):
     logo_drawn = False
     logo_w = 15 * mm
     logo_h = 15 * mm
-    if company.logo and hasattr(company.logo, 'path'):
+    if company.logo:
         try:
-            p.drawImage(company.logo.path, margin_left, top - logo_h, width=logo_w, height=logo_h,
+            logo_src = None
+            try:
+                logo_src = company.logo.path
+            except (AttributeError, NotImplementedError, ValueError):
+                logo_src = None
+
+            if not logo_src:
+                import io
+                from reportlab.lib.utils import ImageReader
+                company.logo.open('rb')
+                logo_src = ImageReader(io.BytesIO(company.logo.read()))
+                company.logo.close()
+
+            p.drawImage(logo_src, margin_left, top - logo_h, width=logo_w, height=logo_h,
                         preserveAspectRatio=True, mask='auto')
             logo_drawn = True
         except Exception:
