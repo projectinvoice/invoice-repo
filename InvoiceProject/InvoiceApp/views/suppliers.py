@@ -11,7 +11,7 @@ def list_suppliers(request):
     suppliers = user.suppliers.all()
     context = {
         'company_name': user.company_name,
-        'company_logo_url': user.logo.url if user.logo else None,
+        'company_logo_url': user.logo_url,
         'suppliers': suppliers,
     }
     return render(request, 'supplier_list.html', context)
@@ -26,7 +26,7 @@ def list_supplies(request):
     products = user.products.all()
     context = {
         'company_name': user.company_name,
-        'company_logo_url': user.logo.url if user.logo else None,
+        'company_logo_url': user.logo_url,
         'supplies': supplies,
         'suppliers': suppliers,
         'products': products,

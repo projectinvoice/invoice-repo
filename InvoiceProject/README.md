@@ -90,11 +90,11 @@ Par défaut, les buckets R2 sont privés. Pour que vos utilisateurs et le naviga
 4. Cliquez sur **Add Environment Variable** (ou **Add from .env**) et ajoutez :
 
 ```ini
-CLOUDFLARE_R2_BUCKET_NAME = smart-invoice-media
-CLOUDFLARE_R2_ACCOUNT_ID = <votre_account_id_cloudflare>
-CLOUDFLARE_R2_ACCESS_KEY_ID = <votre_access_key_id>
-CLOUDFLARE_R2_SECRET_ACCESS_KEY = <votre_secret_access_key>
-CLOUDFLARE_R2_CUSTOM_DOMAIN = pub-xxxxxxxxxxxx.r2.dev
+CLOUDFLARE_R2_BUCKET_NAME=smart-invoice-media
+CLOUDFLARE_R2_ACCOUNT_ID=<votre_account_id_cloudflare>
+CLOUDFLARE_R2_ACCESS_KEY_ID=<votre_access_key_id>
+CLOUDFLARE_R2_SECRET_ACCESS_KEY=<votre_secret_access_key>
+CLOUDFLARE_R2_CUSTOM_DOMAIN=pub-xxxxxxxxxxxx.r2.dev
 ```
 
 *(Si vous utilisez un domaine personnalisé type `media.votredomaine.com`, mettez-le dans `CLOUDFLARE_R2_CUSTOM_DOMAIN`)*.

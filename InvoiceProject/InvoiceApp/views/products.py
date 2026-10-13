@@ -11,7 +11,7 @@ def list_products(request):
     products = user.products.all()
     context = {
         'company_name': user.company_name,
-        'company_logo_url': user.logo.url if user.logo else None,
+        'company_logo_url': user.logo_url,
         'products': products,
     }
     return render(request, 'product_list.html', context)
@@ -50,31 +50,51 @@ def add_product(request):
     if stock_quantity < 0:
         return JsonResponse({"success": False, "error": "La quantité en stock ne peut pas être négative"}, status=400)
 
-    if product_id:
-        try:
-            product = Product.objects.get(id=product_id, company=request.user)
-            product.name = name
-            product.description = description
-            product.price = price
-            product.currency = currency
-            product.stock_quantity = stock_quantity
-            if image:
-                product.image = image
-            product.save()
-            return JsonResponse({"success": True, "message": "Produit modifié", "product_id": product.id})
-        except Product.DoesNotExist:
-            return JsonResponse({"success": False, "error": "Produit non trouvé"}, status=404)
-    else:
-        product = Product.objects.create(
-            company=request.user,
-            name=name,
-            description=description,
-            price=price,
-            currency=currency,
-            stock_quantity=stock_quantity,
-            image=image,
-        )
-        return JsonResponse({"success": True, "message": "Produit créé", "product_id": product.id})
+    if image:
+        if image.size > 5 * 1024 * 1024:
+            return JsonResponse({"success": False, "error": "L'image du produit est trop volumineuse (maximum 5 Mo)."}, status=400)
+        allowed_extensions = ('.png', '.jpg', '.jpeg', '.webp')
+        if not any(image.name.lower().endswith(ext) for ext in allowed_extensions):
+            return JsonResponse({"success": False, "error": "Format d'image non supporté. Formats acceptés : PNG, JPG, JPEG, WEBP."}, status=400)
+
+    try:
+        if product_id:
+            try:
+                product = Product.objects.get(id=product_id, company=request.user)
+                product.name = name
+                product.description = description
+                product.price = price
+                product.currency = currency
+                product.stock_quantity = stock_quantity
+                if image:
+                    product.image = image
+                product.save()
+                return JsonResponse({"success": True, "message": "Produit modifié", "product_id": product.id})
+            except Product.DoesNotExist:
+                return JsonResponse({"success": False, "error": "Produit non trouvé"}, status=404)
+        else:
+            product = Product.objects.create(
+                company=request.user,
+                name=name,
+                description=description,
+                price=price,
+                currency=currency,
+                stock_quantity=stock_quantity,
+                image=image,
+            )
+            return JsonResponse({"success": True, "message": "Produit créé", "product_id": product.id})
+    except Exception as e:
+        logger.exception("Erreur lors de l'enregistrement du produit: %s", e)
+        err_lower = str(e).lower()
+        if any(k in err_lower for k in ("accessdenied", "invalidaccesskey", "signaturedoesnotmatch")):
+            msg = "Erreur de stockage distant (Cloudflare R2) : identifiants S3 invalides ou permissions insuffisantes (Object Read & Write requis)."
+        elif "nosuchbucket" in err_lower:
+            msg = "Erreur de stockage distant (Cloudflare R2) : le bucket spécifié est introuvable."
+        elif any(k in err_lower for k in ("ssl", "endpoint", "connection", "nodename")):
+            msg = "Erreur de connexion au stockage distant (Cloudflare R2) : impossible de joindre le serveur. Vérifiez l'Account ID et l'endpoint."
+        else:
+            msg = f"Erreur lors de l'enregistrement du produit : {str(e)}"
+        return JsonResponse({"success": False, "error": msg}, status=400)
 
 
 @require_http_methods(["POST"])

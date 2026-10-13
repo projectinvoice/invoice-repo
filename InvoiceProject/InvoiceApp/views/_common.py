@@ -10,8 +10,10 @@ import uuid
 from datetime import datetime, timedelta
 from decimal import Decimal, InvalidOperation
 from functools import wraps
-
+import logging
 import requests as http_requests
+
+logger = logging.getLogger(__name__)
 
 from django.conf import settings
 from django.shortcuts import render, redirect

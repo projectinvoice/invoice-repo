@@ -15,7 +15,7 @@ def list_invoices(request):
     sales = user.sales.select_related('client', 'product').prefetch_related('sale_items__product').all()
     context = {
         'company_name': user.company_name,
-        'company_logo_url': user.logo.url if user.logo else None,
+        'company_logo_url': user.logo_url,
         'invoices': invoices,
         'sales': sales,
     }
