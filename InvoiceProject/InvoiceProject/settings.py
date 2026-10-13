@@ -185,12 +185,17 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 # le système bascule automatiquement et de manière transparente sur le
 # stockage local FileSystemStorage.
 
-CLOUDFLARE_R2_BUCKET_NAME = os.environ.get('CLOUDFLARE_R2_BUCKET_NAME')
-CLOUDFLARE_R2_ACCOUNT_ID = os.environ.get('CLOUDFLARE_R2_ACCOUNT_ID')
-CLOUDFLARE_R2_ACCESS_KEY_ID = os.environ.get('CLOUDFLARE_R2_ACCESS_KEY_ID') or os.environ.get('AWS_ACCESS_KEY_ID')
-CLOUDFLARE_R2_SECRET_ACCESS_KEY = os.environ.get('CLOUDFLARE_R2_SECRET_ACCESS_KEY') or os.environ.get('AWS_SECRET_ACCESS_KEY')
-CLOUDFLARE_R2_CUSTOM_DOMAIN = os.environ.get('CLOUDFLARE_R2_CUSTOM_DOMAIN')
-CLOUDFLARE_R2_ENDPOINT_URL = os.environ.get('CLOUDFLARE_R2_ENDPOINT_URL')
+def _clean_r2_env(val):
+    if not val:
+        return ''
+    return str(val).strip().strip('"\'').strip()
+
+CLOUDFLARE_R2_BUCKET_NAME = _clean_r2_env(os.environ.get('CLOUDFLARE_R2_BUCKET_NAME'))
+CLOUDFLARE_R2_ACCOUNT_ID = _clean_r2_env(os.environ.get('CLOUDFLARE_R2_ACCOUNT_ID'))
+CLOUDFLARE_R2_ACCESS_KEY_ID = _clean_r2_env(os.environ.get('CLOUDFLARE_R2_ACCESS_KEY_ID') or os.environ.get('AWS_ACCESS_KEY_ID'))
+CLOUDFLARE_R2_SECRET_ACCESS_KEY = _clean_r2_env(os.environ.get('CLOUDFLARE_R2_SECRET_ACCESS_KEY') or os.environ.get('AWS_SECRET_ACCESS_KEY'))
+CLOUDFLARE_R2_CUSTOM_DOMAIN = _clean_r2_env(os.environ.get('CLOUDFLARE_R2_CUSTOM_DOMAIN'))
+CLOUDFLARE_R2_ENDPOINT_URL = _clean_r2_env(os.environ.get('CLOUDFLARE_R2_ENDPOINT_URL'))
 
 # Nettoyage du domaine personnalisé si renseigné avec http(s)://
 if CLOUDFLARE_R2_CUSTOM_DOMAIN:
@@ -200,8 +205,19 @@ if CLOUDFLARE_R2_CUSTOM_DOMAIN:
         .strip('/')
     )
 
+# Nettoyage de l'Account ID si l'utilisateur a copié l'URL complète
+if CLOUDFLARE_R2_ACCOUNT_ID:
+    CLOUDFLARE_R2_ACCOUNT_ID = (
+        CLOUDFLARE_R2_ACCOUNT_ID.replace('https://', '')
+        .replace('http://', '')
+        .replace('.r2.cloudflarestorage.com', '')
+        .strip('/')
+    )
+
 # Construction automatique de l'endpoint R2 standard si seul l'Account ID est fourni
-if not CLOUDFLARE_R2_ENDPOINT_URL and CLOUDFLARE_R2_ACCOUNT_ID:
+if CLOUDFLARE_R2_ENDPOINT_URL:
+    CLOUDFLARE_R2_ENDPOINT_URL = CLOUDFLARE_R2_ENDPOINT_URL.rstrip('/')
+elif CLOUDFLARE_R2_ACCOUNT_ID:
     CLOUDFLARE_R2_ENDPOINT_URL = f"https://{CLOUDFLARE_R2_ACCOUNT_ID}.r2.cloudflarestorage.com"
 
 USE_CLOUDFLARE_R2 = bool(
@@ -227,6 +243,7 @@ if USE_CLOUDFLARE_R2:
         "region_name": "auto",
         "default_acl": None,  # Obligatoire pour Cloudflare R2 (ne supporte pas les ACL S3)
         "signature_version": "s3v4",
+        "addressing_style": "path",  # Obligatoire pour Cloudflare R2 (certificat SSL wildcard *.r2.cloudflarestorage.com)
         "file_overwrite": False,
         "querystring_auth": False if CLOUDFLARE_R2_CUSTOM_DOMAIN else True,
         "url_protocol": "https:",

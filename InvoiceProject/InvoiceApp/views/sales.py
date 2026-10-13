@@ -19,7 +19,7 @@ def list_sales(request):
     agents = user.agents.all()
     context = {
         'company_name': user.company_name,
-        'company_logo_url': user.logo.url if user.logo else None,
+        'company_logo_url': user.logo_url,
         'sales': sales,
         'clients': clients,
         'products': products,

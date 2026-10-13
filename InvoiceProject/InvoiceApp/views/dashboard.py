@@ -111,7 +111,7 @@ def dashboard(request):
 
     context = {
         'company_name': user.company_name,
-        'company_logo_url': user.logo.url if user.logo else None,
+        'company_logo_url': user.logo_url,
         'agents_count': user.agents.count(),
         'agent_roles_count': user.agent_roles.count(),
         'engines_count': user.engines.count(),

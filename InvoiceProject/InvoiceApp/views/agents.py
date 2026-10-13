@@ -11,7 +11,7 @@ def manage_agent_roles(request):
     agent_roles = user.agent_roles.all()
     context = {
         'company_name': user.company_name,
-        'company_logo_url': user.logo.url if user.logo else None,
+        'company_logo_url': user.logo_url,
         'agent_roles': agent_roles,
     }
     return render(request, 'agent_roles_manage.html', context)
@@ -24,7 +24,7 @@ def list_agents(request):
     agents = user.agents.all()
     context = {
         'company_name': user.company_name,
-        'company_logo_url': user.logo.url if user.logo else None,
+        'company_logo_url': user.logo_url,
         'agents': agents,
         'roles': user.agent_roles.all(),
         'engines': user.engines.all(),
@@ -40,7 +40,7 @@ def list_engines(request):
     engines = user.engines.all()
     context = {
         'company_name': user.company_name,
-        'company_logo_url': user.logo.url if user.logo else None,
+        'company_logo_url': user.logo_url,
         'engines': engines,
     }
     return render(request, 'engine_list.html', context)

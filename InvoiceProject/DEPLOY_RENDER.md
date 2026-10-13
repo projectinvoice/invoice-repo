@@ -56,6 +56,11 @@ Vérifiez que `db.sqlite3` et `media/` ne sont **pas** commités (le `.gitignore
 | `MONEYFUSION_API_URL` | si vous utilisez les abonnements payants |
 | `SITE_BASE_URL` | `https://votre-app.onrender.com` |
 | `EMAIL_*` | si vous voulez de vrais emails de réinitialisation de mot de passe (sinon ils restent dans les logs) |
+| `CLOUDFLARE_R2_BUCKET_NAME` | nom du bucket Cloudflare R2 (ex: `smart-invoice-media`) pour le stockage persistant des logos/images |
+| `CLOUDFLARE_R2_ACCOUNT_ID` | Identifiant de compte Cloudflare (32 caractères) |
+| `CLOUDFLARE_R2_ACCESS_KEY_ID` | Clé d'accès du jeton API R2 (permissions Object Read & Write requises) |
+| `CLOUDFLARE_R2_SECRET_ACCESS_KEY` | Clé secrète du jeton API R2 (64 caractères) |
+| `CLOUDFLARE_R2_CUSTOM_DOMAIN` | Domaine public R2 (ex: `pub-xxxxxxxxxxxx.r2.dev`) pour afficher les logos/images |
 
 ### 4. Premier déploiement
 Render build automatiquement à chaque push. Suivez les logs : `pip install` → `collectstatic` → `migrate` → démarrage de `gunicorn`.

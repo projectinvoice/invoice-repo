@@ -17,7 +17,7 @@ def list_stock_loads(request):
 
     context = {
         'company_name': user.company_name,
-        'company_logo_url': user.logo.url if user.logo else None,
+        'company_logo_url': user.logo_url,
         'agents': agents,
         'products': products,
         'engines': engines,

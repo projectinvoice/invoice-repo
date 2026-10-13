@@ -11,7 +11,7 @@ def list_clients(request):
     clients = user.clients.all()
     context = {
         'company_name': user.company_name,
-        'company_logo_url': user.logo.url if user.logo else None,
+        'company_logo_url': user.logo_url,
         'clients': clients,
     }
     return render(request, 'client_list.html', context)

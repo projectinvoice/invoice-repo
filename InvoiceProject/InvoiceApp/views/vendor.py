@@ -108,7 +108,7 @@ def vendor_dashboard(request):
     context = {
         'agent': agent,
         'company_name': agent.company.company_name,
-        'company_logo_url': agent.company.logo.url if agent.company.logo else None,
+        'company_logo_url': agent.company.logo_url,
         'agent_stocks': agent_stocks,
         'clients': clients,
         'sales': recent_sales,

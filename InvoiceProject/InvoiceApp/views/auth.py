@@ -104,18 +104,38 @@ def register_company(request):
         if subscription_plan not in dict(SUBSCRIPTION_PLAN_CHOICES).keys():
             subscription_plan = "monthly"
 
-        user = User.objects.create_user(
-            username=email,
-            email=email,
-            password=password,
-            company_name=company_name,
-            company_email=email,
-            phone=phone,
-            address=address,
-            default_currency=default_currency,
-            logo=logo,
-            is_active=False,
-        )
+        if logo:
+            if logo.size > 2 * 1024 * 1024:
+                return JsonResponse({"success": False, "error": "Le fichier du logo est trop volumineux (maximum 2 Mo)."}, status=400)
+            allowed_extensions = ('.png', '.jpg', '.jpeg', '.webp', '.svg')
+            if not any(logo.name.lower().endswith(ext) for ext in allowed_extensions):
+                return JsonResponse({"success": False, "error": "Format d'image non supporté. Formats acceptés : PNG, JPG, JPEG, WEBP, SVG."}, status=400)
+
+        try:
+            user = User.objects.create_user(
+                username=email,
+                email=email,
+                password=password,
+                company_name=company_name,
+                company_email=email,
+                phone=phone,
+                address=address,
+                default_currency=default_currency,
+                logo=logo,
+                is_active=False,
+            )
+        except Exception as e:
+            logger.exception("Erreur lors de la création de l'entreprise ou de l'upload du logo: %s", e)
+            err_lower = str(e).lower()
+            if any(k in err_lower for k in ("accessdenied", "invalidaccesskey", "signaturedoesnotmatch")):
+                msg = "Erreur de stockage distant (Cloudflare R2) : identifiants S3 invalides ou permissions insuffisantes (Object Read & Write requis)."
+            elif "nosuchbucket" in err_lower:
+                msg = "Erreur de stockage distant (Cloudflare R2) : le bucket spécifié est introuvable."
+            elif any(k in err_lower for k in ("ssl", "endpoint", "connection", "nodename")):
+                msg = "Erreur de connexion au stockage distant (Cloudflare R2) : impossible de joindre le serveur. Vérifiez l'Account ID et l'endpoint."
+            else:
+                msg = f"Erreur lors de la création du compte : {str(e)}"
+            return JsonResponse({"success": False, "error": msg}, status=400)
         Subscription.objects.create(
             company=user,
             plan=subscription_plan,

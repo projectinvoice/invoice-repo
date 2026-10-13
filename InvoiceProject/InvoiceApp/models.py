@@ -125,6 +125,16 @@ class User(AbstractUser):
             if not User.objects.filter(agent_login_code=code).exists():
                 return code
 
+    @property
+    def logo_url(self):
+        """Retourne l'URL du logo de manière sécurisée (aucun crash si stockage indisponible)."""
+        if not self.logo:
+            return None
+        try:
+            return self.logo.url
+        except Exception:
+            return None
+
     def __str__(self):
         return self.company_name
 
@@ -209,6 +219,16 @@ class Product(models.Model):
     currency = models.CharField(max_length=3, choices=CURRENCY_CHOICES, default='EUR', verbose_name="Devise")
     stock_quantity = models.PositiveIntegerField(default=0, verbose_name="Quantité en stock")
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="Date de création")
+
+    @property
+    def image_url(self):
+        """Retourne l'URL de l'image de manière sécurisée (aucun crash si stockage indisponible)."""
+        if not self.image:
+            return None
+        try:
+            return self.image.url
+        except Exception:
+            return None
 
     def __str__(self):
         return f"{self.name} ({self.company.company_name})"
