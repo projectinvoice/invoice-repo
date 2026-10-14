@@ -27,7 +27,7 @@ def contact(request):
         if not name or not email or not message:
             error = "Merci de renseigner votre nom, votre email et votre message."
         else:
-            full_subject = f"[Contact InvoiceApp] {subject}" if subject else "[Contact InvoiceApp] Nouveau message"
+            full_subject = f"[Contact {settings.PLATFORM_NAME}] {subject}" if subject else f"[Contact {settings.PLATFORM_NAME}] Nouveau message"
             body = (
                 f"Nouveau message depuis le formulaire de contact public.\n\n"
                 f"Nom : {name}\n"

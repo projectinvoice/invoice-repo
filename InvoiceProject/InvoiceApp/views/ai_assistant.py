@@ -328,7 +328,7 @@ AI_FUNCTION_DECLARATIONS = [
 ]
 
 
-AI_SYSTEM_PROMPT = """Tu es l'assistant IA intégré à InvoiceApp, une application de facturation et de gestion \
+AI_SYSTEM_PROMPT = """Tu es l'assistant IA intégré à {platform_name}, une application de facturation et de gestion \
 commerciale. Tu discutes actuellement avec l'entreprise « {company_name} » (devise par défaut : {currency}), \
 connectée à son propre tableau de bord. La date du jour est {today}.
 
@@ -398,6 +398,7 @@ def ai_chat_api(request):
 
     company = request.user
     system_text = AI_SYSTEM_PROMPT.format(
+        platform_name=settings.PLATFORM_NAME,
         company_name=company.company_name,
         currency=getattr(company, 'default_currency', 'EUR'),
         today=timezone.now().date().isoformat(),

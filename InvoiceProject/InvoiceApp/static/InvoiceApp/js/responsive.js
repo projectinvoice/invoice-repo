@@ -1,5 +1,5 @@
 /**
- * SMART INVOICE — GESTION DE LA NAVIGATION MOBILE RESPONSIVE
+ * GESTION DE LA NAVIGATION MOBILE RESPONSIVE
  * Gère l'ouverture, la fermeture et le focus de la sidebar mobile et overlay.
  */
 document.addEventListener('DOMContentLoaded', function () {

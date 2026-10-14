@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Confidentialité — InvoiceApp</title>
+    <title>Confidentialité — {{ platform_name }}</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
         :root {
@@ -92,7 +92,7 @@
         <div class="header-inner">
             <a href="{% url 'landing' %}" class="brand">
                 <div class="brand-mark">📦</div>
-                InvoiceApp
+                {{ platform_name }}
             </a>
             <div class="header-actions">
                 <a href="{% url 'login' %}" class="btn btn-ghost">Se connecter</a>
@@ -113,7 +113,7 @@
             </div>
 
             <h2>1. Données que nous collectons</h2>
-            <p>Dans le cadre de l'utilisation d'InvoiceApp, nous traitons les catégories de données suivantes :</p>
+            <p>Dans le cadre de l'utilisation de {{ platform_name }}, nous traitons les catégories de données suivantes :</p>
             <table>
                 <tr><th>Catégorie</th><th>Exemples</th></tr>
                 <tr><td>Compte entreprise</td><td>Nom de l'entreprise, email, mot de passe (chiffré), logo</td></tr>
@@ -134,7 +134,7 @@
             </ul>
 
             <h2>3. Isolation entre entreprises (multi-tenant)</h2>
-            <p>InvoiceApp héberge plusieurs entreprises clientes sur la même plateforme. Chaque entreprise n'a accès qu'à ses propres données (clients, ventes, stock, factures) : des contrôles techniques dédiés garantissent qu'aucune entreprise ne peut consulter ou modifier les données d'une autre.</p>
+            <p>{{ platform_name }} héberge plusieurs entreprises clientes sur la même plateforme. Chaque entreprise n'a accès qu'à ses propres données (clients, ventes, stock, factures) : des contrôles techniques dédiés garantissent qu'aucune entreprise ne peut consulter ou modifier les données d'une autre.</p>
 
             <h2>4. Assistant IA</h2>
             <p>Si votre entreprise active l'assistant conversationnel intégré, certaines données commerciales (ventes, produits, clients) peuvent être transmises à l'API de génération de texte utilisée pour formuler ses réponses, uniquement dans le cadre de vos échanges avec l'assistant. Cette fonctionnalité est optionnelle et désactivable.</p>
@@ -170,7 +170,7 @@
         <div class="wrap">
             <div class="footer-grid">
                 <div class="footer-brand">
-                    <div class="brand"><div class="brand-mark">📦</div> InvoiceApp</div>
+                    <div class="brand"><div class="brand-mark">📦</div> {{ platform_name }}</div>
                     <p>La plateforme de gestion commerciale pensée pour les PME et leurs équipes terrain.</p>
                 </div>
                 <div class="footer-col">
@@ -193,7 +193,7 @@
                 </div>
             </div>
             <div class="footer-bottom">
-                <span>&copy; 2026 InvoiceApp. Tous droits réservés.</span>
+                <span>&copy; 2026 {{ platform_name }}. Tous droits réservés.</span>
                 <div class="legal-links">
                     <a href="{% url 'terms_of_service' %}">Conditions d'utilisation</a>
                     <a href="{% url 'privacy_policy' %}">Confidentialité</a>

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Contact — InvoiceApp</title>
+    <title>Contact — {{ platform_name }}</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
         :root {
@@ -100,7 +100,7 @@
         <div class="header-inner">
             <a href="{% url 'landing' %}" class="brand">
                 <div class="brand-mark">📦</div>
-                InvoiceApp
+                {{ platform_name }}
             </a>
             <div class="header-actions">
                 <a href="{% url 'login' %}" class="btn btn-ghost">Se connecter</a>
@@ -174,7 +174,7 @@
         <div class="wrap">
             <div class="footer-grid">
                 <div class="footer-brand">
-                    <div class="brand"><div class="brand-mark">📦</div> InvoiceApp</div>
+                    <div class="brand"><div class="brand-mark">📦</div> {{ platform_name }}</div>
                     <p>La plateforme de gestion commerciale pensée pour les PME et leurs équipes terrain.</p>
                 </div>
                 <div class="footer-col">
@@ -197,7 +197,7 @@
                 </div>
             </div>
             <div class="footer-bottom">
-                <span>&copy; 2026 InvoiceApp. Tous droits réservés.</span>
+                <span>&copy; 2026 {{ platform_name }}. Tous droits réservés.</span>
                 <div class="legal-links">
                     <a href="{% url 'terms_of_service' %}">Conditions d'utilisation</a>
                     <a href="{% url 'privacy_policy' %}">Confidentialité</a>

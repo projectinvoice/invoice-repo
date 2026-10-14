@@ -1,5 +1,5 @@
 // /**
-//  * Assistant IA flottant — InvoiceApp
+//  * Assistant IA flottant
 //  * Injecte un bouton flottant + un panneau de chat sur la page courante.
 //  * La conversation (historique brut envoyé à Gemini + bulles affichées)
 //  * est conservée dans sessionStorage : elle survit à la navigation entre
@@ -27,7 +27,7 @@
 //             hash = ((hash << 5) - hash) + token.charCodeAt(i);
 //             hash |= 0;
 //         }
-//         return 'ia_invoiceapp_conv_' + Math.abs(hash);
+//         return 'ia_conv_' + Math.abs(hash);
 //     }
 
 //     // ─────────────────────────────────────────────────────────

@@ -63,6 +63,17 @@ if RENDER_EXTERNAL_HOSTNAME:
     CSRF_TRUSTED_ORIGINS.append(f'https://{RENDER_EXTERNAL_HOSTNAME}')
 
 
+# ═══════════════════════════════════════════════════════════════
+# Identité de la plateforme (nom + slogan)
+# ═══════════════════════════════════════════════════════════════
+# Valeurs lues dans les variables d'environnement, disponibles dans tous les
+# templates via {{ platform_name }} et {{ platform_slogan }}, et dans le code
+# Python via settings.PLATFORM_NAME / settings.PLATFORM_SLOGAN.
+# Pour renommer la plateforme : modifiez ces variables (ex: sur Render) puis redéployez.
+PLATFORM_NAME = os.environ.get('PLATFORM_NAME', '').strip() or 'MerchandBlock'
+PLATFORM_SLOGAN = os.environ.get('PLATFORM_SLOGAN', '').strip() or 'Facturation & Gestion de Stock pour PME'
+
+
 # Application definition
 
 INSTALLED_APPS = [
@@ -103,6 +114,7 @@ TEMPLATES = [
                 'django.contrib.messages.context_processors.messages',
                 'InvoiceApp.context_processors.subscription_context',
                 'InvoiceApp.context_processors.whatsapp_context',
+                'InvoiceApp.context_processors.platform_context',
             ],
         },
     },

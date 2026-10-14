@@ -34,3 +34,14 @@ def whatsapp_context(request):
         'whatsapp_enabled': bool(str(token).strip()),
     }
 
+
+def platform_context(request):
+    """
+    Injecte l'identité de la plateforme (nom et slogan) dans tous les templates.
+    Les valeurs viennent des variables d'environnement PLATFORM_NAME et PLATFORM_SLOGAN
+    (voir settings.py) : {{ platform_name }} et {{ platform_slogan }}.
+    """
+    return {
+        'platform_name': settings.PLATFORM_NAME,
+        'platform_slogan': settings.PLATFORM_SLOGAN,
+    }

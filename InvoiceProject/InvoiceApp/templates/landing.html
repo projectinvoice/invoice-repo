@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>InvoiceApp — Facturation & Gestion de Stock pour PME</title>
+    <title>{{ platform_name }} — {{ platform_slogan }}</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
 
@@ -344,7 +344,7 @@
         <div class="header-inner">
             <a href="{% url 'landing' %}" class="brand" style="text-decoration:none;">
                 <div class="brand-mark">📦</div>
-                InvoiceApp
+                {{ platform_name }}
             </a>
 
             <nav class="desktop-nav">
@@ -523,7 +523,7 @@
     <section class="section reveal">
         <div class="wrap benefits-wrap">
             <div>
-                <span class="section-kicker">Pourquoi InvoiceApp</span>
+                <span class="section-kicker">Pourquoi {{ platform_name }}</span>
                 <h2 style="font-size:30px;font-weight:800;margin-bottom:20px;">Pensé pour les équipes qui n'ont pas de temps à perdre</h2>
                 <div class="benefit-list">
                     <div class="benefit-item">
@@ -579,7 +579,7 @@
         <div class="wrap">
             <div class="section-head">
                 <span class="section-kicker">Avis clients</span>
-                <h2>Ils gèrent déjà leur activité avec InvoiceApp</h2>
+                <h2>Ils gèrent déjà leur activité avec {{ platform_name }}</h2>
             </div>
 
             <div class="testimonials-grid">
@@ -625,7 +625,7 @@
         <div class="wrap">
             <div class="footer-grid">
                 <div class="footer-brand">
-                    <div class="brand"><div class="brand-mark">📦</div> InvoiceApp</div>
+                    <div class="brand"><div class="brand-mark">📦</div> {{ platform_name }}</div>
                     <p>La plateforme de gestion commerciale pensée pour les PME et leurs équipes terrain.</p>
                 </div>
                 <div class="footer-col">
@@ -650,7 +650,7 @@
             </div>
 
             <div class="footer-bottom">
-                <span>&copy; 2026 InvoiceApp. Tous droits réservés.</span>
+                <span>&copy; 2026 {{ platform_name }}. Tous droits réservés.</span>
                 <div class="legal-links">
                     <a href="{% url 'terms_of_service' %}">Conditions d'utilisation</a>
                     <a href="{% url 'privacy_policy' %}">Confidentialité</a>

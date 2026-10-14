@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tarifs & Abonnements — Smart Invoice</title>
+    <title>Tarifs & Abonnements — {{ platform_name }}</title>
     <link rel="stylesheet" href="{% static 'InvoiceApp/css/responsive.css' %}">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
@@ -322,7 +322,7 @@
         <div class="header-inner">
             <a href="{% url 'landing' %}" class="brand">
                 <div class="brand-mark">📦</div>
-                Smart Invoice
+                {{ platform_name }}
             </a>
 
             <nav class="desktop-nav">
@@ -480,7 +480,7 @@
             <div class="currency-notice-icon">ℹ️</div>
             <div>
                 <strong>Information sur la facturation multidevise :</strong>
-                Les tarifs de référence officiels de Smart Invoice sont fixés en <strong>Franc CFA (XOF)</strong>.
+                Les tarifs de référence officiels de {{ platform_name }} sont fixés en <strong>Franc CFA (XOF)</strong>.
                 Pour votre confort, l'équivalence indicative dans les autres devises (EUR, USD) est calculée sur la base des taux de référence officiels.
                 Les paiements en ligne et Mobile Money sont traités via MoneyFusion au tarif officiel de référence en FCFA.
             </div>
@@ -564,7 +564,7 @@
         <!-- ══════════════════════════════════ FAQ ══════════════════════════════════ -->
         <section class="faq-section">
             <h2 class="faq-title">Foire aux questions (FAQ)</h2>
-            <p class="faq-sub">Tout ce que vous devez savoir sur le fonctionnement des abonnements Smart Invoice.</p>
+            <p class="faq-sub">Tout ce que vous devez savoir sur le fonctionnement des abonnements {{ platform_name }}.</p>
 
             <div class="faq-list">
                 <!-- Question 1 -->
@@ -614,7 +614,7 @@
                 <div class="faq-card">
                     <div class="faq-q"><span class="faq-q-icon">❓</span> 6. Comment les devises sont-elles gérées ?</div>
                     <div class="faq-a">
-                        Smart Invoice gère trois devises : <strong>XOF (Franc CFA)</strong>, <strong>EUR (€)</strong> et <strong>USD ($)</strong> pour la tenue de vos stocks et de vos factures commerciales.
+                        {{ platform_name }} gère trois devises : <strong>XOF (Franc CFA)</strong>, <strong>EUR (€)</strong> et <strong>USD ($)</strong> pour la tenue de vos stocks et de vos factures commerciales.
                         Pour les abonnements au SaaS, les tarifs de référence sont fixés en <strong>Franc CFA (XOF)</strong>. L'affichage en EUR et USD sur cette page est fourni à titre indicatif selon les taux de parité officiels. Les paiements réels sont exécutés en FCFA via les moyens de paiement locaux (Mobile Money).
                     </div>
                 </div>
@@ -635,7 +635,7 @@
         <div class="wrap">
             <div class="footer-grid">
                 <div class="footer-brand">
-                    <div class="brand"><div class="brand-mark">📦</div> Smart Invoice</div>
+                    <div class="brand"><div class="brand-mark">📦</div> {{ platform_name }}</div>
                     <p>La plateforme de gestion commerciale pensée pour les grossistes, commerçants et dépôts.</p>
                 </div>
                 <div class="footer-col">
@@ -660,7 +660,7 @@
             </div>
 
             <div class="footer-bottom">
-                <div>&copy; 2026 Smart Invoice. Tous droits réservés.</div>
+                <div>&copy; 2026 {{ platform_name }}. Tous droits réservés.</div>
                 <div class="legal-links">
                     <a href="{% url 'terms_of_service' %}">Conditions d'utilisation</a>
                     <a href="{% url 'privacy_policy' %}">Confidentialité</a>
