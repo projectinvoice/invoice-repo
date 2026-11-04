@@ -1,241 +1,141 @@
-/* ═════════════════════════════════════════════════════════════════════════════
-   SMART INVOICE — SYSTÈME RESPONSIVE UNIFIÉ
-   Adapté pour : Mobiles (320px, 375px, 414px), Tablettes (768px, 820px),
-   Laptops (1024px, 1280px) et Desktop (1440px+)
-   ═════════════════════════════════════════════════════════════════════════════ */
+/* ========================================
+   MerchandBlock — Responsive Styles
+   ======================================== */
 
-/* ── PREVENT HORIZONTAL OVERFLOW ── */
-html, body {
-    max-width: 100%;
-    overflow-x: hidden;
-}
-
-/* ── BOUTON TOGGLE HAMBURGER MOBILE ── */
-.sidebar-toggle-btn {
+.mobile-menu-btn {
     display: none;
-    flex-direction: column;
-    justify-content: center;
-    gap: 4px;
-    width: 38px;
-    height: 38px;
-    padding: 8px;
-    background: var(--overlay-2, rgba(255,255,255,0.06));
-    border: 1px solid var(--border, rgba(99, 102, 241, 0.15));
-    border-radius: var(--radius-sm, 10px);
+    position: fixed;
+    top: 12px;
+    left: 14px;
+    z-index: 250;
+    width: 40px;
+    height: 40px;
+    border-radius: 9px;
+    background: #08244B;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: white;
+    font-size: 18px;
     cursor: pointer;
-    flex-shrink: 0;
-}
-.sidebar-toggle-btn span {
-    display: block;
-    width: 100%;
-    height: 2px;
-    background: var(--text-primary, #E2E8F0);
-    border-radius: 2px;
-    transition: transform 0.2s, opacity 0.2s;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 12px rgba(8, 36, 75, 0.28);
+    transition: transform 0.15s ease, background 0.15s ease;
 }
 
-/* ── OVERLAY SOMBRE POUR SIDEBAR MOBILE ── */
+.mobile-menu-btn:hover {
+    background: #0C3166;
+}
+
+.mobile-menu-btn:active {
+    transform: scale(0.95);
+}
+
 .sidebar-overlay {
+    display: none;
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.65);
-    backdrop-filter: blur(3px);
-    -webkit-backdrop-filter: blur(3px);
-    z-index: 998;
-    opacity: 0;
-    visibility: hidden;
-    transition: opacity 0.25s ease, visibility 0.25s ease;
+    background: rgba(8, 20, 44, 0.55);
+    backdrop-filter: blur(2px);
+    z-index: 90;
 }
+
 .sidebar-overlay.active {
-    opacity: 1;
-    visibility: visible;
+    display: block;
 }
 
-/* ── BOUTON FERMER SIDEBAR MOBILE ── */
-.sidebar-close-btn {
-    display: none;
-    background: transparent;
-    border: none;
-    color: var(--text-muted, #64748B);
-    font-size: 24px;
-    cursor: pointer;
-    padding: 4px 8px;
-    line-height: 1;
-    margin-left: auto;
-}
-.sidebar-close-btn:hover {
-    color: var(--text-primary, #E2E8F0);
-}
+/* ========================================
+   MEDIA QUERIES — TABLET & MOBILE (< 992px)
+   ======================================== */
+@media (max-width: 992px) {
+    .mobile-menu-btn {
+        display: flex;
+    }
 
-/* ── TABLEAUX RESPONSIVE UNIFIÉS ── */
-.table-card {
-    max-width: 100%;
-    overflow-x: auto !important;
-    -webkit-overflow-scrolling: touch;
-}
-.table-card table,
-.table-card .table {
-    min-width: 600px;
-}
-
-/* ── MEDIA QUERIES GLOBALES (TABLETTES & MOBILES <= 900px) ── */
-@media (max-width: 900px) {
-    /* Sidebar devient un tiroir latéral accessible au clic */
     .sidebar {
-        position: fixed !important;
-        left: 0 !important;
-        top: 0 !important;
-        bottom: 0 !important;
-        width: 270px !important;
-        max-width: 84vw !important;
-        z-index: 999 !important;
-        transform: translateX(-100%) !important;
-        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
-        box-shadow: 0 0 35px rgba(0,0,0,0.6) !important;
-        display: flex !important;
-    }
-    .sidebar.active {
-        transform: translateX(0) !important;
-    }
-    .sidebar-toggle-btn {
-        display: flex !important;
-    }
-    .sidebar-close-btn {
-        display: block !important;
+        transform: translateX(-100%);
+        transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 8px 0 32px rgba(8, 20, 44, 0.35);
     }
 
-    /* Le contenu principal prend 100% de la largeur */
+    .sidebar.open {
+        transform: translateX(0);
+    }
+
     .main {
         margin-left: 0 !important;
-        width: 100% !important;
-        max-width: 100% !important;
+        width: 100%;
     }
 
-    /* Topbar compacte et organisée */
     .topbar {
-        padding: 12px 16px !important;
+        padding: 12px 16px 12px 64px !important;
+        flex-wrap: wrap;
+        gap: 10px;
     }
+
     .topbar-title {
         font-size: 15px !important;
     }
-    .topbar-sub {
-        font-size: 11px !important;
+
+    .topbar-actions {
+        width: 100%;
+        justify-content: flex-start;
+        flex-wrap: wrap;
     }
 
-    /* Padding de contenu adapté */
     .content {
-        padding: 18px 14px !important;
+        padding: 16px !important;
     }
 
-    /* Toolbar / Filtres empilables */
-    .toolbar {
-        flex-direction: column;
-        align-items: stretch !important;
-        gap: 10px !important;
+    .kpi-grid,
+    .stats-row {
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)) !important;
+        gap: 12px !important;
     }
-    .search-wrap {
-        width: 100% !important;
-        min-width: 0 !important;
-    }
-}
 
-/* ── MEDIA QUERIES MOBILES <= 640px ── */
-@media (max-width: 640px) {
-    /* Modales adaptées à l'écran mobile */
-    .modal-overlay {
-        padding: 12px !important;
-        align-items: flex-end !important; /* style sheet bottom sur mobile pour facilité au pouce */
+    .charts-row,
+    .bottom-row,
+    .grid-2,
+    .settings-grid,
+    .form-row {
+        grid-template-columns: 1fr !important;
     }
+
+    .card,
+    .table-card {
+        overflow-x: auto;
+    }
+
+    table {
+        min-width: 600px;
+    }
+
     .modal-content,
     .modal-box {
-        padding: 20px 16px !important;
-        max-width: 100% !important;
-        width: 100% !important;
-        margin: 0 !important;
-        border-radius: var(--radius, 16px) var(--radius, 16px) 12px 12px !important;
-        max-height: 90vh !important;
+        width: 95% !important;
+        padding: 20px !important;
+        margin: 10px;
+        max-height: 90vh;
+        overflow-y: auto;
     }
-    .modal-actions {
-        flex-direction: column-reverse !important;
-        gap: 8px !important;
-    }
-    .modal-actions .btn {
-        width: 100% !important;
-        justify-content: center !important;
+}
+
+@media (max-width: 480px) {
+    .kpi-grid,
+    .stats-row {
+        grid-template-columns: 1fr !important;
     }
 
-    /* Formulaires en grille passent en 1 colonne */
-    .row {
-        flex-direction: column !important;
-        gap: 10px !important;
-    }
-    .col-md-5, .col-md-4, .col-md-3, .col-md-2, .col-md-6 {
-        min-width: 100% !important;
-        flex: 1 1 100% !important;
-    }
-
-    /* Boutons confortables au doigt */
-    .btn {
-        min-height: 38px;
-    }
-
-    /* Topbar actions */
-    .topbar-actions {
-        gap: 6px !important;
-    }
     .topbar-actions .btn {
-        padding: 7px 10px !important;
-        font-size: 12px !important;
+        flex: 1;
+        justify-content: center;
     }
-}
 
-/* ── PETITS MOBILES <= 375px & 320px ── */
-@media (max-width: 375px) {
-    .content {
-        padding: 14px 10px !important;
+    .filter-form {
+        width: 100%;
+        justify-content: space-between;
     }
-    .topbar {
-        padding: 10px 12px !important;
+
+    .filter-select {
+        flex: 1;
     }
-    .topbar-title {
-        font-size: 14px !important;
-    }
-    .sidebar {
-        width: 250px !important;
-    }
-}
-
-/* ── LISIBILITÉ UNIVERSELLE DES MENUS DÉROULANTS (SELECT & OPTIONS) ── */
-select, .form-select, .cart-product, .load-product, .filter-select {
-    color-scheme: dark !important;
-    background-color: #1E293B !important;
-    color: #FFFFFF !important;
-}
-
-option,
-select option,
-.form-select option,
-.cart-product option,
-.load-product option,
-.filter-select option {
-    background-color: #1E293B !important;
-    color: #FFFFFF !important;
-    font-weight: 500 !important;
-    padding: 8px 12px !important;
-}
-
-optgroup,
-select optgroup,
-.form-select optgroup {
-    background-color: #0F172A !important;
-    color: #94A3B8 !important;
-    font-weight: 700 !important;
-}
-
-option:checked,
-option:hover,
-select option:checked,
-.form-select option:checked {
-    background-color: #4F46E5 !important;
-    color: #FFFFFF !important;
 }

@@ -1,433 +1,169 @@
-<!DOCTYPE html>
 {% load static %}
+<!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Factures — {{ company_name }}</title>
+    <title>Factures — {{ company_name }} | MerchandBlock</title>
+    <link rel="stylesheet" href="{% static 'InvoiceApp/css/merchandblock.css' %}">
+    <link rel="stylesheet" href="{% static 'InvoiceApp/css/responsive.css' %}">
+    <script src="{% static 'InvoiceApp/js/merchandblock.js' %}"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
-
-        :root {
-            --bg-base: #0F1629;
-            --bg-card: #1A2238;
-            --bg-card-hover: #1F2A44;
-            --border: rgba(99, 102, 241, 0.15);
-            --indigo: #6366F1;
-            --indigo-light: #818CF8;
-            --emerald: #10B981;
-            --amber: #F59E0B;
-            --rose: #F43F5E;
-            --sky: #38BDF8;
-            --text-primary: #E2E8F0;
-            --text-secondary: #94A3B8;
-            --text-muted: #64748B;
-            --radius: 16px;
-            --radius-sm: 10px;
-            --shadow: 0 4px 24px rgba(0,0,0,0.4);
-        }
-
-        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-
-        body {
-            font-family: 'Inter', sans-serif;
-            background: var(--bg-base);
-            color: var(--text-primary);
-            min-height: 100vh;
-            font-size: 14px;
-            line-height: 1.6;
-        }
-
-        .sidebar {
-            position: fixed; left: 0; top: 0; bottom: 0;
-            width: 240px; background: var(--bg-card);
-            border-right: 1px solid var(--border);
-            display: flex; flex-direction: column; z-index: 100;
-        }
-
-        .sidebar-logo {
-            padding: 24px 20px 20px; border-bottom: 1px solid var(--border);
-            display: flex; align-items: center; gap: 12px;
-        }
-
-        .logo-mark {
-            width: 36px; height: 36px; background: linear-gradient(135deg, var(--indigo), #9333EA);
-            border-radius: 10px; display: flex; align-items: center; justify-content: center;
-            font-size: 18px; font-weight: 800; color: white; flex-shrink: 0;
-        }
-
-        .logo-text { font-size: 15px; font-weight: 700; color: var(--text-primary); }
-
-        .sidebar-nav { flex: 1; padding: 16px 12px; overflow-y: auto; }
-
-        .nav-section-label {
-            font-size: 10px; font-weight: 600; color: var(--text-muted);
-            text-transform: uppercase; letter-spacing: 0.12em; padding: 12px 8px 6px;
-        }
-
-        .nav-item {
-            display: flex; align-items: center; gap: 10px; padding: 9px 12px;
-            border-radius: var(--radius-sm); color: var(--text-secondary);
-            text-decoration: none; font-weight: 500; font-size: 13.5px;
-            transition: all 0.18s; margin-bottom: 2px;
-        }
-
-        .nav-item:hover, .nav-item.active {
-            background: rgba(99, 102, 241, 0.12); color: var(--indigo-light);
-        }
-        .nav-item.active { font-weight: 600; }
-        .nav-item .nav-icon { font-size: 16px; width: 20px; text-align: center; }
-
-        .sidebar-footer { padding: 16px 12px; border-top: 1px solid var(--border); }
-
-        .user-block {
-            display: flex; align-items: center; gap: 10px; padding: 10px;
-            border-radius: var(--radius-sm); background: rgba(255,255,255,0.04);
-        }
-
-        .user-avatar {
-            width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, var(--emerald), #059669);
-            display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; color: white; flex-shrink: 0;
-        }
-        .user-name { font-weight: 600; font-size: 13px; }
-        .user-role { font-size: 11px; color: var(--text-muted); }
-
-        .logout-btn {
-            margin-top: 10px; display: block; text-align: center; padding: 8px;
-            background: rgba(244, 63, 94, 0.1); color: var(--rose);
-            border-radius: var(--radius-sm); text-decoration: none; font-size: 13px; font-weight: 500;
-        }
-        .logout-btn:hover { background: rgba(244, 63, 94, 0.2); }
-
-        .main { margin-left: 240px; min-height: 100vh; display: flex; flex-direction: column; }
-
-        .topbar {
-            background: var(--bg-card); border-bottom: 1px solid var(--border);
-            padding: 14px 32px; display: flex; align-items: center; justify-content: space-between;
-            position: sticky; top: 0; z-index: 50;
-        }
-
-        .topbar-title { font-size: 17px; font-weight: 700; }
-        .topbar-sub { font-size: 12px; color: var(--text-muted); margin-top: 1px; }
-        .topbar-actions { display: flex; gap: 10px; align-items: center; }
-
-        .btn {
-            display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px;
-            border-radius: var(--radius-sm); font-size: 13px; font-weight: 600;
-            cursor: pointer; text-decoration: none; border: none; transition: all 0.2s;
-            font-family: 'Inter', sans-serif;
-        }
-        .btn-primary { background: var(--indigo); color: white; }
-        .btn-primary:hover { background: #5254CC; transform: translateY(-1px); }
-        .btn-ghost {
-            background: rgba(255,255,255,0.06); color: var(--text-secondary);
-            border: 1px solid var(--border);
-        }
-        .btn-ghost:hover { background: rgba(255,255,255,0.1); color: var(--text-primary); }
-        .btn-sm { padding: 6px 12px; font-size: 12px; }
-        .btn-danger-soft {
-            background: rgba(244,63,94,0.1); color: var(--rose);
-            border: 1px solid rgba(244,63,94,0.2);
-        }
-        .btn-danger-soft:hover { background: rgba(244,63,94,0.22); }
-        .btn-edit-soft {
-            background: rgba(99,102,241,0.1); color: var(--indigo-light);
-            border: 1px solid rgba(99,102,241,0.2);
-        }
-        .btn-edit-soft:hover { background: rgba(99,102,241,0.2); }
-
-        .content { padding: 28px 32px; flex: 1; }
-
-        .toolbar { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
-        .search-wrap { position: relative; flex: 1; min-width: 220px; }
-        .search-icon {
-            position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
-            color: var(--text-muted); font-size: 15px; pointer-events: none;
-        }
-        .search-input {
-            width: 100%; background: var(--bg-card); border: 1px solid var(--border);
-            border-radius: var(--radius-sm); padding: 9px 14px 9px 36px; color: var(--text-primary);
-            font-size: 13px; outline: none; transition: border-color 0.2s;
-        }
-        .search-input::placeholder { color: var(--text-muted); }
-        .search-input:focus { border-color: var(--indigo); }
-
-        .table-card {
-            background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius);
-            box-shadow: var(--shadow); overflow: hidden;
-        }
-
-        .table { width: 100%; border-collapse: collapse; }
-        .table th {
-            background: rgba(255,255,255,0.04); color: var(--text-secondary); text-align: left;
-            padding: 12px 16px; font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
-        }
-        .table td {
-            padding: 14px 16px; border-top: 1px solid var(--border); color: var(--text-primary); vertical-align: middle;
-        }
-        .invoice-row:hover { background: var(--bg-card-hover); }
-        .invoice-number { font-weight: 700; color: var(--sky); }
-        .invoice-muted { color: var(--text-secondary); font-size: 12px; }
+        .invoice-number { font-weight: 700; color: var(--mb-navy); font-family: 'Plus Jakarta Sans', sans-serif; }
+        [data-theme="dark"] .invoice-number { color: var(--mb-orange-light); }
+        .invoice-muted { font-size: 13px; color: var(--text-secondary); }
         .status-pill {
-            display: inline-block; padding: 4px 8px; border-radius: 999px; font-size: 11px; font-weight: 700;
-            text-transform: uppercase; letter-spacing: 0.05em;
+            display: inline-flex; align-items: center; padding: 3px 10px;
+            border-radius: 6px; font-size: 11.5px; font-weight: 600;
         }
-        .status-pending { background: rgba(245, 158, 11, 0.16); color: #FCD34D; }
-        .status-partial { background: rgba(56, 189, 248, 0.16); color: #7DD3FC; }
-        .status-paid { background: rgba(16, 185, 129, 0.16); color: #A7F3D0; }
-        .status-overdue { background: rgba(244, 63, 94, 0.16); color: #FECACA; }
-        .empty-state { padding: 24px; text-align: center; color: var(--text-secondary); }
-
-        .modal-overlay {
-            position: fixed; inset: 0; background: rgba(0, 0, 0, 0.7); display: none;
-            align-items: center; justify-content: center; z-index: 1000; padding: 24px;
-        }
-        .modal-overlay.show { display: flex; }
-        .modal-content {
-            background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius);
-            padding: 28px; max-width: 640px; width: 100%; max-height: 85vh; overflow-y: auto;
-            box-shadow: var(--shadow); animation: slideIn 0.25s ease;
-        }
-        @keyframes slideIn { from { transform: translateY(-20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-        .close-btn { float: right; font-size: 28px; font-weight: bold; color: var(--text-muted); cursor: pointer; }
-        .close-btn:hover { color: var(--text-primary); }
-
-        .modal-box { text-align: center; max-width: 420px; }
-        .modal-icon { font-size: 36px; margin-bottom: 12px; }
-        .modal-title { font-size: 17px; font-weight: 700; }
-        .modal-msg { font-size: 13.5px; color: var(--text-secondary); margin-bottom: 24px; line-height: 1.7; }
-        .modal-msg strong { color: var(--text-primary); }
-        .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 8px; }
-        .btn-danger-solid { background: var(--rose); color: white; border: none; }
-        .btn-danger-solid:hover { background: #e0294a; }
-
-        .form-label { display: block; margin-bottom: 6px; color: var(--text-secondary); font-size: 13px; font-weight: 600; }
-        .form-control, .form-select { width: 100%; background: rgba(255,255,255,0.04); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; color: var(--text-primary); outline: none; }
-        .form-control:focus, .form-select:focus { border-color: var(--indigo); box-shadow: 0 0 0 3px rgba(99,102,241,0.15); }
-        .form-select, select {
-            cursor: pointer;
-            color-scheme: dark;
-        }
-        .form-select option, select option {
-            background-color: #1E293B !important;
-            color: #F8FAFC !important;
-            padding: 8px 12px;
-        }
-        .form-select optgroup, select optgroup {
-            background-color: #0F172A !important;
-            color: #94A3B8 !important;
-        }
+        .status-paid { background: var(--emerald-bg); color: var(--emerald); }
+        .status-pending { background: var(--amber-bg); color: var(--amber); }
+        .status-partial { background: var(--sky-bg); color: var(--sky); }
+        .status-overdue { background: var(--rose-bg); color: var(--rose); }
         .mb-3 { margin-bottom: 14px; }
         .d-flex { display: flex; gap: 10px; flex-wrap: wrap; }
-        .alert { padding: 10px 12px; border-radius: 10px; margin-top: 12px; }
-        .alert-success { background: rgba(16,185,129,0.15); color: #A7F3D0; }
-        .alert-danger { background: rgba(244,63,94,0.15); color: #FECACA; }
-
-        @media (max-width: 900px) {
-            .main { margin-left: 0; }
-            .topbar { padding: 12px 16px; }
-            .content { padding: 16px 12px; }
+        .share-summary-box {
+            background: var(--bg-subtle);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 14px;
+            margin-bottom: 16px;
+        }
+        .share-channel-box {
+            background: var(--bg-subtle);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 12px 14px;
         }
     </style>
-    <link rel="stylesheet" href="{% static 'InvoiceApp/css/responsive.css' %}">
 </head>
 <body>
 
-<div class="sidebar">
-    <div class="sidebar-logo">
-        {% if company_logo_url %}
-        <img src="{{ company_logo_url }}" alt="Logo" style="width:36px;height:36px;object-fit:contain;border-radius:10px;background:#fff;padding:4px;">
-        {% else %}
-        <div class="logo-mark">{{ company_name|first|upper }}</div>
-        {% endif %}
-        <div class="logo-text">{{ company_name }}</div>
-        <button type="button" class="sidebar-close-btn" id="sidebarCloseBtn" aria-label="Fermer le menu">&times;</button>
-    </div>
-
-    <nav class="sidebar-nav">
-        <div class="nav-section-label">Général</div>
-        <a href="{% url 'dashboard' %}" class="nav-item">
-            <span class="nav-icon">📊</span> Tableau de bord
-        </a>
-
-        <div class="nav-section-label">Gestion</div>
-        <a href="{% url 'list_agents' %}" class="nav-item">
-            <span class="nav-icon">👥</span> Agents
-        </a>
-        <a href="{% url 'manage_agent_roles' %}" class="nav-item">
-            <span class="nav-icon">🎭</span> Rôles
-        </a>
-        <a href="{% url 'list_engines' %}" class="nav-item">
-            <span class="nav-icon">⚙️</span> Engins
-        </a>
-        <a href="{% url 'list_stock_loads' %}" class="nav-item">
-            <span class="nav-icon">🚚</span> Stock Vendeurs
-        </a>
-        <a href="{% url 'list_products' %}" class="nav-item">
-            <span class="nav-icon">📦</span> Produits
-        </a>
-
-        <div class="nav-section-label">Commerce</div>
-        <a href="{% url 'list_clients' %}" class="nav-item">
-            <span class="nav-icon">🤝</span> Clients
-        </a>
-        <a href="{% url 'list_suppliers' %}" class="nav-item">
-            <span class="nav-icon">🏭</span> Fournisseurs
-        </a>
-        <a href="{% url 'list_sales' %}" class="nav-item">
-            <span class="nav-icon">💹</span> Ventes
-        </a>
-        <a href="{% url 'list_supplies' %}" class="nav-item">
-            <span class="nav-icon">🛒</span> Appros
-        </a>
-        <a href="{% url 'list_invoices' %}" class="nav-item active">
-            <span class="nav-icon">🧾</span> Factures <span class="nav-badge">{{ invoices|length }}</span>
-        </a>
-
-        <div class="nav-section-label">Entreprise</div>
-        <a href="{% url 'company_settings' %}" class="nav-item">
-            <span class="nav-icon">⚙️</span> Paramètres
-        </a>
-        <a href="{% url 'subscription' %}" class="nav-item">
-            <span class="nav-icon">💳</span> Abonnement
-        </a>
-        {% if request.user.is_staff %}
-        <a href="{% url 'promo_codes_admin' %}" class="nav-item">
-            <span class="nav-icon">🎟️</span> Codes promo
-        </a>
-        {% endif %}
-    </nav>
-
-    <div class="sidebar-footer">
-        <div class="user-block">
-            <div class="user-avatar">{{ company_name|slice:":1"|upper|default:"A" }}</div>
-            <div>
-                <div class="user-name">{{ company_name|default:request.user.username }}</div>
-                <div class="user-role">Administrateur</div>
-            </div>
-        </div>
-        <a href="{% url 'logout' %}" class="logout-btn">🚪 Se déconnecter</a>
-    </div>
-</div>
-<div class="sidebar-overlay" id="sidebarOverlay"></div>
+{% include 'includes/sidebar.html' with active_page='invoices' %}
 
 <div class="main">
-    <div class="topbar">
-        <div style="display:flex; align-items:center; gap:12px;">
+    <header class="topbar">
+        <div class="topbar-left">
             <button type="button" class="sidebar-toggle-btn" id="sidebarToggleBtn" aria-label="Menu de navigation">
                 <span></span><span></span><span></span>
             </button>
             <div>
-                <div class="topbar-title">Liste des factures</div>
+                <div class="topbar-title">Facturation & Encaissements</div>
                 <div class="topbar-sub">{{ invoices|length }} facture{{ invoices|length|pluralize }} enregistrée{{ invoices|length|pluralize }}</div>
             </div>
         </div>
         <div class="topbar-actions">
-            <a href="#" onclick="openInvoiceModal(null); return false;" class="btn btn-primary">＋ Ajouter</a>
+            <a href="#" onclick="openInvoiceModal(null); return false;" class="btn btn-primary">+ Nouvelle facture</a>
             <a href="{% url 'dashboard' %}" class="btn btn-ghost">← Tableau de bord</a>
         </div>
-    </div>
+    </header>
 
-    <div class="content">
+    <main class="content">
         <div class="toolbar">
             <div class="search-wrap">
-                <span class="search-icon">🔎</span>
-                <input type="text" class="search-input" id="searchInput" placeholder="Rechercher une facture...">
+                <span class="search-icon">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                </span>
+                <input type="text" class="search-input" id="searchInput" placeholder="Rechercher une facture par numéro ou client...">
             </div>
         </div>
 
         <div class="table-card">
-            <table class="table">
-                <thead>
-                    <tr>
-                        <th>#</th>
-                        <th>Numéro</th>
-                        <th>Vente</th>
-                        <th>Émission</th>
-                        <th>Échéance</th>
-                        <th>Statut</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for invoice in invoices %}
-                    <tr class="invoice-row">
-                        <td>{{ forloop.counter }}</td>
-                        <td class="invoice-number">{{ invoice.invoice_number }}</td>
-                        <td>
-                            {% if invoice.sale %}
-                                <div class="invoice-muted">{{ invoice.sale.client.name }} — {{ invoice.sale.item_names }}</div>
-                            {% else %}
-                                <span class="invoice-muted">-</span>
-                            {% endif %}
-                        </td>
-                        <td>{{ invoice.issued_date|date:"d/m/Y" }}</td>
-                        <td>{{ invoice.due_date|date:"d/m/Y" }}</td>
-                        <td>
-                            {% if invoice.status == "pending" %}
-                                <span class="status-pill status-pending">En attente</span>
-                            {% elif invoice.status == "partial" %}
-                                <span class="status-pill status-partial">Partiel (reste {{ invoice.formatted_balance_due }})</span>
-                            {% elif invoice.status == "paid" %}
-                                <span class="status-pill status-paid">Payée</span>
-                            {% else %}
-                                <span class="status-pill status-overdue">En retard{% if invoice.balance_due > 0 %} ({{ invoice.formatted_balance_due }}){% endif %}</span>
-                            {% endif %}
-                        </td>
-                        <td>
-                            <a href="{% url 'invoice_pdf' invoice.id %}" class="btn btn-ghost btn-sm" target="_blank" title="Télécharger le PDF A5">📄 PDF</a>
-                            <button type="button" class="btn btn-ghost btn-sm share-invoice-btn"
-                                    data-invoice-id="{{ invoice.id }}"
-                                    data-invoice-number="{{ invoice.invoice_number }}"
-                                    data-client-name="{{ invoice.sale.client.shop_name|default:invoice.sale.client.name }}"
-                                    data-client-phone="{{ invoice.sale.client.phone|default:'' }}"
-                                    data-client-email="{{ invoice.sale.client.email|default:'' }}"
-                                    data-total="{{ invoice.sale.formatted_total_price }}"
-                                    data-balance="{{ invoice.formatted_balance_due }}"
-                                    data-is-paid="{% if invoice.status == 'paid' %}true{% else %}false{% endif %}"
-                                    data-pdf-url="{% url 'invoice_pdf' invoice.id %}"
-                                    data-send-email-url="{% url 'send_invoice_email' invoice.id %}"
-                                    data-send-whatsapp-url="{% url 'send_invoice_whatsapp' invoice.id %}"
-                                    data-company-name="{{ company_name }}"
-                                    data-date="{{ invoice.issued_date|date:'d/m/Y' }}">📤 Partager</button>
-                            {% if whatsapp_enabled and invoice.whatsapp_status_label %}
-                            <span class="status-pill" style="background: rgba(16,185,129,0.15); color: #10B981; font-size:11px;" title="Statut WhatsApp Meta">{{ invoice.whatsapp_status_label }}</span>
-                            {% endif %}
-                            {% if invoice.status != "paid" and invoice.balance_due > 0 %}
-                            <button type="button" class="btn btn-ghost btn-sm pay-invoice-btn"
-                                    data-invoice-id="{{ invoice.id }}"
-                                    data-invoice-number="{{ invoice.invoice_number|escapejs }}"
-                                    data-balance-due="{{ invoice.balance_due }}"
-                                    data-formatted-balance="{{ invoice.formatted_balance_due|escapejs }}">💰 Encaisser</button>
-                            {% endif %}
-                            <button type="button" class="btn btn-edit-soft btn-sm edit-invoice-btn"
-                                    data-invoice-id="{{ invoice.id }}"
-                                    data-invoice-number="{{ invoice.invoice_number|escapejs }}"
-                                    data-sale-id="{{ invoice.sale.id|default:'' }}"
-                                    data-due-date="{{ invoice.due_date|date:'Y-m-d' }}"
-                                    data-status="{{ invoice.status }}">Modifier</button>
-                            <button type="button" class="btn btn-danger-soft btn-sm delete-invoice-btn"
-                                    data-invoice-id="{{ invoice.id }}"
-                                    data-invoice-number="{{ invoice.invoice_number|escapejs }}">Supprimer</button>
-                        </td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="7"><div class="empty-state">Aucune facture enregistrée</div></td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+            <div class="table-wrap">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Numéro</th>
+                            <th>Vente / Client</th>
+                            <th>Émission</th>
+                            <th>Échéance</th>
+                            <th>Statut</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for invoice in invoices %}
+                        <tr class="invoice-row">
+                            <td>{{ forloop.counter }}</td>
+                            <td class="invoice-number">{{ invoice.invoice_number }}</td>
+                            <td>
+                                {% if invoice.sale %}
+                                    <div class="invoice-muted"><strong>{% if invoice.sale.client %}{{ invoice.sale.client.name }}{% else %}Client supprimé{% endif %}</strong> — {{ invoice.sale.item_names|default:"—" }}</div>
+                                {% else %}
+                                    <span class="invoice-muted">—</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ invoice.issued_date|date:"d/m/Y" }}</td>
+                            <td>{{ invoice.due_date|date:"d/m/Y" }}</td>
+                            <td>
+                                {% if invoice.status == "pending" %}
+                                    <span class="status-pill status-pending">En attente</span>
+                                {% elif invoice.status == "partial" %}
+                                    <span class="status-pill status-partial">Partiel (reste {{ invoice.formatted_balance_due }})</span>
+                                {% elif invoice.status == "paid" %}
+                                    <span class="status-pill status-paid">Payée</span>
+                                {% else %}
+                                    <span class="status-pill status-overdue">En retard{% if invoice.balance_due > 0 %} ({{ invoice.formatted_balance_due }}){% endif %}</span>
+                                {% endif %}
+                            </td>
+                            <td style="white-space:nowrap;">
+                                <a href="{% url 'invoice_pdf' invoice.id %}" class="btn btn-ghost btn-sm" target="_blank" title="Télécharger le PDF A5">PDF A5</a>
+                                <button type="button" class="btn btn-ghost btn-sm share-invoice-btn"
+                                        data-invoice-id="{{ invoice.id }}"
+                                        data-invoice-number="{{ invoice.invoice_number }}"
+                                        data-client-name="{% if invoice.sale and invoice.sale.client %}{{ invoice.sale.client.shop_name|default:invoice.sale.client.name }}{% else %}Client{% endif %}"
+                                        data-client-phone="{% if invoice.sale and invoice.sale.client %}{{ invoice.sale.client.phone }}{% endif %}"
+                                        data-client-email="{% if invoice.sale and invoice.sale.client %}{{ invoice.sale.client.email }}{% endif %}"
+                                        data-total="{% if invoice.sale %}{{ invoice.sale.formatted_total_price }}{% else %}{{ invoice.formatted_amount_paid }}{% endif %}"
+                                        data-balance="{{ invoice.formatted_balance_due }}"
+                                        data-is-paid="{% if invoice.status == 'paid' %}true{% else %}false{% endif %}"
+                                        data-pdf-url="{% url 'invoice_pdf' invoice.id %}"
+                                        data-send-email-url="{% url 'send_invoice_email' invoice.id %}"
+                                        data-send-whatsapp-url="{% url 'send_invoice_whatsapp' invoice.id %}"
+                                        data-company-name="{{ company_name }}"
+                                        data-date="{{ invoice.issued_date|date:'d/m/Y' }}">Partager</button>
+                                {% if whatsapp_enabled and invoice.whatsapp_status_label %}
+                                <span class="status-pill status-paid" style="font-size:11px;" title="Statut WhatsApp Meta">{{ invoice.whatsapp_status_label }}</span>
+                                {% endif %}
+                                {% if invoice.status != "paid" and invoice.balance_due > 0 %}
+                                <button type="button" class="btn btn-secondary btn-sm pay-invoice-btn"
+                                        data-invoice-id="{{ invoice.id }}"
+                                        data-invoice-number="{{ invoice.invoice_number|escapejs }}"
+                                        data-balance-due="{{ invoice.balance_due }}"
+                                        data-formatted-balance="{{ invoice.formatted_balance_due|escapejs }}">Encaisser</button>
+                                {% endif %}
+                                <button type="button" class="btn btn-edit-soft btn-sm edit-invoice-btn"
+                                        data-invoice-id="{{ invoice.id }}"
+                                        data-invoice-number="{{ invoice.invoice_number|escapejs }}"
+                                        data-sale-id="{% if invoice.sale %}{{ invoice.sale.id }}{% endif %}"
+                                        data-due-date="{{ invoice.due_date|date:'Y-m-d' }}"
+                                        data-status="{{ invoice.status }}">Modifier</button>
+                                <button type="button" class="btn btn-danger-soft btn-sm delete-invoice-btn"
+                                        data-invoice-id="{{ invoice.id }}"
+                                        data-invoice-number="{{ invoice.invoice_number|escapejs }}">Supprimer</button>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7"><div class="empty-state">Aucune facture enregistrée</div></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         </div>
-    </div>
+    </main>
 </div>
 
 <div class="modal-overlay" id="invoiceModal">
     <div class="modal-content">
-        <span class="close-btn" onclick="closeInvoiceModal()">&times;</span>
-        <h3 id="modalTitle">Ajouter une Facture</h3>
+        <div class="modal-header">
+            <h3 class="modal-title" id="modalTitle">Ajouter une Facture</h3>
+            <span class="close-btn" onclick="closeInvoiceModal()">&times;</span>
+        </div>
 
-        <form id="invoiceForm" style="margin-top: 20px;">
+        <form id="invoiceForm">
             {% csrf_token %}
             <input type="hidden" id="invoiceId" name="invoice_id" value="">
 
@@ -441,7 +177,7 @@
                 <select class="form-select" id="sale" name="sale_id" required>
                     <option value="">Sélectionner une vente...</option>
                     {% for sale in sales %}
-                        <option value="{{ sale.id }}">{{ sale.client.name }} — {{ sale.item_names }} ({{ sale.formatted_total_price }})</option>
+                        <option value="{{ sale.id }}">{% if sale.client %}{{ sale.client.name }}{% else %}Client supprimé{% endif %} — {{ sale.item_names }} ({{ sale.formatted_total_price }})</option>
                     {% endfor %}
                 </select>
             </div>
@@ -461,9 +197,9 @@
                 </select>
             </div>
 
-            <div class="d-flex">
-                <button type="submit" class="btn btn-primary">💾 Enregistrer</button>
+            <div class="d-flex" style="justify-content:flex-end; margin-top:18px;">
                 <button type="button" class="btn btn-ghost" onclick="closeInvoiceModal()">Annuler</button>
+                <button type="submit" class="btn btn-primary">Enregistrer</button>
             </div>
         </form>
 
@@ -471,15 +207,17 @@
     </div>
 </div>
 
-<!-- ══════════════ MODAL ENCAISSEMENT PAIEMENT ══════════════ -->
+<!-- MODAL ENCAISSEMENT PAIEMENT -->
 <div class="modal-overlay" id="paymentModal">
     <div class="modal-content" style="max-width: 460px;">
-        <span class="close-btn" onclick="closePaymentModal()">&times;</span>
-        <h3>💰 Encaisser un règlement</h3>
-        <p style="font-size: 13px; color: var(--text-secondary); margin-top: 6px;">
-            Facture <strong id="paymentInvoiceLabel" style="color: var(--text-primary);"></strong> — Reste à payer : <strong id="paymentBalanceLabel" style="color: var(--sky);"></strong>
+        <div class="modal-header">
+            <h3 class="modal-title">Encaisser un règlement</h3>
+            <span class="close-btn" onclick="closePaymentModal()">&times;</span>
+        </div>
+        <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 14px;">
+            Facture <strong id="paymentInvoiceLabel" style="color: var(--text-primary);"></strong> — Reste à payer : <strong id="paymentBalanceLabel" style="color: var(--mb-orange);"></strong>
         </p>
-        <form id="paymentForm" style="margin-top: 16px;">
+        <form id="paymentForm">
             {% csrf_token %}
             <input type="hidden" id="paymentInvoiceId" name="invoice_id" value="">
             <div class="mb-3">
@@ -490,45 +228,45 @@
                 <label for="paymentNote" class="form-label">Note (optionnel)</label>
                 <input type="text" class="form-control" id="paymentNote" name="note" placeholder="Ex: Versement espèces, Mobile Money...">
             </div>
-            <div class="d-flex">
-                <button type="submit" class="btn btn-primary">💾 Valider le paiement</button>
+            <div class="d-flex" style="justify-content:flex-end; margin-top:18px;">
                 <button type="button" class="btn btn-ghost" onclick="closePaymentModal()">Annuler</button>
+                <button type="submit" class="btn btn-primary">Valider le paiement</button>
             </div>
         </form>
         <div id="paymentMessage" style="margin-top: 15px;"></div>
     </div>
 </div>
 
-<!-- ══════════════ MODAL CONFIRMATION SUPPRESSION ══════════════ -->
+<!-- MODAL CONFIRMATION SUPPRESSION -->
 <div class="modal-overlay" id="deleteModal">
-    <div class="modal-content modal-box">
-        <div class="modal-icon">⚠️</div>
-        <div class="modal-title">Confirmer la suppression</div>
-        <div class="modal-msg">
-            Êtes-vous sûr de vouloir supprimer la facture <strong id="modal-invoice-number"></strong> ?
+    <div class="modal-content modal-box" style="max-width:420px;">
+        <div class="modal-header">
+            <div class="modal-title">Confirmer la suppression</div>
+            <span class="close-btn" onclick="closeDeleteModal()">&times;</span>
+        </div>
+        <div class="modal-msg" style="font-size:13.5px; color:var(--text-secondary); margin-bottom:20px; line-height:1.6;">
+            Êtes-vous sûr de vouloir supprimer la facture <strong id="modal-invoice-number" style="color:var(--text-primary);"></strong> ?
             <br>Cette action est <strong>irréversible</strong>.
         </div>
         <div class="modal-actions">
             <button type="button" class="btn btn-ghost" onclick="closeDeleteModal()">Annuler</button>
-            <button type="button" class="btn btn-danger-solid" id="confirmDeleteBtn">🗑️ Supprimer</button>
+            <button type="button" class="btn btn-danger-solid" id="confirmDeleteBtn">Supprimer</button>
         </div>
-</div>
+    </div>
 </div>
 
-<!-- ══════════════ MODAL PARTAGE ET EXPÉDITION ══════════════ -->
+<!-- MODAL PARTAGE ET EXPÉDITION -->
 <div class="modal-overlay" id="shareInvoiceModal">
     <div class="modal-content" style="max-width: 490px;">
-        <span class="close-btn" onclick="closeShareModal()">&times;</span>
-        <div style="display:flex; align-items:center; gap:8px; margin-bottom: 14px;">
-            <span style="font-size:22px;">🧾</span>
-            <h3 style="margin:0;">Partager la facture</h3>
+        <div class="modal-header">
+            <h3 class="modal-title">Partager la facture</h3>
+            <span class="close-btn" onclick="closeShareModal()">&times;</span>
         </div>
 
-        <!-- Récapitulatif facture -->
-        <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border); border-radius: 12px; padding: 14px; margin-bottom: 16px;">
+        <div class="share-summary-box">
             <div style="display: flex; justify-content: space-between; align-items: flex-start;">
                 <div>
-                    <div style="font-size: 16px; font-weight: 800; color: var(--indigo-light);" id="adminShareInvoiceNumber"></div>
+                    <div style="font-size: 16px; font-weight: 800; color: var(--mb-orange);" id="adminShareInvoiceNumber"></div>
                     <div style="font-size: 13px; color: var(--text-secondary); margin-top: 2px;" id="adminShareClientName"></div>
                 </div>
                 <div style="text-align: right;">
@@ -542,31 +280,28 @@
             </div>
         </div>
 
-        <!-- 3 Canaux de partage / expédition -->
         <div style="display: flex; flex-direction: column; gap: 12px;">
-            <!-- 1. Téléchargement PDF A5 -->
-            <div style="background: rgba(99, 102, 241, 0.05); border: 1px solid rgba(99, 102, 241, 0.2); border-radius: 10px; padding: 12px; display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+            <div class="share-channel-box" style="display: flex; align-items: center; justify-content: space-between; gap: 10px;">
                 <div>
-                    <div style="font-weight: 600; font-size: 13px; color: var(--text-primary);">📄 Document PDF (Format A5)</div>
+                    <div style="font-weight: 600; font-size: 13px; color: var(--text-primary);">Document PDF (Format A5)</div>
                     <div style="font-size: 11px; color: var(--text-muted);">Format commercial compact officiel (148 × 210 mm)</div>
                 </div>
-                <a href="#" id="adminShareDownloadPdfBtn" target="_blank" class="btn btn-ghost btn-sm" style="border: 1px solid var(--border); white-space: nowrap;">
-                    ⬇️ Télécharger
+                <a href="#" id="adminShareDownloadPdfBtn" target="_blank" class="btn btn-ghost btn-sm" style="white-space: nowrap;">
+                    Télécharger
                 </a>
             </div>
 
             {% if whatsapp_enabled %}
-            <!-- 2. Partage WhatsApp -->
-            <div style="background: rgba(16, 185, 129, 0.05); border: 1px solid rgba(16, 185, 129, 0.25); border-radius: 10px; padding: 12px;">
-                <div style="font-weight: 600; font-size: 13px; color: #10B981; margin-bottom: 4px; display:flex; align-items:center; gap:6px;">
-                    <span>💬 Partager sur WhatsApp</span>
+            <div class="share-channel-box">
+                <div style="font-weight: 600; font-size: 13px; color: var(--emerald); margin-bottom: 4px;">
+                    Partager sur WhatsApp
                 </div>
                 <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">
                     Partage natif avec PDF joint sur mobile, ou ouverture directe de WhatsApp avec message prérempli.
                 </div>
                 <div style="display: flex; gap: 8px;">
                     <input type="tel" id="adminShareWhatsAppPhone" class="form-control" style="font-size: 12.5px; padding: 6px 10px;" placeholder="Ex: 77 123 45 67 ou +221...">
-                    <button type="button" id="adminShareWhatsAppBtn" class="btn btn-sm" style="background: #10B981; color: white; white-space: nowrap; font-weight:600;">
+                    <button type="button" id="adminShareWhatsAppBtn" class="btn btn-sm" style="background: var(--emerald); color: white; white-space: nowrap; font-weight:600; border:none;">
                         Partager
                     </button>
                 </div>
@@ -574,17 +309,16 @@
             </div>
             {% endif %}
 
-            <!-- 3. Envoi par Email -->
-            <div style="background: rgba(56, 189, 248, 0.05); border: 1px solid rgba(56, 189, 248, 0.25); border-radius: 10px; padding: 12px;">
-                <div style="font-weight: 600; font-size: 13px; color: #38BDF8; margin-bottom: 4px; display:flex; align-items:center; gap:6px;">
-                    <span>✉️ Envoyer par Email</span>
+            <div class="share-channel-box">
+                <div style="font-weight: 600; font-size: 13px; color: var(--sky); margin-bottom: 4px;">
+                    Envoyer par Email
                 </div>
                 <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">
                     Expédié par le serveur avec la facture A5 attachée en pièce jointe PDF.
                 </div>
                 <div style="display: flex; gap: 8px;">
                     <input type="email" id="adminShareEmailInput" class="form-control" style="font-size: 12.5px; padding: 6px 10px;" placeholder="client@domaine.com">
-                    <button type="button" id="adminShareEmailBtn" class="btn btn-sm" style="background: #0284C7; color: #ffffff; white-space: nowrap; font-weight: 600; padding: 7px 16px; border-radius: 6px; border: none; cursor: pointer;">
+                    <button type="button" id="adminShareEmailBtn" class="btn btn-secondary btn-sm" style="white-space: nowrap;">
                         Envoyer
                     </button>
                 </div>
@@ -644,16 +378,17 @@
         return cookieValue;
     }
 
-    const csrfToken = getCookie('csrftoken');
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || getCookie('csrftoken');
 
     document.querySelectorAll('.edit-invoice-btn').forEach(btn => {
         btn.addEventListener('click', function() {
-            const invoiceId = this.dataset.invoiceId;
-            const invoiceNumber = this.dataset.invoiceNumber;
-            const saleId = this.dataset.saleId;
-            const dueDate = this.dataset.dueDate;
-            const status = this.dataset.status;
-            openInvoiceModal(invoiceId, invoiceNumber, saleId, dueDate, status);
+            openInvoiceModal(
+                this.dataset.invoiceId,
+                this.dataset.invoiceNumber,
+                this.dataset.saleId,
+                this.dataset.dueDate,
+                this.dataset.status
+            );
         });
     });
 
@@ -710,7 +445,6 @@
 
     document.getElementById('invoiceForm').addEventListener('submit', async function(e) {
         e.preventDefault();
-
         const formData = new FormData(this);
 
         try {
@@ -764,23 +498,15 @@
             credentials: 'same-origin'
         });
 
-        if (!response.ok) {
-            const text = await response.text();
-            console.error('Server error:', response.status, text);
-            alert('Erreur serveur: ' + response.status);
-            return;
-        }
-
-        const data = await response.json();
-        if (data.success) {
+        const data = await response.json().catch(() => ({}));
+        if (response.ok && data.success) {
             closeDeleteModal();
             location.reload();
         } else {
-            alert(data.error || 'Erreur lors de la suppression');
+            alert(data.error || ('Erreur lors de la suppression (' + response.status + ')'));
         }
     });
 
-    // ── GESTION DU MODAL DE PARTAGE MULTI-CANAL ──
     let activeAdminShareData = null;
 
     function cleanWhatsAppPhone(phone) {
@@ -867,7 +593,7 @@
             const btn = adminWaBtn;
             if (feedback) {
                 feedback.style.display = 'block';
-                feedback.style.color = '#94A3B8';
+                feedback.style.color = 'var(--text-secondary)';
                 feedback.textContent = 'Connexion à WhatsApp...';
             }
 
@@ -882,7 +608,7 @@
                 btn.disabled = true;
                 if (feedback) {
                     feedback.style.display = 'block';
-                    feedback.style.color = '#94A3B8';
+                    feedback.style.color = 'var(--text-secondary)';
                     feedback.textContent = 'Préparation du partage...';
                 }
 
@@ -890,7 +616,7 @@
                 text += `Voici votre facture *${activeAdminShareData.invoiceNumber}* émise le ${activeAdminShareData.date} par *${activeAdminShareData.companyName}*.\n\n`;
                 text += `• Montant total : *${activeAdminShareData.totalPrice}*\n`;
                 if (activeAdminShareData.isPaid) {
-                    text += `• Statut : *Payée en totalité* ✅\n\n`;
+                    text += `• Statut : *Payée en totalité*\n\n`;
                 } else {
                     text += `• Reste à payer : *${activeAdminShareData.balanceDue}*\n\n`;
                 }
@@ -898,7 +624,6 @@
 
                 const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 
-                // Sur mobile uniquement : partage natif qui attache directement le PDF
                 if (isMobile && navigator.share && navigator.canShare) {
                     try {
                         const resp = await fetch(activeAdminShareData.pdfUrl, { credentials: 'same-origin' });
@@ -915,7 +640,7 @@
                                 files: [file]
                             });
                             if (feedback) {
-                                feedback.style.color = '#10B981';
+                                feedback.style.color = 'var(--emerald)';
                                 feedback.textContent = 'Partage ouvert dans votre application.';
                             }
                             btn.disabled = false;
@@ -932,7 +657,6 @@
                     }
                 }
 
-                // Sur PC / Desktop : téléchargement automatique du PDF et ouverture directe de la discussion WhatsApp du client
                 const dlLink = document.createElement('a');
                 dlLink.href = activeAdminShareData.pdfUrl;
                 dlLink.download = `${activeAdminShareData.invoiceNumber}.pdf`;
@@ -946,7 +670,7 @@
 
                 window.open(waUrl, '_blank');
                 if (feedback) {
-                    feedback.style.color = '#10B981';
+                    feedback.style.color = 'var(--emerald)';
                     feedback.textContent = phone
                         ? 'Discussion WhatsApp du client ouverte & PDF téléchargé.'
                         : 'WhatsApp ouvert & PDF téléchargé.';
@@ -955,7 +679,6 @@
                 btn.textContent = oldText;
             }
 
-            // 1. Tentative d'envoi automatique via l'API officielle Meta WhatsApp Cloud si configurée
             if (activeAdminShareData.sendWhatsAppUrl) {
                 try {
                     const formData = new FormData();
@@ -970,8 +693,8 @@
 
                     if (respApi.ok && resJson.success && resJson.mode === 'cloud_api') {
                         if (feedback) {
-                            feedback.style.color = '#10B981';
-                            feedback.textContent = '✅ ' + (resJson.message || 'Facture expédiée via WhatsApp Business !');
+                            feedback.style.color = 'var(--emerald)';
+                            feedback.textContent = resJson.message || 'Facture expédiée via WhatsApp Business !';
                         }
                         btn.disabled = false;
                         btn.textContent = oldText;
@@ -982,13 +705,9 @@
                         btn.disabled = false;
                         btn.textContent = oldText;
                         if (feedback) {
-                            feedback.style.color = '#EF4444';
+                            feedback.style.color = 'var(--rose)';
                             const errMsg = resJson.error || 'Erreur lors de l’envoi.';
-                            if (errMsg.includes('131030')) {
-                                feedback.innerHTML = '⚠️ Ce numéro n’est pas encore enregistré dans la liste des numéros autorisés sur Meta for Developers.<br><button type="button" id="useAdminFallbackShareBtn" style="margin-top:6px; background:transparent; border:1px solid rgba(255,255,255,0.2); color:#60A5FA; padding:3px 8px; border-radius:6px; cursor:pointer; font-size:12px;">📲 Utiliser le partage WhatsApp manuel</button>';
-                            } else {
-                                feedback.innerHTML = '❌ ' + errMsg + '<br><button type="button" id="useAdminFallbackShareBtn" style="margin-top:6px; background:transparent; border:1px solid rgba(255,255,255,0.2); color:#60A5FA; padding:3px 8px; border-radius:6px; cursor:pointer; font-size:12px;">📲 Utiliser le partage WhatsApp manuel</button>';
-                            }
+                            feedback.innerHTML = errMsg + '<br><button type="button" id="useAdminFallbackShareBtn" class="btn btn-ghost btn-sm" style="margin-top:6px;">Utiliser le partage WhatsApp manuel</button>';
                             document.getElementById('useAdminFallbackShareBtn')?.addEventListener('click', triggerManualAdminFallbackShare);
                         }
                         return;
@@ -998,11 +717,9 @@
                 }
             }
 
-            // 2. Bascule transparente vers Web Share API / wa.me uniquement si le Cloud API n'est pas configuré
             await triggerManualAdminFallbackShare();
         });
     }
-
 
     document.getElementById('adminShareEmailBtn').addEventListener('click', async function() {
         if (!activeAdminShareData) return;
@@ -1013,7 +730,7 @@
 
         if (!email || !email.includes('@')) {
             feedback.style.display = 'block';
-            feedback.style.color = '#F43F5E';
+            feedback.style.color = 'var(--rose)';
             feedback.textContent = 'Veuillez saisir une adresse email valide.';
             emailInput.focus();
             return;
@@ -1023,7 +740,7 @@
         const oldText = btn.textContent;
         btn.textContent = 'Envoi…';
         feedback.style.display = 'block';
-        feedback.style.color = '#94A3B8';
+        feedback.style.color = 'var(--text-secondary)';
         feedback.textContent = 'Génération du PDF A5 et expédition du courriel...';
 
         const formData = new FormData();
@@ -1038,15 +755,15 @@
             });
             const resData = await resp.json();
             if (resp.ok && resData.success) {
-                feedback.style.color = '#10B981';
-                feedback.textContent = '✅ ' + (resData.message || 'Facture envoyée avec succès !');
+                feedback.style.color = 'var(--emerald)';
+                feedback.textContent = resData.message || 'Facture envoyée avec succès !';
             } else {
-                feedback.style.color = '#F43F5E';
-                feedback.textContent = '⚠️ ' + (resData.error || "Erreur lors de l'envoi.");
+                feedback.style.color = 'var(--rose)';
+                feedback.textContent = resData.error || "Erreur lors de l'envoi.";
             }
         } catch (err) {
-            feedback.style.color = '#F43F5E';
-            feedback.textContent = "⚠️ Erreur réseau ou serveur.";
+            feedback.style.color = 'var(--rose)';
+            feedback.textContent = "Erreur réseau ou serveur.";
         } finally {
             btn.disabled = false;
             btn.textContent = oldText;
@@ -1062,9 +779,6 @@
         });
     });
 </script>
-
-
-
 <script src="{% static 'InvoiceApp/js/responsive.js' %}"></script>
 <script src="{% static 'InvoiceApp/js/ai_assistant.js' %}"></script>
 </body>

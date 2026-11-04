@@ -1,0 +1,163 @@
+<aside class="sidebar">
+    <a href="{% url 'dashboard' %}" class="sidebar-logo">
+        {% if company_logo_url %}
+        <img src="{{ company_logo_url }}" alt="{{ company_name }}" style="width:36px;height:36px;object-fit:contain;border-radius:9px;background:#ffffff;padding:3px;flex-shrink:0;">
+        {% elif request.user.logo_url %}
+        <img src="{{ request.user.logo_url }}" alt="{{ company_name }}" style="width:36px;height:36px;object-fit:contain;border-radius:9px;background:#ffffff;padding:3px;flex-shrink:0;">
+        {% else %}
+        <div class="logo-mark" aria-hidden="true">
+            <svg viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect width="120" height="120" rx="22" fill="#08244B"/>
+                <path d="M26 92V32H43L60 58L77 32H91L94 35V92H77V57L60 82L43 57V92H26Z" fill="#FFFFFF"/>
+                <polygon points="79,22 100,22 100,43" fill="#F26722"/>
+            </svg>
+        </div>
+        {% endif %}
+        <div style="min-width: 0;">
+            <span class="logo-text">{{ company_name|default:"MerchandBlock" }}</span>
+            <span class="logo-subtext">MerchandBlock ERP</span>
+        </div>
+    </a>
+
+    <nav class="sidebar-nav">
+        <div class="nav-section-label">Principal</div>
+        <a href="{% url 'dashboard' %}" class="nav-item {% if active_page == 'dashboard' %}active{% endif %}">
+            <span class="nav-icon">
+                <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>
+            </span>
+            Tableau de bord
+        </a>
+
+        <div class="nav-section-label">Gestion</div>
+        <a href="{% url 'list_agents' %}" class="nav-item {% if active_page == 'agents' %}active{% endif %} {% if subscription_blocked %}locked-link{% endif %}">
+            <span class="nav-icon">
+                <svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            </span>
+            Agents
+            {% if agents_count is not None %}<span class="nav-badge">{{ agents_count }}</span>{% elif total_agents is not None %}<span class="nav-badge">{{ total_agents }}</span>{% endif %}
+        </a>
+        <a href="{% url 'manage_agent_roles' %}" class="nav-item {% if active_page == 'agent_roles' %}active{% endif %} {% if subscription_blocked %}locked-link{% endif %}">
+            <span class="nav-icon">
+                <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
+            </span>
+            Rôles d'agent
+        </a>
+        <a href="{% url 'list_engines' %}" class="nav-item {% if active_page == 'engines' %}active{% endif %} {% if subscription_blocked %}locked-link{% endif %}">
+            <span class="nav-icon">
+                <svg viewBox="0 0 24 24"><rect x="1" y="3" width="15" height="13" rx="2"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+            </span>
+            Engins
+            {% if engines_count is not None %}<span class="nav-badge">{{ engines_count }}</span>{% elif total_engines is not None %}<span class="nav-badge">{{ total_engines }}</span>{% endif %}
+        </a>
+        <a href="{% url 'list_products' %}" class="nav-item {% if active_page == 'products' %}active{% endif %} {% if subscription_blocked %}locked-link{% endif %}">
+            <span class="nav-icon">
+                <svg viewBox="0 0 24 24"><path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>
+            </span>
+            Produits
+            {% if products_count is not None %}<span class="nav-badge">{{ products_count }}</span>{% elif total_products is not None %}<span class="nav-badge">{{ total_products }}</span>{% endif %}
+        </a>
+        <a href="{% url 'list_clients' %}" class="nav-item {% if active_page == 'clients' %}active{% endif %} {% if subscription_blocked %}locked-link{% endif %}">
+            <span class="nav-icon">
+                <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            </span>
+            Clients
+            {% if clients_count is not None %}<span class="nav-badge">{{ clients_count }}</span>{% elif total_clients is not None %}<span class="nav-badge">{{ total_clients }}</span>{% endif %}
+        </a>
+        <a href="{% url 'list_suppliers' %}" class="nav-item {% if active_page == 'suppliers' %}active{% endif %} {% if subscription_blocked %}locked-link{% endif %}">
+            <span class="nav-icon">
+                <svg viewBox="0 0 24 24"><path d="M3 21h18"/><path d="M5 21V7l8-4v18"/><path d="M19 21V11l-6-4"/><path d="M9 9v.01"/><path d="M9 12v.01"/><path d="M9 15v.01"/><path d="M9 18v.01"/></svg>
+            </span>
+            Fournisseurs
+            {% if suppliers_count is not None %}<span class="nav-badge">{{ suppliers_count }}</span>{% elif total_suppliers is not None %}<span class="nav-badge">{{ total_suppliers }}</span>{% endif %}
+        </a>
+
+        <div class="nav-section-label">Transactions</div>
+        <a href="{% url 'list_supplies' %}" class="nav-item {% if active_page == 'supplies' %}active{% endif %} {% if subscription_blocked %}locked-link{% endif %}">
+            <span class="nav-icon">
+                <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            </span>
+            Approvisionnements
+            {% if supplies_count is not None %}<span class="nav-badge">{{ supplies_count }}</span>{% elif total_supplies is not None %}<span class="nav-badge">{{ total_supplies }}</span>{% endif %}
+        </a>
+        <a href="{% url 'list_sales' %}" class="nav-item {% if active_page == 'sales' %}active{% endif %} {% if subscription_blocked %}locked-link{% endif %}">
+            <span class="nav-icon">
+                <svg viewBox="0 0 24 24"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+            </span>
+            Ventes
+            {% if sales_count is not None %}<span class="nav-badge">{{ sales_count }}</span>{% elif total_sales is not None %}<span class="nav-badge">{{ total_sales }}</span>{% endif %}
+        </a>
+        <a href="{% url 'list_invoices' %}" class="nav-item {% if active_page == 'invoices' %}active{% endif %} {% if subscription_blocked %}locked-link{% endif %}">
+            <span class="nav-icon">
+                <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>
+            </span>
+            Factures
+            {% if invoices_count is not None %}<span class="nav-badge">{{ invoices_count }}</span>{% elif total_invoices is not None %}<span class="nav-badge">{{ total_invoices }}</span>{% endif %}
+        </a>
+        <a href="{% url 'list_stock_loads' %}" class="nav-item {% if active_page == 'stock_loads' %}active{% endif %} {% if subscription_blocked %}locked-link{% endif %}">
+            <span class="nav-icon">
+                <svg viewBox="0 0 24 24"><path d="M16 16h6"/><path d="M19 13v6"/><path d="M21 10V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l2-1.14"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>
+            </span>
+            Chargements de stock
+        </a>
+
+        <div class="nav-section-label">Entreprise</div>
+        <a href="{% url 'company_settings' %}" class="nav-item {% if active_page == 'company_settings' %}active{% endif %}">
+            <span class="nav-icon">
+                <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+            </span>
+            Paramètres
+        </a>
+        <a href="{% url 'subscription' %}" class="nav-item {% if active_page == 'subscription' %}active{% endif %}">
+            <span class="nav-icon">
+                <svg viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+            </span>
+            Mon Abonnement
+        </a>
+        <a href="{% url 'pricing' %}" class="nav-item {% if active_page == 'pricing' %}active{% endif %}">
+            <span class="nav-icon">
+                <svg viewBox="0 0 24 24"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+            </span>
+            Tarifs &amp; Plans
+        </a>
+        {% if request.user.is_staff %}
+        <a href="{% url 'promo_codes_admin' %}" class="nav-item {% if active_page == 'promo_codes' %}active{% endif %}">
+            <span class="nav-icon">
+                <svg viewBox="0 0 24 24"><path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/><path d="M13 5v2"/><path d="M13 17v2"/><path d="M13 11v2"/></svg>
+            </span>
+            Codes Promo (Admin)
+        </a>
+        {% endif %}
+        <a href="{% url 'change_password' %}" class="nav-item {% if active_page == 'change_password' %}active{% endif %}">
+            <span class="nav-icon">
+                <svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            </span>
+            Mot de passe
+        </a>
+        <a href="{% url 'delete_account' %}" class="nav-item {% if active_page == 'delete_account' %}active{% endif %}">
+            <span class="nav-icon">
+                <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+            </span>
+            Supprimer compte
+        </a>
+    </nav>
+
+    <div class="sidebar-footer">
+        <div class="user-block">
+            {% if company_logo_url %}
+            <img src="{{ company_logo_url }}" alt="Logo" style="width:32px;height:32px;object-fit:contain;border-radius:50%;background:#ffffff;padding:2px;flex-shrink:0;">
+            {% elif request.user.logo_url %}
+            <img src="{{ request.user.logo_url }}" alt="Logo" style="width:32px;height:32px;object-fit:contain;border-radius:50%;background:#ffffff;padding:2px;flex-shrink:0;">
+            {% else %}
+            <div class="user-avatar">{{ company_name|default:"M"|slice:":1"|upper }}</div>
+            {% endif %}
+            <div style="min-width: 0;">
+                <div class="user-name">{{ company_name|default:"Mon Entreprise" }}</div>
+                <div class="user-role">Administrateur</div>
+            </div>
+        </div>
+        <a href="{% url 'logout' %}" class="logout-btn">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+            Déconnexion
+        </a>
+    </div>
+</aside>

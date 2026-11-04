@@ -287,7 +287,7 @@ class Supplier(models.Model):
 # Modèle pour les approvisionnements (achats de stock)
 class Supply(models.Model):
     company = models.ForeignKey(User, on_delete=models.CASCADE, related_name='supplies', verbose_name="Entreprise")
-    supplier = models.ForeignKey(Supplier, on_delete=models.CASCADE, related_name='supplies', verbose_name="Fournisseur")
+    supplier = models.ForeignKey(Supplier, on_delete=models.SET_NULL, null=True, blank=True, related_name='supplies', verbose_name="Fournisseur")
     total_price = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'), verbose_name="Prix total")
     currency = models.CharField(max_length=3, choices=Product.CURRENCY_CHOICES, default='EUR', verbose_name="Devise")
     date = models.DateTimeField(auto_now_add=True, verbose_name="Date")
@@ -334,7 +334,7 @@ class Supply(models.Model):
 
 class SupplyItem(models.Model):
     supply = models.ForeignKey(Supply, on_delete=models.CASCADE, related_name='supply_items', verbose_name="Approvisionnement")
-    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='supply_items', verbose_name="Produit")
+    product = models.ForeignKey(Product, on_delete=models.SET_NULL, null=True, blank=True, related_name='supply_items', verbose_name="Produit")
     quantity = models.PositiveIntegerField(default=1, verbose_name="Quantité")
     unit_price = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'), verbose_name="Prix unitaire")
     total_price = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'), verbose_name="Prix total")
@@ -347,7 +347,7 @@ class SupplyItem(models.Model):
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return f"{self.product.name} x{self.quantity}"
+        return f"{self.product.name if self.product else 'Produit'} x{self.quantity}"
 
     class Meta:
         verbose_name = "Ligne d'approvisionnement"
@@ -356,9 +356,9 @@ class SupplyItem(models.Model):
 # Modèle pour les ventes
 class Sale(models.Model):
     company = models.ForeignKey(User, on_delete=models.CASCADE, related_name='sales', verbose_name="Entreprise")
-    client = models.ForeignKey(Client, on_delete=models.CASCADE, related_name='sales', verbose_name="Client")
+    client = models.ForeignKey(Client, on_delete=models.SET_NULL, null=True, blank=True, related_name='sales', verbose_name="Client")
     agent = models.ForeignKey(Agent, on_delete=models.SET_NULL, null=True, blank=True, related_name='sales', verbose_name="Agent")
-    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='sales', verbose_name="Produit", null=True, blank=True)
+    product = models.ForeignKey(Product, on_delete=models.SET_NULL, related_name='sales', verbose_name="Produit", null=True, blank=True)
     quantity = models.PositiveIntegerField(default=0, verbose_name="Quantité")
     unit_price = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'), verbose_name="Prix unitaire")
     total_price = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'), verbose_name="Prix total")
@@ -378,7 +378,7 @@ class Sale(models.Model):
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return f"Vente de {self.item_names or 'plusieurs produits'} à {self.client.name} ({self.company.company_name})"
+        return f"Vente de {self.item_names or 'plusieurs produits'} à {self.client.name if self.client else 'Client'} ({self.company.company_name})"
 
     @property
     def item_names(self):
@@ -412,7 +412,7 @@ class Sale(models.Model):
 
 class SaleItem(models.Model):
     sale = models.ForeignKey(Sale, on_delete=models.CASCADE, related_name='sale_items', verbose_name="Vente")
-    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='sale_items', verbose_name="Produit")
+    product = models.ForeignKey(Product, on_delete=models.SET_NULL, null=True, blank=True, related_name='sale_items', verbose_name="Produit")
     quantity = models.PositiveIntegerField(default=1, verbose_name="Quantité")
     unit_price = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'), verbose_name="Prix unitaire")
     total_price = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'), verbose_name="Prix total")
@@ -425,7 +425,7 @@ class SaleItem(models.Model):
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return f"{self.product.name} x{self.quantity}"
+        return f"{self.product.name if self.product else 'Produit'} x{self.quantity}"
 
     class Meta:
         verbose_name = "Ligne de vente"
@@ -434,7 +434,7 @@ class SaleItem(models.Model):
 # Modèle pour les factures
 class Invoice(models.Model):
     company = models.ForeignKey(User, on_delete=models.CASCADE, related_name='invoices', verbose_name="Entreprise")
-    sale = models.OneToOneField(Sale, on_delete=models.CASCADE, related_name='invoice', verbose_name="Vente associée")
+    sale = models.OneToOneField(Sale, on_delete=models.SET_NULL, null=True, blank=True, related_name='invoice', verbose_name="Vente associée")
     invoice_number = models.CharField(max_length=50, verbose_name="Numéro de facture")
     issued_date = models.DateTimeField(auto_now_add=True, verbose_name="Date d'émission")
     due_date = models.DateField(verbose_name="Date d'échéance")
@@ -588,13 +588,13 @@ class StockLoad(models.Model):
 
 class StockLoadItem(models.Model):
     load = models.ForeignKey(StockLoad, on_delete=models.CASCADE, related_name='items', verbose_name="Chargement")
-    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='stock_load_items', verbose_name="Produit")
+    product = models.ForeignKey(Product, on_delete=models.SET_NULL, null=True, blank=True, related_name='stock_load_items', verbose_name="Produit")
     quantity = models.PositiveIntegerField(verbose_name="Quantité chargée")
     unit_price = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Prix fixé pour le vendeur")
     currency = models.CharField(max_length=3, choices=Product.CURRENCY_CHOICES, default='EUR', verbose_name="Devise")
 
     def __str__(self):
-        return f"{self.product.name} x{self.quantity}"
+        return f"{self.product.name if self.product else 'Produit'} x{self.quantity}"
 
     class Meta:
         verbose_name = "Ligne de chargement"
@@ -619,11 +619,11 @@ class StockReturn(models.Model):
 
 class StockReturnItem(models.Model):
     stock_return = models.ForeignKey(StockReturn, on_delete=models.CASCADE, related_name='items', verbose_name="Retour")
-    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='stock_return_items', verbose_name="Produit")
+    product = models.ForeignKey(Product, on_delete=models.SET_NULL, null=True, blank=True, related_name='stock_return_items', verbose_name="Produit")
     quantity = models.PositiveIntegerField(verbose_name="Quantité retournée")
 
     def __str__(self):
-        return f"{self.product.name} x{self.quantity}"
+        return f"{self.product.name if self.product else 'Produit'} x{self.quantity}"
 
     class Meta:
         verbose_name = "Ligne de retour"

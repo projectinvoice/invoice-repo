@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" fill="none">
+  <rect width="240" height="240" rx="28" fill="#08244B"/>
+  <!-- Bold geometric M -->
+  <path d="M68 148V62H93L120 102L147 62H167L172 67V148H147V99L120 137L93 99V148H68Z" fill="#FFFFFF"/>
+  <!-- Top-right Orange Triangle Accent -->
+  <polygon points="148,44 180,44 180,76" fill="#F26722"/>
+  <!-- MerchandBlock Wordmark -->
+  <text x="120" y="188" text-anchor="middle" fill="#FFFFFF" font-family="'Plus Jakarta Sans', 'Inter', system-ui, -apple-system, sans-serif" font-size="23" font-weight="800" letter-spacing="-0.3">MerchandBlock</text>
+</svg>

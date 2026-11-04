@@ -67,11 +67,5 @@ def delete_client(request):
     if not client:
         return JsonResponse({"success": True, "message": "Client supprimé"})
         
-    if client.sales.exists():
-        return JsonResponse({
-            "success": False,
-            "error": "Impossible de supprimer ce client car des ventes ou factures lui sont associées."
-        }, status=400)
-        
     client.delete()
     return JsonResponse({"success": True, "message": "Client supprimé"})

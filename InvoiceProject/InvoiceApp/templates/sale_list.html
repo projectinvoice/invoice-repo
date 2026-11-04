@@ -1,557 +1,169 @@
-<!DOCTYPE html>
 {% load static %}
+<!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ventes — {{ company_name }}</title>
+    <title>Ventes — {{ company_name }} | MerchandBlock</title>
+    <link rel="stylesheet" href="{% static 'InvoiceApp/css/merchandblock.css' %}">
+    <link rel="stylesheet" href="{% static 'InvoiceApp/css/responsive.css' %}">
+    <script src="{% static 'InvoiceApp/js/merchandblock.js' %}"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
-
-        :root {
-            --bg-base: #0F1629;
-            --bg-card: #1A2238;
-            --bg-card-hover: #1F2A44;
-            --border: rgba(99, 102, 241, 0.15);
-            --border-hover: rgba(99, 102, 241, 0.45);
-            --indigo: #6366F1;
-            --indigo-light: #818CF8;
-            --emerald: #10B981;
-            --amber: #F59E0B;
-            --rose: #F43F5E;
-            --sky: #38BDF8;
-            --text-primary: #E2E8F0;
-            --text-secondary: #94A3B8;
-            --text-muted: #64748B;
-            --radius: 16px;
-            --radius-sm: 10px;
-            --shadow: 0 4px 24px rgba(0,0,0,0.4);
-        }
-
-        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-
-        body {
-            font-family: 'Inter', sans-serif;
-            background: var(--bg-base);
-            color: var(--text-primary);
-            min-height: 100vh;
-            font-size: 14px;
-            line-height: 1.6;
-        }
-
-        .sidebar {
-            position: fixed;
-            left: 0; top: 0; bottom: 0;
-            width: 240px;
-            background: var(--bg-card);
-            border-right: 1px solid var(--border);
-            display: flex;
-            flex-direction: column;
-            z-index: 100;
-        }
-
-        .sidebar-logo {
-            padding: 24px 20px 20px;
-            border-bottom: 1px solid var(--border);
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .logo-mark {
-            width: 36px; height: 36px;
-            background: linear-gradient(135deg, var(--indigo), #9333EA);
-            border-radius: 10px;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 18px; font-weight: 800; color: white;
-            flex-shrink: 0;
-        }
-
-        .logo-text {
-            font-size: 15px; font-weight: 700;
-            color: var(--text-primary);
-            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-        }
-
-        .sidebar-nav { flex: 1; padding: 16px 12px; overflow-y: auto; }
-
-        .nav-section-label {
-            font-size: 10px; font-weight: 600;
-            color: var(--text-muted);
-            text-transform: uppercase; letter-spacing: 0.12em;
-            padding: 12px 8px 6px;
-        }
-
-        .nav-item {
-            display: flex; align-items: center; gap: 10px;
-            padding: 9px 12px; border-radius: var(--radius-sm);
-            color: var(--text-secondary); text-decoration: none;
-            font-weight: 500; font-size: 13.5px;
-            transition: all 0.18s; margin-bottom: 2px;
-        }
-
-        .nav-item:hover, .nav-item.active {
-            background: rgba(99, 102, 241, 0.12);
-            color: var(--indigo-light);
-        }
-
-        .nav-item.active { font-weight: 600; }
-        .nav-item .nav-icon { font-size: 16px; width: 20px; text-align: center; }
-
-        .nav-badge {
-            margin-left: auto;
-            background: rgba(99, 102, 241, 0.2);
-            color: var(--indigo-light);
-            font-size: 11px; font-weight: 600;
-            padding: 2px 7px; border-radius: 20px;
-        }
-
-        .sidebar-footer { padding: 16px 12px; border-top: 1px solid var(--border); }
-
-        .user-block {
-            display: flex; align-items: center; gap: 10px;
-            padding: 10px; border-radius: var(--radius-sm);
-            background: rgba(255,255,255,0.04);
-        }
-
-        .user-avatar {
-            width: 32px; height: 32px; border-radius: 50%;
-            background: linear-gradient(135deg, var(--emerald), #059669);
-            display: flex; align-items: center; justify-content: center;
-            font-size: 13px; font-weight: 700; color: white; flex-shrink: 0;
-        }
-
-        .user-name { font-weight: 600; font-size: 13px; }
-        .user-role { font-size: 11px; color: var(--text-muted); }
-
-        .logout-btn {
-            margin-top: 10px; display: block; text-align: center;
-            padding: 8px;
-            background: rgba(244, 63, 94, 0.1);
-            color: var(--rose); border-radius: var(--radius-sm);
-            text-decoration: none; font-size: 13px; font-weight: 500;
-            transition: background 0.2s;
-        }
-        .logout-btn:hover { background: rgba(244, 63, 94, 0.2); }
-
-        .main { margin-left: 240px; min-height: 100vh; display: flex; flex-direction: column; }
-
-        .topbar {
-            background: var(--bg-card);
-            border-bottom: 1px solid var(--border);
-            padding: 14px 32px;
-            display: flex; align-items: center; justify-content: space-between;
-            position: sticky; top: 0; z-index: 50;
-        }
-
-        .topbar-title { font-size: 17px; font-weight: 700; }
-        .topbar-sub { font-size: 12px; color: var(--text-muted); margin-top: 1px; }
-        .topbar-actions { display: flex; gap: 10px; align-items: center; }
-
-        .btn {
-            display: inline-flex; align-items: center; gap: 6px;
-            padding: 8px 16px; border-radius: var(--radius-sm);
-            font-size: 13px; font-weight: 600; cursor: pointer;
-            text-decoration: none; border: none;
-            transition: all 0.2s; font-family: 'Inter', sans-serif;
-        }
-        .btn-primary { background: var(--indigo); color: white; }
-        .btn-primary:hover { background: #5254CC; transform: translateY(-1px); }
-        .btn-ghost {
-            background: rgba(255,255,255,0.06);
-            color: var(--text-secondary);
-            border: 1px solid var(--border);
-        }
-        .btn-ghost:hover { background: rgba(255,255,255,0.1); color: var(--text-primary); }
-        .btn-sm { padding: 6px 12px; font-size: 12px; }
-        .btn-danger-soft {
-            background: rgba(244,63,94,0.1);
-            color: var(--rose);
-            border: 1px solid rgba(244,63,94,0.2);
-        }
-        .btn-danger-soft:hover { background: rgba(244,63,94,0.22); }
-        .btn-edit-soft {
-            background: rgba(99,102,241,0.1);
-            color: var(--indigo-light);
-            border: 1px solid rgba(99,102,241,0.2);
-        }
-        .btn-edit-soft:hover { background: rgba(99,102,241,0.2); }
-
-        .content { padding: 28px 32px; flex: 1; }
-
-        .toolbar {
-            display: flex; align-items: center; gap: 12px;
-            margin-bottom: 20px; flex-wrap: wrap;
-        }
-
-        .search-wrap { position: relative; flex: 1; min-width: 220px; }
-        .search-icon {
-            position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
-            color: var(--text-muted); font-size: 15px; pointer-events: none;
-        }
-        .search-input {
-            width: 100%;
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: var(--radius-sm);
-            padding: 9px 14px 9px 36px;
-            color: var(--text-primary);
-            font-size: 13px; font-family: 'Inter', sans-serif;
-            outline: none; transition: border-color 0.2s;
-        }
-        .search-input::placeholder { color: var(--text-muted); }
-        .search-input:focus { border-color: var(--indigo); }
-
-        .table-card {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
-            box-shadow: var(--shadow);
-            overflow: hidden;
-        }
-
-        .table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        .table th {
-            background: rgba(255,255,255,0.04);
-            color: var(--text-secondary);
-            text-align: left;
-            padding: 12px 16px;
-            font-size: 12px;
-            font-weight: 700;
-            letter-spacing: 0.06em;
-            text-transform: uppercase;
-        }
-
-        .table td {
-            padding: 14px 16px;
-            border-top: 1px solid var(--border);
-            color: var(--text-primary);
-            vertical-align: middle;
-        }
-
-        .sale-row:hover { background: var(--bg-card-hover); }
-        .sale-muted { color: var(--text-secondary); font-size: 12px; }
-        .sale-item-stack {
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-        }
+        .sale-muted { font-weight: 600; color: var(--text-primary); }
+        .sale-item-stack { display: flex; flex-direction: column; gap: 6px; }
         .sale-item-line {
-            display: block;
-            padding: 4px 0;
-            line-height: 1.45;
+            padding: 6px 10px;
+            background: var(--bg-subtle);
+            border: 1px solid var(--border);
+            border-radius: 6px;
         }
-        .sale-item-meta {
-            color: var(--text-secondary);
-            font-size: 11px;
-            margin-top: 2px;
-        }
+        .sale-item-meta { font-size: 11.5px; color: var(--text-secondary); margin-top: 2px; }
         .sale-total { font-weight: 700; color: var(--emerald); }
-        .empty-state {
-            padding: 24px; text-align: center;
-            color: var(--text-secondary);
-        }
-
-        .modal-overlay {
-            position: fixed;
-            inset: 0;
-            background: rgba(0, 0, 0, 0.7);
-            display: none;
-            align-items: center;
-            justify-content: center;
-            z-index: 1000;
-            padding: 24px;
-        }
-        .modal-overlay.show { display: flex; }
-        .modal-content {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
-            padding: 28px;
-            max-width: 640px;
-            width: 100%;
-            max-height: 85vh;
-            overflow-y: auto;
-            box-shadow: var(--shadow);
-            animation: slideIn 0.25s ease;
-        }
-        @keyframes slideIn {
-            from { transform: translateY(-20px); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
-        }
-        .close-btn {
-            float: right;
-            font-size: 28px;
-            font-weight: bold;
-            color: var(--text-muted);
-            cursor: pointer;
-        }
-        .close-btn:hover { color: var(--text-primary); }
-
-        .form-label {
-            display: block;
-            margin-bottom: 6px;
-            color: var(--text-secondary);
-            font-size: 13px;
-            font-weight: 600;
-        }
-        .form-control, .form-select, textarea {
-            width: 100%;
-            background: rgba(255,255,255,0.04);
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            padding: 10px 12px;
-            color: var(--text-primary);
-            font-family: 'Inter', sans-serif;
-            outline: none;
-        }
-        .form-control:focus, .form-select:focus, textarea:focus {
-            border-color: var(--indigo);
-            box-shadow: 0 0 0 3px rgba(99,102,241,0.15);
-        }
-        .form-select, select {
-            cursor: pointer;
-            color-scheme: dark;
-        }
-        .form-select option, select option {
-            background-color: #1E293B !important;
-            color: #F8FAFC !important;
-            padding: 8px 12px;
-        }
-        .form-select optgroup, select optgroup {
-            background-color: #0F172A !important;
-            color: #94A3B8 !important;
-        }
-        .tabs { display: flex; gap: 6px; margin-bottom: 14px; }
+        .image-pill { color: var(--text-muted); font-size: 12px; }
+        .tabs { display: flex; gap: 6px; margin-bottom: 12px; }
         .tab-btn {
-            flex: 1; padding: 8px; border-radius: 10px; text-align: center;
+            flex: 1; padding: 8px 10px; border-radius: 8px; text-align: center;
             font-size: 12.5px; font-weight: 600; cursor: pointer;
-            background: rgba(255,255,255,0.04); color: var(--text-secondary); border: 1px solid var(--border);
+            background: var(--bg-subtle); color: var(--text-secondary);
+            border: 1px solid var(--border);
+            transition: all 0.15s;
         }
-        .tab-btn.active { background: rgba(99,102,241,0.15); color: var(--indigo-light); border-color: var(--border-hover); }
+        .tab-btn.active {
+            background: rgba(242, 103, 34, 0.12);
+            color: var(--mb-orange);
+            border-color: rgba(242, 103, 34, 0.35);
+        }
         .form-error { color: var(--rose); font-size: 12px; margin-top: 4px; display: none; }
         .payment-hint {
             font-size: 12px; color: var(--text-secondary); margin-bottom: 14px;
-            padding: 8px 10px; background: rgba(255,255,255,0.03); border-radius: 8px;
+            padding: 10px 12px; background: var(--bg-subtle); border: 1px solid var(--border); border-radius: 8px;
         }
         .mb-3 { margin-bottom: 14px; }
-        .row { display: flex; gap: 12px; flex-wrap: wrap; }
-        .col-md-4 { flex: 1; min-width: 180px; }
+        .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+        .col-md-4 { flex: 2; min-width: 150px; }
+        .col-md-3 { flex: 1; min-width: 90px; }
+        .col-md-2 { flex: 0 0 auto; }
         .d-flex { display: flex; gap: 10px; flex-wrap: wrap; }
-        .alert { padding: 10px 12px; border-radius: 10px; margin-top: 12px; }
-        .alert-success { background: rgba(16,185,129,0.15); color: #A7F3D0; }
-        .alert-danger { background: rgba(244,63,94,0.15); color: #FECACA; }
-                .btn-close { background: transparent; border: none; color: inherit; cursor: pointer; }
-
-        .modal-box { text-align: center; max-width: 420px; }
-        .modal-icon { font-size: 36px; margin-bottom: 12px; }
-        .modal-title { font-size: 17px; font-weight: 700; }
-        .modal-msg { font-size: 13.5px; color: var(--text-secondary); margin-bottom: 24px; line-height: 1.7; }
-        .modal-msg strong { color: var(--text-primary); }
-        .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 8px; }
-        .btn-danger-solid { background: var(--rose); color: white; border: none; }
-        .btn-danger-solid:hover { background: #e0294a; }
-
-        @media (max-width: 900px) {
-            .main { margin-left: 0; }
-            .topbar { padding: 12px 16px; }
-            .content { padding: 16px 12px; }
-        }
     </style>
-    <link rel="stylesheet" href="{% static 'InvoiceApp/css/responsive.css' %}">
 </head>
 <body>
 
-<div class="sidebar">
-    <div class="sidebar-logo">
-        {% if company_logo_url %}
-        <img src="{{ company_logo_url }}" alt="Logo" style="width:36px;height:36px;object-fit:contain;border-radius:10px;background:#fff;padding:4px;">
-        {% else %}
-        <div class="logo-mark">{{ company_name|first|upper }}</div>
-        {% endif %}
-        <div class="logo-text">{{ company_name }}</div>
-        <button type="button" class="sidebar-close-btn" id="sidebarCloseBtn" aria-label="Fermer le menu">&times;</button>
-    </div>
-
-    <nav class="sidebar-nav">
-        <div class="nav-section-label">Général</div>
-        <a href="{% url 'dashboard' %}" class="nav-item">
-            <span class="nav-icon">📊</span> Tableau de bord
-        </a>
-
-        <div class="nav-section-label">Gestion</div>
-        <a href="{% url 'list_agents' %}" class="nav-item">
-            <span class="nav-icon">👥</span> Agents
-        </a>
-        <a href="{% url 'manage_agent_roles' %}" class="nav-item">
-            <span class="nav-icon">🎭</span> Rôles
-        </a>
-        <a href="{% url 'list_engines' %}" class="nav-item">
-            <span class="nav-icon">⚙️</span> Engins
-        </a>
-        <a href="{% url 'list_stock_loads' %}" class="nav-item">
-            <span class="nav-icon">🚚</span> Stock Vendeurs
-        </a>
-        <a href="{% url 'list_products' %}" class="nav-item">
-            <span class="nav-icon">📦</span> Produits
-        </a>
-
-        <div class="nav-section-label">Commerce</div>
-        <a href="{% url 'list_clients' %}" class="nav-item">
-            <span class="nav-icon">🤝</span> Clients
-        </a>
-        <a href="{% url 'list_suppliers' %}" class="nav-item">
-            <span class="nav-icon">🏭</span> Fournisseurs
-        </a>
-        <a href="{% url 'list_sales' %}" class="nav-item active">
-            <span class="nav-icon">💹</span> Ventes <span class="nav-badge">{{ sales|length }}</span>
-        </a>
-        <a href="{% url 'list_supplies' %}" class="nav-item">
-            <span class="nav-icon">🛒</span> Appros
-        </a>
-        <a href="{% url 'list_invoices' %}" class="nav-item">
-            <span class="nav-icon">🧾</span> Factures
-        </a>
-
-        <div class="nav-section-label">Entreprise</div>
-        <a href="{% url 'company_settings' %}" class="nav-item">
-            <span class="nav-icon">⚙️</span> Paramètres
-        </a>
-        <a href="{% url 'subscription' %}" class="nav-item">
-            <span class="nav-icon">💳</span> Abonnement
-        </a>
-        {% if request.user.is_staff %}
-        <a href="{% url 'promo_codes_admin' %}" class="nav-item">
-            <span class="nav-icon">🎟️</span> Codes promo
-        </a>
-        {% endif %}
-    </nav>
-
-    <div class="sidebar-footer">
-        <div class="user-block">
-            <div class="user-avatar">{{ company_name|slice:":1"|upper|default:"A" }}</div>
-            <div>
-                <div class="user-name">{{ company_name|default:request.user.username }}</div>
-                <div class="user-role">Administrateur</div>
-            </div>
-        </div>
-        <a href="{% url 'logout' %}" class="logout-btn">🚪 Se déconnecter</a>
-    </div>
-</div>
-<div class="sidebar-overlay" id="sidebarOverlay"></div>
+{% include 'includes/sidebar.html' with active_page='sales' %}
 
 <div class="main">
-    <div class="topbar">
-        <div style="display:flex; align-items:center; gap:12px;">
+    <header class="topbar">
+        <div class="topbar-left">
             <button type="button" class="sidebar-toggle-btn" id="sidebarToggleBtn" aria-label="Menu de navigation">
                 <span></span><span></span><span></span>
             </button>
             <div>
-                <div class="topbar-title">Liste des ventes</div>
+                <div class="topbar-title">Journal des ventes</div>
                 <div class="topbar-sub">{{ sales|length }} vente{{ sales|length|pluralize }} enregistrée{{ sales|length|pluralize }}</div>
             </div>
         </div>
         <div class="topbar-actions">
-            <a href="#" onclick="openSaleModal(null); return false;" class="btn btn-primary">＋ Ajouter</a>
+            <a href="#" onclick="openSaleModal(null); return false;" class="btn btn-primary">+ Nouvelle vente</a>
             <a href="{% url 'dashboard' %}" class="btn btn-ghost">← Tableau de bord</a>
         </div>
-    </div>
+    </header>
 
-    <div class="content">
+    <main class="content">
         <div class="toolbar">
             <div class="search-wrap">
-                <span class="search-icon">🔎</span>
-                <input type="text" class="search-input" id="searchInput" placeholder="Rechercher une vente...">
+                <span class="search-icon">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                </span>
+                <input type="text" class="search-input" id="searchInput" placeholder="Rechercher une vente par client, agent ou produit...">
             </div>
         </div>
 
         <div class="table-card">
-            <table class="table">
-                <thead>
-                    <tr>
-                        <th>#</th>
-                        <th>Client</th>
-                        <th>Agent</th>
-                        <th>Produit</th>
-                        <th>Qté</th>
-                        <th>Prix</th>
-                        <th>Total</th>
-                        <th>Date</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for sale in sales %}
-                    <tr class="sale-row">
-                        <td>{{ forloop.counter }}</td>
-                        <td>
-                            {% if sale.client %}
-                                <div class="sale-muted">{{ sale.client.name }}</div>
-                            {% else %}
-                                <span class="image-pill">-</span>
-                            {% endif %}
-                        </td>
-                        <td>
-                            {% if sale.agent %}
-                                <div class="sale-muted">{{ sale.agent.name }}</div>
-                            {% else %}
-                                <span class="image-pill">-</span>
-                            {% endif %}
-                        </td>
-                        <td>
-                            {% if sale.sale_items.all %}
-                                <div class="sale-item-stack">
-                                    {% for item in sale.sale_items.all %}
-                                    <div class="sale-item-line">
-                                        <div class="sale-muted">{{ item.product.name }}</div>
-                                        <div class="sale-item-meta">Qté {{ item.quantity }} • Prix {{ item.unit_price|floatformat:2 }} • Total {{ item.total_price|floatformat:2 }} {{ sale.get_currency_display }}</div>
+            <div class="table-wrap">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Client</th>
+                            <th>Agent</th>
+                            <th>Produits vendus</th>
+                            <th>Qté totale</th>
+                            <th>Prix réf.</th>
+                            <th>Total TTC</th>
+                            <th>Date</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for sale in sales %}
+                        <tr class="sale-row">
+                            <td>{{ forloop.counter }}</td>
+                            <td>
+                                {% if sale.client %}
+                                    <div class="sale-muted">{{ sale.client.name }}</div>
+                                {% else %}
+                                    <span class="image-pill">—</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if sale.agent %}
+                                    <div class="sale-muted">{{ sale.agent.name }}</div>
+                                {% else %}
+                                    <span class="image-pill">—</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if sale.sale_items.all %}
+                                    <div class="sale-item-stack">
+                                        {% for item in sale.sale_items.all %}
+                                        <div class="sale-item-line">
+                                            <div class="sale-muted">{% if item.product %}{{ item.product.name }}{% else %}Produit supprimé{% endif %}</div>
+                                            <div class="sale-item-meta">Qté {{ item.quantity }} • Prix {{ item.unit_price|floatformat:2 }} • Total {{ item.total_price|floatformat:2 }} {{ sale.get_currency_display }}</div>
+                                        </div>
+                                        {% endfor %}
                                     </div>
-                                    {% endfor %}
-                                </div>
-                            {% else %}
-                                <span class="image-pill">-</span>
-                            {% endif %}
-                        </td>
-                        <td>{{ sale.quantity }}</td>
-                        <td>{{ sale.unit_price|floatformat:2 }} {{ sale.get_currency_display }}</td>
-                        <td><span class="sale-total">{{ sale.formatted_total_price }}</span></td>
-                        <td>{{ sale.date|date:"d/m/Y" }}</td>
-                        <td>
-                            <button type="button"
-                                    class="btn btn-edit-soft btn-sm"
-                                    data-sale-id="{{ sale.id }}"
-                                    data-client-id="{{ sale.client.id|default:'' }}"
-                                    data-agent-id="{{ sale.agent.id|default:'' }}"
-                                    data-items='{{ sale.serialized_items|escapejs }}'
-                                    onclick="openSaleModalFromButton(this)">
-                                Modifier
-                            </button>
-                            <button type="button" onclick="openDeleteModal({{ sale.id }})" class="btn btn-danger-soft btn-sm">Supprimer</button>
-                        </td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="9">
-                            <div class="empty-state">Aucune vente enregistrée</div>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+                                {% else %}
+                                    <span class="image-pill">—</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ sale.quantity }}</td>
+                            <td>{{ sale.unit_price|floatformat:2 }} {{ sale.get_currency_display }}</td>
+                            <td><span class="sale-total">{{ sale.formatted_total_price }}</span></td>
+                            <td>{{ sale.date|date:"d/m/Y" }}</td>
+                            <td>
+                                <button type="button"
+                                        class="btn btn-edit-soft btn-sm"
+                                        data-sale-id="{{ sale.id }}"
+                                        data-client-id="{% if sale.client %}{{ sale.client.id }}{% endif %}"
+                                        data-agent-id="{% if sale.agent %}{{ sale.agent.id }}{% endif %}"
+                                        data-items='{{ sale.serialized_items|escapejs }}'
+                                        onclick="openSaleModalFromButton(this)">
+                                    Modifier
+                                </button>
+                                <button type="button" onclick="openDeleteModal({{ sale.id }})" class="btn btn-danger-soft btn-sm">Supprimer</button>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="9">
+                                <div class="empty-state">Aucune vente enregistrée</div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         </div>
-    </div>
+    </main>
 </div>
 
 <div class="modal-overlay" id="saleModal">
     <div class="modal-content">
-        <span class="close-btn" onclick="closeSaleModal()">&times;</span>
-        <h3 id="modalTitle">Ajouter une Vente</h3>
+        <div class="modal-header">
+            <h3 class="modal-title" id="modalTitle">Ajouter une Vente</h3>
+            <span class="close-btn" onclick="closeSaleModal()">&times;</span>
+        </div>
 
-        <form id="saleForm" style="margin-top: 20px;">
+        <form id="saleForm">
             {% csrf_token %}
             <input type="hidden" id="saleId" name="sale_id" value="">
 
@@ -577,13 +189,15 @@
                     <label class="form-label" for="newClientShopName">Nom du magasin</label>
                     <input type="text" class="form-control" id="newClientShopName" name="new_client_shop_name" style="margin-bottom: 10px;">
                     <label class="form-label" for="newClientPhone">Téléphone</label>
-                    <input type="text" class="form-control" id="newClientPhone" name="new_client_phone">
+                    <input type="text" class="form-control" id="newClientPhone" name="new_client_phone" style="margin-bottom: 10px;">
+                    <label class="form-label" for="newClientEmail">Email (pour envoi de la facture)</label>
+                    <input type="email" class="form-control" id="newClientEmail" name="new_client_email" placeholder="client@domaine.com">
                 </div>
                 <div class="form-error" id="clientError"></div>
             </div>
 
             <div class="mb-3">
-                <label for="agent" class="form-label">Agent</label>
+                <label for="agent" class="form-label">Agent commercial</label>
                 <select class="form-select" id="agent" name="agent_id">
                     <option value="">— Sans agent —</option>
                     {% for agent in agents %}
@@ -595,13 +209,13 @@
             <div class="mb-3">
                 <label class="form-label">Produits *</label>
                 <div id="saleItemsContainer"></div>
-                <button type="button" class="btn btn-ghost btn-sm" style="margin-top: 10px;" onclick="addSaleItemRow()">＋ Ajouter une ligne</button>
+                <button type="button" class="btn btn-ghost btn-sm" style="margin-top: 10px;" onclick="addSaleItemRow()">+ Ajouter une ligne</button>
             </div>
 
             <input type="hidden" id="saleItemsInput" name="sale_items" value="[]">
 
             <div class="mb-3" id="paymentSection">
-                <label class="form-label">Paiement *</label>
+                <label class="form-label">Mode de règlement *</label>
                 <div class="tabs">
                     <div class="tab-btn active" id="payFull" onclick="switchPaymentType('full')">Comptant</div>
                     <div class="tab-btn" id="payCredit" onclick="switchPaymentType('credit')">Crédit</div>
@@ -623,12 +237,12 @@
             </div>
 
             <div class="mb-3 payment-hint" id="paymentEditHint" style="display:none;">
-                ℹ️ Le paiement d'une vente déjà enregistrée se gère depuis l'espace <strong>Factures</strong>.
+                Le paiement d'une vente déjà enregistrée se gère depuis l'espace <strong>Factures</strong>.
             </div>
 
-            <div class="d-flex">
-                <button type="submit" class="btn btn-primary">💾 Enregistrer</button>
+            <div class="d-flex" style="justify-content:flex-end; margin-top:18px;">
                 <button type="button" class="btn btn-ghost" onclick="closeSaleModal()">Annuler</button>
+                <button type="submit" class="btn btn-primary">Enregistrer</button>
             </div>
         </form>
 
@@ -636,18 +250,20 @@
     </div>
 </div>
 
-<!-- ══════════════ MODAL CONFIRMATION SUPPRESSION ══════════════ -->
+<!-- MODAL CONFIRMATION SUPPRESSION -->
 <div class="modal-overlay" id="deleteModal">
-    <div class="modal-box">
-        <div class="modal-icon">⚠️</div>
-        <div class="modal-title">Confirmer la suppression</div>
-        <div class="modal-msg">
-            Êtes-vous sûr de vouloir supprimer la vente <strong id="modal-sale-id"></strong> ?
+    <div class="modal-box" style="max-width:420px;">
+        <div class="modal-header">
+            <div class="modal-title">Confirmer la suppression</div>
+            <button type="button" class="modal-close" onclick="closeDeleteModal()">&times;</button>
+        </div>
+        <div class="modal-msg" style="font-size:13.5px; color:var(--text-secondary); margin-bottom:20px; line-height:1.6;">
+            Êtes-vous sûr de vouloir supprimer la vente <strong id="modal-sale-id" style="color:var(--text-primary);"></strong> ?
             <br>Cette action est <strong>irréversible</strong>.
         </div>
         <div class="modal-actions">
             <button type="button" class="btn btn-ghost" onclick="closeDeleteModal()">Annuler</button>
-            <button type="button" class="btn btn-danger-solid" id="confirmDeleteBtn">🗑️ Supprimer</button>
+            <button type="button" class="btn btn-danger-solid" id="confirmDeleteBtn">Supprimer</button>
         </div>
     </div>
 </div>
@@ -661,7 +277,7 @@
         const productOptions = [{% for product in products %}{ value: '{{ product.id }}', label: '{{ product.name|escapejs }}', price: '{{ product.price|escapejs }}' }{% if not forloop.last %},{% endif %}{% endfor %}];
         const optionHtml = productOptions.map(option => {
             const selected = String(productId) === String(option.value) ? ' selected' : '';
-            return `<option value="${option.value}"${selected} style="background-color: #1E293B !important; color: #FFFFFF !important;">${option.label}</option>`;
+            return `<option value="${option.value}"${selected}>${option.label}</option>`;
         }).join('');
 
         const productLookup = Object.fromEntries(productOptions.map(option => [String(option.value), option.price || '']));
@@ -669,8 +285,8 @@
         row.innerHTML = `
             <div class="row">
                 <div class="col-md-4">
-                    <select class="form-select" style="color-scheme: dark !important; background-color: #1E293B !important; color: #FFFFFF !important;" required>
-                        <option value="" style="background-color: #1E293B !important; color: #94A3B8 !important;">Sélectionner un produit...</option>
+                    <select class="form-select" required>
+                        <option value="">Sélectionner un produit...</option>
                         ${optionHtml}
                     </select>
                 </div>
@@ -779,6 +395,7 @@
             document.getElementById('newClientName').value = '';
             document.getElementById('newClientShopName').value = '';
             document.getElementById('newClientPhone').value = '';
+            document.getElementById('newClientEmail').value = '';
         } else {
             modalTitle.textContent = 'Ajouter une Vente';
             document.getElementById('saleId').value = '';
@@ -786,8 +403,6 @@
         }
         switchClientTab('existing');
 
-        // Le paiement (comptant/crédit/avance) ne se choisit qu'à la création d'une vente ;
-        // pour une vente existante, il se gère depuis l'espace Factures.
         paymentSection.style.display = isEditing ? 'none' : 'block';
         paymentEditHint.style.display = isEditing ? 'block' : 'none';
         switchPaymentType('full');
@@ -805,7 +420,6 @@
             try {
                 parsedItems = JSON.parse(rawItems);
             } catch (error) {
-                console.warn('Impossible de parser les lignes de vente', error);
                 parsedItems = [];
             }
         }
@@ -845,7 +459,7 @@
         return cookieValue;
     }
 
-    const csrfToken = getCookie('csrftoken');
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || getCookie('csrftoken');
 
     document.getElementById('saleForm').addEventListener('submit', async function(e) {
         e.preventDefault();
@@ -901,7 +515,6 @@
                 return;
             }
         } else {
-            // En édition, le bloc paiement est masqué : on ne l'envoie pas.
             formData.delete('payment_type');
             formData.delete('amount_paid');
             formData.delete('due_date');
@@ -911,26 +524,17 @@
             const response = await fetch('{% url "add_sale" %}', {
                 method: 'POST',
                 body: formData,
-                headers: {
-                    'X-CSRFToken': csrfToken
-                },
+                headers: { 'X-CSRFToken': csrfToken },
                 credentials: 'same-origin'
             });
 
             const msgDiv = document.getElementById('message');
-            if (!response.ok) {
-                const text = await response.text();
-                console.error('Server error:', response.status, text);
-                msgDiv.innerHTML = '<div class="alert alert-danger">Erreur serveur: ' + response.status + '</div>';
-                return;
-            }
-
-            const data = await response.json();
-            if (data.success) {
+            const data = await response.json().catch(() => ({}));
+            if (response.ok && data.success) {
                 msgDiv.innerHTML = '<div class="alert alert-success" role="alert">' + data.message + '</div>';
                 setTimeout(() => location.reload(), 1500);
             } else {
-                msgDiv.innerHTML = '<div class="alert alert-danger" role="alert">' + data.error + '</div>';
+                msgDiv.innerHTML = '<div class="alert alert-danger" role="alert">' + (data.error || ('Erreur serveur: ' + response.status)) + '</div>';
             }
         } catch (error) {
             console.error(error);
@@ -940,7 +544,7 @@
 
     let saleToDelete = null;
 
-            function openDeleteModal(saleId) {
+    function openDeleteModal(saleId) {
         saleToDelete = saleId;
         document.getElementById('modal-sale-id').textContent = '#' + saleId;
         document.getElementById('deleteModal').classList.add('show');
@@ -963,25 +567,16 @@
         const response = await fetch('{% url "delete_sale" %}', {
             method: 'POST',
             body: formData,
-            headers: {
-                'X-CSRFToken': csrfToken
-            },
+            headers: { 'X-CSRFToken': csrfToken },
             credentials: 'same-origin'
         });
 
-        if (!response.ok) {
-            const text = await response.text();
-            console.error('Server error:', response.status, text);
-            alert('Erreur serveur: ' + response.status);
-            return;
-        }
-
-        const data = await response.json();
-        if (data.success) {
+        const data = await response.json().catch(() => ({}));
+        if (response.ok && data.success) {
             closeDeleteModal();
             location.reload();
         } else {
-            alert(data.error || 'Erreur lors de la suppression');
+            alert(data.error || ('Erreur serveur: ' + response.status));
         }
     });
 
@@ -994,9 +589,6 @@
         });
     });
 </script>
-
-
-
 <script src="{% static 'InvoiceApp/js/responsive.js' %}"></script>
 <script src="{% static 'InvoiceApp/js/ai_assistant.js' %}"></script>
 </body>

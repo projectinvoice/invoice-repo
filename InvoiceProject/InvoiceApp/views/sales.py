@@ -36,6 +36,7 @@ def add_sale(request):
     new_client_name = request.POST.get("new_client_name", "").strip()
     new_client_shop_name = request.POST.get("new_client_shop_name", "").strip()
     new_client_phone = request.POST.get("new_client_phone", "").strip()
+    new_client_email = request.POST.get("new_client_email", "").strip()
     agent_id = request.POST.get("agent_id")
     sale_items_payload = request.POST.get("sale_items")
     payment_type = request.POST.get("payment_type", "full")  # full | credit | partial
@@ -59,7 +60,7 @@ def add_sale(request):
             company=request.user,
             name=new_client_name,
             shop_name=new_client_shop_name,
-            phone=new_client_phone,
+            phone=new_client_phone, email=new_client_email,
         )
 
     agent = None
@@ -257,6 +258,8 @@ def delete_sale(request):
     with transaction.atomic():
         # Recrédite le stock selon la provenance (stock vendeur ou magasin central)
         for item in sale.sale_items.select_related('product').all():
+            if not item.product:
+                continue
             if sale.agent:
                 agent_stock, _ = AgentStock.objects.select_for_update().get_or_create(
                     agent=sale.agent, product=item.product,

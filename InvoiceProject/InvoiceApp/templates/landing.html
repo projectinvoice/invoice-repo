@@ -1,685 +1,1314 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>InvoiceApp — Facturation & Gestion de Stock pour PME</title>
+    <title>MerchandBlock — Logiciel de gestion des stocks, flottes vendeurs et facturation B2B</title>
+    <meta name="description" content="MerchandBlock centralise vos approvisionnements, vos chargements d'engins, le suivi de vos vendeurs terrain et votre facturation PDF professionnelle.">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap');
 
         :root {
-            --bg-base: #0F1629;
-            --bg-card: #1A2238;
-            --bg-card-hover: #1F2A44;
-            --border: rgba(99, 102, 241, 0.15);
-            --indigo: #6366F1;
-            --indigo-light: #818CF8;
-            --violet: #9333EA;
-            --emerald: #10B981;
-            --amber: #F59E0B;
-            --rose: #F43F5E;
-            --sky: #38BDF8;
-            --text-primary: #E2E8F0;
-            --text-secondary: #94A3B8;
+            --mb-navy: #08244B;
+            --mb-navy-hover: #0D3268;
+            --mb-navy-dark: #051630;
+            --mb-orange: #F26722;
+            --mb-orange-hover: #D95514;
+            --bg-page: #F8FAFC;
+            --bg-white: #FFFFFF;
+            --bg-subtle: #F1F5F9;
+            --text-main: #0F172A;
+            --text-body: #334155;
             --text-muted: #64748B;
-            --radius: 20px;
-            --radius-sm: 12px;
+            --border: #E2E8F0;
+            --border-strong: #CBD5E1;
+            --emerald: #059669;
+            --amber: #D97706;
+            --radius: 12px;
+            --radius-lg: 18px;
         }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        *, *::before, *::after {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-        html { scroll-behavior: smooth; }
+        html {
+            scroll-behavior: smooth;
+        }
 
         body {
-            font-family: 'Inter', sans-serif;
-            background: var(--bg-base);
-            color: var(--text-primary);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-page);
+            color: var(--text-main);
             line-height: 1.6;
-            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+            font-variant-numeric: tabular-nums;
         }
 
-        a { color: inherit; }
-        img { max-width: 100%; display: block; }
-        section { position: relative; }
-
-        .wrap { max-width: 1180px; margin: 0 auto; padding: 0 24px; }
-
-        /* Fond décoratif */
-        .glow {
-            position: absolute;
-            border-radius: 50%;
-            filter: blur(90px);
-            opacity: 0.35;
-            pointer-events: none;
-            z-index: 0;
+        h1, h2, h3, h4, .brand-name {
+            font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
+            letter-spacing: -0.025em;
         }
-        .glow-indigo { background: var(--indigo); }
-        .glow-violet { background: var(--violet); }
-        .glow-emerald { background: var(--emerald); }
 
-        /* Header */
-        header {
-            position: sticky; top: 0; z-index: 200;
-            background: rgba(15, 22, 41, 0.82);
-            backdrop-filter: blur(14px);
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+
+        /* ==========================================================================
+           HEADER / NAVBAR
+           ========================================================================== */
+        .navbar {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: rgba(255, 255, 255, 0.92);
+            backdrop-filter: blur(12px);
             border-bottom: 1px solid var(--border);
         }
-        .header-inner {
-            display: flex; align-items: center; justify-content: space-between;
-            padding: 16px 24px;
-            max-width: 1180px; margin: 0 auto;
+
+        .nav-inner {
+            height: 72px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 20px;
         }
-        .brand { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 17px; }
+
+        .brand {
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+            color: var(--mb-navy);
+        }
+
         .brand-mark {
-            width: 34px; height: 34px; border-radius: 10px;
-            background: linear-gradient(135deg, var(--indigo), var(--violet));
-            display: flex; align-items: center; justify-content: center; font-size: 16px;
+            width: 38px;
+            height: 38px;
+            border-radius: 9px;
+            overflow: hidden;
+            flex-shrink: 0;
+            box-shadow: 0 2px 6px rgba(8, 36, 75, 0.18);
         }
 
-        nav.desktop-nav { display: flex; align-items: center; gap: 6px; }
-        nav.desktop-nav a.nav-link {
-            padding: 9px 14px; border-radius: 999px; text-decoration: none;
-            color: var(--text-secondary); font-size: 13.5px; font-weight: 500;
-            transition: all 0.2s;
+        .brand-mark svg {
+            width: 100%;
+            height: 100%;
+            display: block;
         }
-        nav.desktop-nav a.nav-link:hover { color: var(--text-primary); background: rgba(255,255,255,0.06); }
 
-        .header-actions { display: flex; align-items: center; gap: 10px; }
+        .brand-name {
+            font-size: 19px;
+            font-weight: 800;
+            color: var(--mb-navy);
+        }
+
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 32px;
+            list-style: none;
+        }
+
+        .nav-links a {
+            color: var(--text-body);
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 600;
+            transition: color 0.15s ease;
+        }
+
+        .nav-links a:hover {
+            color: var(--mb-navy);
+        }
+
+        .nav-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
         .btn {
-            display: inline-flex; align-items: center; justify-content: center; gap: 6px;
-            padding: 10px 20px; border-radius: 999px; font-size: 13.5px; font-weight: 600;
-            text-decoration: none; border: none; cursor: pointer; transition: all 0.2s;
-            font-family: 'Inter', sans-serif; white-space: nowrap;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 10px 18px;
+            border-radius: 9px;
+            font-size: 14px;
+            font-weight: 600;
+            text-decoration: none;
+            cursor: pointer;
+            border: 1px solid transparent;
+            transition: all 0.15s ease;
+            font-family: inherit;
         }
-        .btn-ghost { color: var(--text-primary); background: rgba(255,255,255,0.06); border: 1px solid var(--border); }
-        .btn-ghost:hover { background: rgba(255,255,255,0.12); }
-        .btn-primary { background: linear-gradient(135deg, var(--indigo), var(--violet)); color: white; }
-        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 10px 28px rgba(99,102,241,0.4); }
-        .btn-lg { padding: 15px 30px; font-size: 15px; }
 
-        .burger {
-            display: none; flex-direction: column; gap: 5px; background: transparent; border: none;
-            cursor: pointer; padding: 8px;
+        .btn svg {
+            width: 16px;
+            height: 16px;
+            stroke: currentColor;
+            stroke-width: 2;
+            fill: none;
         }
-        .burger span { width: 22px; height: 2px; background: var(--text-primary); border-radius: 2px; }
 
-        .mobile-nav {
+        .btn-navy {
+            background: var(--mb-navy);
+            color: #FFFFFF;
+            border-color: var(--mb-navy);
+        }
+
+        .btn-navy:hover {
+            background: var(--mb-navy-hover);
+            transform: translateY(-1px);
+            box-shadow: 0 6px 16px rgba(8, 36, 75, 0.18);
+        }
+
+        .btn-orange {
+            background: var(--mb-orange);
+            color: #FFFFFF;
+            border-color: var(--mb-orange);
+        }
+
+        .btn-orange:hover {
+            background: var(--mb-orange-hover);
+            transform: translateY(-1px);
+            box-shadow: 0 6px 16px rgba(242, 103, 34, 0.25);
+        }
+
+        .btn-outline {
+            background: var(--bg-white);
+            color: var(--text-main);
+            border: 1px solid var(--border-strong);
+        }
+
+        .btn-outline:hover {
+            background: var(--bg-subtle);
+            border-color: #94A3B8;
+        }
+
+        .btn-lg {
+            padding: 13px 24px;
+            font-size: 15px;
+        }
+
+        .mobile-toggle {
             display: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background: var(--bg-white);
+            color: var(--mb-navy);
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+
+        .mobile-drawer {
+            display: none;
+            background: var(--bg-white);
+            border-bottom: 1px solid var(--border);
+            padding: 16px 24px 24px;
+        }
+
+        .mobile-drawer.open {
+            display: block;
+        }
+
+        .mobile-drawer a {
+            display: block;
+            padding: 11px 0;
+            color: var(--text-main);
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 15px;
+            border-bottom: 1px solid var(--bg-subtle);
+        }
+
+        .mobile-drawer .mobile-actions {
+            display: flex;
             flex-direction: column;
-            gap: 4px;
-            padding: 12px 24px 18px;
-            border-top: 1px solid var(--border);
-            background: rgba(15,22,41,0.98);
+            gap: 10px;
+            margin-top: 16px;
         }
-        .mobile-nav.open { display: flex; }
-        .mobile-nav a.nav-link { padding: 10px 12px; border-radius: 10px; text-decoration: none; color: var(--text-secondary); font-size: 14px; font-weight: 500; }
-        .mobile-nav a.nav-link:hover { background: rgba(255,255,255,0.06); color: var(--text-primary); }
-        .mobile-nav .btn { margin-top: 8px; width: 100%; }
 
-        /* Hero */
-        .hero { padding: 90px 0 70px; overflow: hidden; }
+        /* ==========================================================================
+           HERO SECTION
+           ========================================================================== */
+        .hero {
+            padding: 68px 0 80px;
+            background: linear-gradient(180deg, #FFFFFF 0%, #F1F5F9 100%);
+            border-bottom: 1px solid var(--border);
+        }
+
         .hero-grid {
-            display: grid; grid-template-columns: 1.05fr 0.95fr; gap: 56px; align-items: center;
-            position: relative; z-index: 1;
+            display: grid;
+            grid-template-columns: 1.12fr 0.88fr;
+            gap: 52px;
+            align-items: center;
         }
-        .badge-pill {
-            display: inline-flex; align-items: center; gap: 8px;
-            background: rgba(99,102,241,0.12); border: 1px solid rgba(99,102,241,0.3);
-            color: var(--indigo-light); font-size: 12.5px; font-weight: 600;
-            padding: 7px 14px; border-radius: 999px; margin-bottom: 22px;
-        }
-        .badge-pill .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--emerald); }
 
-        .hero h1 { font-size: 46px; font-weight: 800; line-height: 1.15; letter-spacing: -0.02em; margin-bottom: 20px; }
+        .eyebrow {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 12px;
+            border-radius: 6px;
+            background: rgba(8, 36, 75, 0.06);
+            border: 1px solid rgba(8, 36, 75, 0.12);
+            color: var(--mb-navy);
+            font-size: 12.5px;
+            font-weight: 700;
+            letter-spacing: 0.02em;
+            margin-bottom: 20px;
+        }
+
+        .eyebrow-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: var(--mb-orange);
+        }
+
+        .hero h1 {
+            font-size: clamp(30px, 3.8vw, 46px);
+            font-weight: 800;
+            line-height: 1.14;
+            color: var(--mb-navy);
+            margin-bottom: 18px;
+            letter-spacing: -0.025em;
+        }
+
         .hero h1 .accent {
-            background: linear-gradient(135deg, var(--indigo-light), var(--sky));
-            -webkit-background-clip: text; background-clip: text; color: transparent;
+            color: var(--mb-orange);
         }
-        .hero .lead { font-size: 17px; color: var(--text-secondary); max-width: 520px; margin-bottom: 32px; }
-        .hero-cta { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 28px; }
-        .hero-trust { display: flex; align-items: center; gap: 10px; color: var(--text-muted); font-size: 13px; }
-        .avatar-stack { display: flex; }
-        .avatar-stack span {
-            width: 28px; height: 28px; border-radius: 50%; border: 2px solid var(--bg-base);
-            margin-left: -8px; display: flex; align-items: center; justify-content: center;
-            font-size: 11px; font-weight: 700; color: white;
+
+        .hero-lead {
+            font-size: 16.5px;
+            color: var(--text-body);
+            margin-bottom: 28px;
+            max-width: 560px;
+            line-height: 1.65;
         }
-        .avatar-stack span:first-child { margin-left: 0; }
 
-        /* Mockup produit (illustration CSS) */
-        .mockup-wrap { position: relative; }
-        .mockup {
-            background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius);
-            box-shadow: 0 30px 70px rgba(0,0,0,0.5); overflow: hidden;
-            transform: perspective(1200px) rotateY(-6deg) rotateX(2deg);
+        .hero-cta {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 32px;
         }
-        .mockup-bar { display: flex; align-items: center; gap: 6px; padding: 12px 16px; border-bottom: 1px solid var(--border); background: rgba(255,255,255,0.02); }
-        .mockup-bar span { width: 10px; height: 10px; border-radius: 50%; background: rgba(255,255,255,0.15); }
-        .mockup-body { padding: 20px; }
-        .mockup-row { display: flex; gap: 14px; margin-bottom: 14px; }
-        .mockup-card { flex: 1; background: rgba(255,255,255,0.04); border: 1px solid var(--border); border-radius: 12px; padding: 14px; }
-        .mockup-card .mc-label { font-size: 10.5px; color: var(--text-muted); margin-bottom: 6px; }
-        .mockup-card .mc-value { font-size: 17px; font-weight: 800; }
-        .mockup-card .mc-value.up { color: var(--emerald); }
-        .mockup-chart { background: rgba(255,255,255,0.04); border: 1px solid var(--border); border-radius: 12px; padding: 16px; display: flex; align-items: flex-end; gap: 8px; height: 120px; }
-        .mockup-chart .bar { flex: 1; border-radius: 6px 6px 0 0; background: linear-gradient(180deg, var(--indigo-light), var(--indigo)); }
 
-        .float-card {
-            position: absolute; background: var(--bg-card); border: 1px solid var(--border);
-            border-radius: 14px; padding: 12px 16px; box-shadow: 0 20px 40px rgba(0,0,0,0.45);
-            display: flex; align-items: center; gap: 10px; font-size: 12.5px; font-weight: 600;
-            animation: floaty 5s ease-in-out infinite;
+        .hero-specs {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            padding-top: 24px;
+            border-top: 1px solid var(--border);
         }
-        .float-card .fc-icon { width: 32px; height: 32px; border-radius: 9px; display: flex; align-items: center; justify-content: center; font-size: 15px; }
-        .float-1 { top: -18px; right: -18px; }
-        .float-1 .fc-icon { background: rgba(16,185,129,0.18); }
-        .float-2 { bottom: -16px; left: -24px; animation-delay: 1.2s; }
-        .float-2 .fc-icon { background: rgba(56,189,248,0.18); }
 
-        @keyframes floaty { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
-
-        /* Preuve sociale */
-        .social-proof { padding: 30px 0 60px; opacity: 0.7; }
-        .social-proof-label { text-align: center; font-size: 12px; color: var(--text-muted); margin-bottom: 18px; text-transform: uppercase; letter-spacing: 0.1em; }
-        .logo-row { display: flex; justify-content: center; gap: 40px; flex-wrap: wrap; font-weight: 700; color: var(--text-muted); font-size: 15px; }
-
-        /* Sections génériques */
-        .section { padding: 90px 0; }
-        .section-head { text-align: center; max-width: 620px; margin: 0 auto 56px; }
-        .section-kicker { display: inline-block; font-size: 12px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--indigo-light); margin-bottom: 12px; }
-        .section-head h2 { font-size: 32px; font-weight: 800; letter-spacing: -0.01em; margin-bottom: 12px; }
-        .section-head p { color: var(--text-secondary); font-size: 15.5px; }
-
-        /* Features */
-        .features-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
-        .feature-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 28px; transition: all 0.25s; }
-        .feature-card:hover { transform: translateY(-6px); border-color: rgba(99,102,241,0.4); background: var(--bg-card-hover); }
-        .feature-icon { width: 46px; height: 46px; border-radius: 13px; display: flex; align-items: center; justify-content: center; font-size: 21px; margin-bottom: 16px; }
-        .feature-card h3 { font-size: 16.5px; font-weight: 700; margin-bottom: 8px; }
-        .feature-card p { font-size: 13.5px; color: var(--text-secondary); }
-
-        /* Comment ça marche */
-        .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; position: relative; }
-        .step-card { text-align: center; padding: 0 12px; }
-        .step-num {
-            width: 44px; height: 44px; border-radius: 50%; margin: 0 auto 16px;
-            background: linear-gradient(135deg, var(--indigo), var(--violet));
-            display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 16px;
+        .spec-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            background: var(--bg-white);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 12px 14px;
+            box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
         }
-        .step-card h3 { font-size: 16px; font-weight: 700; margin-bottom: 8px; }
-        .step-card p { font-size: 13.5px; color: var(--text-secondary); max-width: 260px; margin: 0 auto; }
 
-        /* Benefits */
-        .benefits-wrap { display: grid; grid-template-columns: 1fr 1fr; gap: 60px; align-items: center; }
-        .benefit-list { display: flex; flex-direction: column; gap: 22px; }
-        .benefit-item { display: flex; gap: 16px; }
-        .benefit-check {
-            flex-shrink: 0; width: 30px; height: 30px; border-radius: 9px;
-            background: rgba(16,185,129,0.15); color: var(--emerald);
-            display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 14px;
+        .spec-icon {
+            width: 24px;
+            height: 24px;
+            border-radius: 6px;
+            background: rgba(242, 103, 34, 0.12);
+            color: var(--mb-orange);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            margin-top: 1px;
         }
-        .benefit-item h3 { font-size: 15.5px; font-weight: 700; margin-bottom: 4px; }
-        .benefit-item p { font-size: 13.5px; color: var(--text-secondary); }
 
-        .benefit-visual { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 26px; box-shadow: 0 20px 50px rgba(0,0,0,0.35); }
-        .bv-row { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--border); }
-        .bv-row:last-child { border-bottom: none; }
-        .bv-icon { width: 34px; height: 34px; border-radius: 9px; display: flex; align-items: center; justify-content: center; font-size: 15px; flex-shrink: 0; }
-        .bv-text b { display: block; font-size: 13.5px; }
-        .bv-text span { font-size: 11.5px; color: var(--text-muted); }
-
-        /* Stats */
-        .stats-band {
-            background: linear-gradient(135deg, rgba(99,102,241,0.12), rgba(147,51,234,0.12));
-            border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);
-            padding: 56px 0;
+        .spec-icon svg {
+            width: 13px;
+            height: 13px;
+            stroke: currentColor;
+            stroke-width: 2.5;
+            fill: none;
         }
-        .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; text-align: center; }
-        .stat-item h3 { font-size: 30px; font-weight: 800; margin-bottom: 4px; }
-        .stat-item p { font-size: 12.5px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; }
 
-        /* Témoignages */
-        .testimonials-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
-        .testimonial-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 26px; }
-        .testimonial-stars { color: var(--amber); font-size: 13px; margin-bottom: 14px; letter-spacing: 2px; }
-        .testimonial-card p.quote { font-size: 13.5px; color: var(--text-secondary); margin-bottom: 20px; }
-        .testimonial-author { display: flex; align-items: center; gap: 10px; }
-        .ta-avatar { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; color: white; flex-shrink: 0; }
-        .ta-name { font-size: 13px; font-weight: 700; }
-        .ta-role { font-size: 11.5px; color: var(--text-muted); }
-
-        /* CTA final */
-        .cta-final {
-            background: linear-gradient(135deg, var(--indigo), var(--violet));
-            border-radius: 28px; padding: 64px 40px; text-align: center;
-            margin: 0 auto 90px; max-width: 1132px;
-            position: relative; overflow: hidden;
+        .spec-text strong {
+            display: block;
+            font-size: 13px;
+            color: var(--text-main);
+            font-weight: 700;
+            line-height: 1.3;
         }
-        .cta-final h2 { font-size: 32px; font-weight: 800; margin-bottom: 12px; }
-        .cta-final p { font-size: 15.5px; opacity: 0.92; max-width: 480px; margin: 0 auto 30px; }
-        .cta-final .cta-buttons { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
-        .cta-final .btn-primary { background: white; color: var(--indigo); }
-        .cta-final .btn-primary:hover { box-shadow: 0 10px 28px rgba(0,0,0,0.25); }
-        .cta-final .btn-ghost { background: rgba(255,255,255,0.12); border-color: rgba(255,255,255,0.3); color: white; }
 
-        /* Footer */
-        footer { border-top: 1px solid var(--border); padding: 50px 0 26px; }
-        .footer-grid { display: grid; grid-template-columns: 1.4fr repeat(3, 1fr); gap: 32px; margin-bottom: 36px; }
-        .footer-brand .brand { margin-bottom: 12px; }
-        .footer-brand p { font-size: 13px; color: var(--text-muted); max-width: 260px; }
-        .footer-col h4 { font-size: 12.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); margin-bottom: 14px; }
-        .footer-col a { display: block; font-size: 13.5px; color: var(--text-secondary); text-decoration: none; margin-bottom: 10px; }
-        .footer-col a:hover { color: var(--text-primary); }
+        .spec-text span {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        /* Architectural Platform Overview Frame (No Fake Data) */
+        .erp-preview {
+            background: var(--mb-navy);
+            border-radius: var(--radius-lg);
+            padding: 14px;
+            box-shadow: 0 20px 40px rgba(8, 36, 75, 0.15), 0 0 0 1px rgba(8, 36, 75, 0.08);
+        }
+
+        .erp-window {
+            background: var(--bg-white);
+            border-radius: 11px;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+        }
+
+        .erp-topbar {
+            background: var(--mb-navy-dark);
+            color: #FFFFFF;
+            padding: 13px 18px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 12px;
+        }
+
+        .erp-topbar-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 700;
+        }
+
+        .erp-status-pill {
+            background: rgba(242, 103, 34, 0.18);
+            color: #FDBA74;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .erp-body {
+            padding: 18px;
+            background: #F8FAFC;
+        }
+
+        .arch-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 14px;
+        }
+
+        .arch-item {
+            background: var(--bg-white);
+            border: 1px solid var(--border);
+            border-radius: 9px;
+            padding: 12px 14px;
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 14px;
+        }
+
+        .arch-item-left {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+        }
+
+        .arch-step-badge {
+            width: 28px;
+            height: 28px;
+            border-radius: 7px;
+            background: rgba(8, 36, 75, 0.07);
+            color: var(--mb-navy);
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            font-size: 11.5px;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            margin-top: 1px;
+        }
+
+        .arch-item-title {
+            font-size: 13.5px;
+            font-weight: 700;
+            color: var(--text-main);
+            margin-bottom: 2px;
+        }
+
+        .arch-item-desc {
+            font-size: 12px;
+            color: var(--text-body);
+            line-height: 1.45;
+        }
+
+        .arch-pill {
+            font-size: 11px;
+            font-weight: 700;
+            padding: 3px 8px;
+            border-radius: 5px;
+            background: var(--bg-subtle);
+            color: var(--mb-navy);
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        .arch-pill.orange {
+            background: rgba(242, 103, 34, 0.12);
+            color: var(--mb-orange);
+        }
+
+        .erp-footer-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: rgba(8, 36, 75, 0.04);
+            border: 1px solid rgba(8, 36, 75, 0.1);
+            border-radius: 8px;
+            padding: 10px 14px;
+            font-size: 12px;
+            color: var(--mb-navy);
+            font-weight: 600;
+        }
+
+        /* ==========================================================================
+           WORKFLOW STRIP (Replaces Fake Stats Band)
+           ========================================================================== */
+        .workflow-band {
+            background: var(--mb-navy);
+            color: #FFFFFF;
+            padding: 48px 0;
+        }
+
+        .workflow-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 24px;
+        }
+
+        .wf-step {
+            padding: 20px;
+            border-radius: var(--radius);
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .wf-num {
+            display: inline-block;
+            font-size: 11px;
+            font-weight: 800;
+            color: #FFFFFF;
+            background: var(--mb-orange);
+            padding: 3px 9px;
+            border-radius: 5px;
+            margin-bottom: 12px;
+            letter-spacing: 0.05em;
+        }
+
+        .wf-step h3 {
+            font-size: 16px;
+            font-weight: 700;
+            margin-bottom: 6px;
+            color: #FFFFFF;
+        }
+
+        .wf-step p {
+            font-size: 13px;
+            color: #CBD5E1;
+            line-height: 1.55;
+        }
+
+        /* ==========================================================================
+           FEATURES SECTION
+           ========================================================================== */
+        .section {
+            padding: 88px 0;
+        }
+
+        .section-alt {
+            background: var(--bg-white);
+            border-top: 1px solid var(--border);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .section-header {
+            max-width: 680px;
+            margin-bottom: 52px;
+        }
+
+        .section-tag {
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--mb-orange);
+            margin-bottom: 10px;
+        }
+
+        .section-title {
+            font-size: clamp(26px, 3.2vw, 36px);
+            font-weight: 800;
+            color: var(--mb-navy);
+            line-height: 1.2;
+            margin-bottom: 14px;
+        }
+
+        .section-desc {
+            font-size: 16px;
+            color: var(--text-body);
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+        }
+
+        .feature-card {
+            background: var(--bg-white);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 28px;
+            transition: border-color 0.15s ease, box-shadow 0.15s ease;
+        }
+
+        .feature-card:hover {
+            border-color: #CBD5E1;
+            box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+        }
+
+        .feature-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 10px;
+            background: rgba(8, 36, 75, 0.07);
+            color: var(--mb-navy);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 18px;
+        }
+
+        .feature-icon svg {
+            width: 22px;
+            height: 22px;
+            stroke: currentColor;
+            stroke-width: 1.85;
+            fill: none;
+        }
+
+        .feature-card h3 {
+            font-size: 17px;
+            font-weight: 700;
+            color: var(--text-main);
+            margin-bottom: 10px;
+        }
+
+        .feature-card p {
+            font-size: 14px;
+            color: var(--text-body);
+            line-height: 1.6;
+        }
+
+        /* ==========================================================================
+           DUAL SPACE (BACK-OFFICE + ESPACE VENDEUR)
+           ========================================================================== */
+        .dual-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 28px;
+        }
+
+        .space-box {
+            border-radius: var(--radius-lg);
+            padding: 36px;
+            border: 1px solid var(--border);
+            background: var(--bg-page);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .space-box.navy {
+            background: var(--mb-navy);
+            color: #FFFFFF;
+            border-color: var(--mb-navy);
+        }
+
+        .space-badge {
+            display: inline-flex;
+            align-self: flex-start;
+            padding: 4px 11px;
+            border-radius: 6px;
+            font-size: 11.5px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            margin-bottom: 16px;
+            background: rgba(8, 36, 75, 0.08);
+            color: var(--mb-navy);
+        }
+
+        .space-box.navy .space-badge {
+            background: rgba(242, 103, 34, 0.2);
+            color: #FDBA74;
+        }
+
+        .space-box h3 {
+            font-size: 22px;
+            font-weight: 800;
+            margin-bottom: 12px;
+        }
+
+        .space-box p {
+            font-size: 14.5px;
+            color: var(--text-body);
+            margin-bottom: 24px;
+        }
+
+        .space-box.navy p {
+            color: #CBD5E1;
+        }
+
+        .check-list {
+            list-style: none;
+            margin-bottom: 28px;
+        }
+
+        .check-list li {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            font-size: 14px;
+            margin-bottom: 10px;
+            font-weight: 500;
+        }
+
+        .check-list li svg {
+            width: 18px;
+            height: 18px;
+            stroke: var(--mb-orange);
+            stroke-width: 2.2;
+            fill: none;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+
+        /* ==========================================================================
+           SECTORS / USE CASES (Replaces Fake Testimonials)
+           ========================================================================== */
+        .sectors-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+        }
+
+        .sector-card {
+            background: var(--bg-white);
+            border: 1px solid var(--border);
+            border-top: 3px solid var(--mb-navy);
+            border-radius: var(--radius);
+            padding: 28px;
+        }
+
+        .sector-card.highlight {
+            border-top-color: var(--mb-orange);
+        }
+
+        .sector-card h3 {
+            font-size: 17px;
+            font-weight: 700;
+            color: var(--mb-navy);
+            margin-bottom: 10px;
+        }
+
+        .sector-card p {
+            font-size: 14px;
+            color: var(--text-body);
+            margin-bottom: 16px;
+        }
+
+        .sector-meta {
+            font-size: 12.5px;
+            color: var(--text-muted);
+            padding-top: 14px;
+            border-top: 1px solid var(--bg-subtle);
+            font-weight: 600;
+        }
+
+        /* ==========================================================================
+           CTA BANNER & FOOTER
+           ========================================================================== */
+        .cta-box {
+            background: var(--mb-navy);
+            border-radius: var(--radius-lg);
+            padding: 56px 48px;
+            color: #FFFFFF;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 32px;
+            flex-wrap: wrap;
+        }
+
+        .cta-box h2 {
+            font-size: clamp(24px, 3vw, 32px);
+            font-weight: 800;
+            margin-bottom: 10px;
+        }
+
+        .cta-box p {
+            color: #CBD5E1;
+            font-size: 15.5px;
+            max-width: 540px;
+        }
+
+        .footer {
+            background: #FFFFFF;
+            border-top: 1px solid var(--border);
+            padding: 64px 0 36px;
+        }
+
+        .footer-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1fr;
+            gap: 40px;
+            margin-bottom: 48px;
+        }
+
+        .footer-desc {
+            font-size: 13.5px;
+            color: var(--text-muted);
+            margin-top: 14px;
+            max-width: 300px;
+        }
+
+        .footer-col h4 {
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--text-main);
+            margin-bottom: 14px;
+        }
+
+        .footer-col ul {
+            list-style: none;
+        }
+
+        .footer-col li {
+            margin-bottom: 9px;
+        }
+
+        .footer-col a {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 13.5px;
+            font-weight: 500;
+            transition: color 0.15s ease;
+        }
+
+        .footer-col a:hover {
+            color: var(--mb-navy);
+        }
+
         .footer-bottom {
-            display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;
-            border-top: 1px solid var(--border); padding-top: 22px; font-size: 12.5px; color: var(--text-muted);
+            padding-top: 24px;
+            border-top: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 13px;
+            color: var(--text-muted);
+            flex-wrap: wrap;
+            gap: 12px;
         }
-        .footer-bottom .legal-links { display: flex; gap: 18px; }
-        .footer-bottom a { text-decoration: none; color: var(--text-muted); }
-        .footer-bottom a:hover { color: var(--text-secondary); }
 
-        /* Scroll reveal */
-        .reveal { opacity: 0; transform: translateY(24px); transition: opacity 0.6s ease, transform 0.6s ease; }
-        .reveal.in-view { opacity: 1; transform: translateY(0); }
-
-        /* ══ RESPONSIVE ══ */
-        @media (max-width: 980px) {
-            .hero-grid { grid-template-columns: 1fr; gap: 48px; }
-            .hero .lead { max-width: none; }
-            .mockup { transform: none; max-width: 480px; margin: 0 auto; }
-            .benefits-wrap { grid-template-columns: 1fr; }
-            .features-grid { grid-template-columns: repeat(2, 1fr); }
-            .testimonials-grid { grid-template-columns: repeat(2, 1fr); }
+        @media (max-width: 992px) {
+            .nav-links, .nav-actions { display: none; }
+            .mobile-toggle { display: inline-flex; }
+            .hero-grid, .dual-grid { grid-template-columns: 1fr; }
+            .workflow-grid, .features-grid, .sectors-grid { grid-template-columns: repeat(2, 1fr); }
             .footer-grid { grid-template-columns: 1fr 1fr; }
         }
 
-        @media (max-width: 720px) {
-            nav.desktop-nav, .header-actions .btn { display: none; }
-            .burger { display: flex; }
-            .hero { padding: 56px 0 40px; }
-            .hero h1 { font-size: 32px; }
-            .hero-cta { flex-direction: column; }
-            .hero-cta .btn { width: 100%; }
-            .section { padding: 60px 0; }
-            .section-head h2 { font-size: 26px; }
-            .features-grid { grid-template-columns: 1fr; }
-            .steps { grid-template-columns: 1fr; gap: 32px; }
-            .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 28px; }
-            .testimonials-grid { grid-template-columns: 1fr; }
-            .footer-grid { grid-template-columns: 1fr; gap: 26px; }
-            .cta-final { padding: 48px 24px; margin: 0 16px 60px; }
-            .cta-final h2 { font-size: 24px; }
-            .float-card { display: none; }
-        }
-
-        @media (max-width: 480px) {
-            .wrap, .hero-grid { padding-left: 14px; padding-right: 14px; }
-            .header-inner { padding: 12px 14px; }
-            .brand { font-size: 15px; }
-            .hero h1 { font-size: 26px; }
-            .hero .lead { font-size: 14.5px; }
-            .badge-pill { font-size: 11.5px; padding: 5px 10px; }
-            .stats-grid { grid-template-columns: 1fr; gap: 20px; }
-            .stat-item h3 { font-size: 26px; }
-            .section-head h2 { font-size: 22px; }
-            .cta-final { padding: 36px 16px; margin: 0 8px 40px; border-radius: 20px; }
-            .cta-final h2 { font-size: 22px; }
-            .cta-final p { font-size: 14px; }
-            .cta-final .btn { width: 100%; }
-            .footer-bottom { flex-direction: column; align-items: flex-start; gap: 10px; }
-            .footer-bottom .legal-links { flex-wrap: wrap; gap: 12px; }
-            .mockup-body { padding: 12px; }
-            .mockup-row { flex-direction: column; gap: 8px; }
-        }
-        @media (max-width: 360px) {
-            .hero h1 { font-size: 23px; }
-            .hero-trust { flex-direction: column; align-items: flex-start; gap: 6px; }
-            .section { padding: 44px 0; }
+        @media (max-width: 640px) {
+            .hero-specs, .erp-kpis, .workflow-grid, .features-grid, .sectors-grid, .footer-grid {
+                grid-template-columns: 1fr;
+            }
+            .cta-box {
+                padding: 32px 24px;
+            }
         }
     </style>
 </head>
 <body>
 
-    <header>
-        <div class="header-inner">
-            <a href="{% url 'landing' %}" class="brand" style="text-decoration:none;">
-                <div class="brand-mark">📦</div>
-                InvoiceApp
+    <!-- NAVBAR -->
+    <header class="navbar">
+        <div class="container nav-inner">
+            <a href="{% url 'landing' %}" class="brand">
+                <span class="brand-mark">
+                    <svg viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect width="120" height="120" rx="22" fill="#08244B"/>
+                        <path d="M26 92V32H43L60 58L77 32H91L94 35V92H77V57L60 82L43 57V92H26Z" fill="#FFFFFF"/>
+                        <polygon points="79,22 100,22 100,43" fill="#F26722"/>
+                    </svg>
+                </span>
+                <span class="brand-name">MerchandBlock</span>
             </a>
 
-            <nav class="desktop-nav">
-                <a href="#features" class="nav-link">Fonctionnalités</a>
-                <a href="#how-it-works" class="nav-link">Comment ça marche</a>
-                <a href="{% url 'pricing' %}" class="nav-link">Tarifs</a>
-                <a href="#testimonials" class="nav-link">Avis clients</a>
-            </nav>
+            <ul class="nav-links">
+                <li><a href="#features">Fonctionnalités</a></li>
+                <li><a href="#workflow">Fonctionnement</a></li>
+                <li><a href="#spaces">Espace Vendeur</a></li>
+                <li><a href="{% url 'pricing' %}">Tarifs</a></li>
+            </ul>
 
-            <div class="header-actions">
-                <a href="{% url 'login' %}" class="btn btn-ghost">Se connecter</a>
-                <a href="{% url 'register' %}" class="btn btn-primary">Essai gratuit</a>
-                <button class="burger" id="burgerBtn" aria-label="Menu">
-                    <span></span><span></span><span></span>
-                </button>
+            <div class="nav-actions">
+                <a href="{% url 'vendor_login' %}" class="btn btn-outline">Portail Vendeur</a>
+                {% if user.is_authenticated %}
+                    <a href="{% url 'dashboard' %}" class="btn btn-navy">Accéder au tableau de bord</a>
+                {% else %}
+                    <a href="{% url 'login' %}" class="btn btn-outline">Connexion</a>
+                    <a href="{% url 'register' %}" class="btn btn-orange">Créer un compte</a>
+                {% endif %}
             </div>
+
+            <button class="mobile-toggle" id="mobileMenuBtn" aria-label="Menu">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+            </button>
         </div>
 
-        <div class="mobile-nav" id="mobileNav">
-            <a href="#features" class="nav-link">Fonctionnalités</a>
-            <a href="#how-it-works" class="nav-link">Comment ça marche</a>
-            <a href="{% url 'pricing' %}" class="nav-link">Tarifs</a>
-            <a href="#testimonials" class="nav-link">Avis clients</a>
-            <a href="{% url 'login' %}" class="btn btn-ghost">Se connecter</a>
-            <a href="{% url 'register' %}" class="btn btn-primary">Essai gratuit</a>
+        <div class="mobile-drawer" id="mobileMenu">
+            <a href="#features" onclick="closeMobile()">Fonctionnalités</a>
+            <a href="#workflow" onclick="closeMobile()">Fonctionnement</a>
+            <a href="#spaces" onclick="closeMobile()">Espace Vendeur</a>
+            <a href="{% url 'pricing' %}">Tarifs</a>
+            <div class="mobile-actions">
+                <a href="{% url 'vendor_login' %}" class="btn btn-outline">Portail Vendeur</a>
+                {% if user.is_authenticated %}
+                    <a href="{% url 'dashboard' %}" class="btn btn-navy">Tableau de bord</a>
+                {% else %}
+                    <a href="{% url 'login' %}" class="btn btn-outline">Connexion Entreprise</a>
+                    <a href="{% url 'register' %}" class="btn btn-orange">Créer un compte</a>
+                {% endif %}
+            </div>
         </div>
     </header>
 
+    <!-- HERO SECTION -->
     <section class="hero">
-        <div class="glow glow-indigo" style="width:420px;height:420px;top:-120px;left:-140px;"></div>
-        <div class="glow glow-violet" style="width:380px;height:380px;top:60px;right:-160px;"></div>
-
-        <div class="wrap hero-grid">
+        <div class="container hero-grid">
             <div>
-                <div class="badge-pill"><span class="dot"></span> Nouveau — Multi-devises EUR / USD / XOF</div>
-                <h1>La gestion commerciale qui <span class="accent">suit le rythme</span> de votre entreprise</h1>
-                <p class="lead">Stock, achats, ventes, équipe terrain et factures professionnelles : tout ce dont votre PME a besoin, réuni dans une seule plateforme pensée pour aller vite.</p>
-
+                <div class="eyebrow">
+                    <span class="eyebrow-dot"></span>
+                    ERP Commercial • Stocks, Flottes &amp; Facturation
+                </div>
+                <h1>
+                    Pilotez vos stocks, vos chargements terrain et votre <span class="accent">facturation B2B</span>.
+                </h1>
+                <p class="hero-lead">
+                    MerchandBlock relie votre dépôt central à vos vendeurs sur le terrain. Suivez chaque chargement d'engin, contrôlez les encaissements et éditez vos factures PDF au format A5 avec le logo de votre entreprise.
+                </p>
                 <div class="hero-cta">
-                    <a href="{% url 'register' %}" class="btn btn-primary btn-lg">Créer mon compte gratuitement</a>
-                    <a href="#how-it-works" class="btn btn-ghost btn-lg">Voir comment ça marche</a>
+                    {% if user.is_authenticated %}
+                        <a href="{% url 'dashboard' %}" class="btn btn-orange btn-lg">
+                            Ouvrir mon espace
+                            <svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                        </a>
+                    {% else %}
+                        <a href="{% url 'register' %}" class="btn btn-orange btn-lg">
+                            Démarrer maintenant
+                            <svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                        </a>
+                    {% endif %}
+                    <a href="{% url 'pricing' %}" class="btn btn-outline btn-lg">Consulter les offres</a>
                 </div>
 
-                <div class="hero-trust">
-                    <div class="avatar-stack">
-                        <span style="background:#6366F1;">A</span>
-                        <span style="background:#10B981;">B</span>
-                        <span style="background:#F59E0B;">C</span>
-                        <span style="background:#38BDF8;">+</span>
+                <div class="hero-specs">
+                    <div class="spec-item">
+                        <div class="spec-icon"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+                        <div class="spec-text">
+                            <strong>Multi-devises natif</strong>
+                            <span>FCFA, GNF, EUR, USD</span>
+                        </div>
                     </div>
-                    Déjà utilisé par des centaines d'entreprises et de vendeurs terrain
+                    <div class="spec-item">
+                        <div class="spec-icon"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+                        <div class="spec-text">
+                            <strong>Traçabilité Engins</strong>
+                            <span>Chargements &amp; retours</span>
+                        </div>
+                    </div>
+                    <div class="spec-item">
+                        <div class="spec-icon"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+                        <div class="spec-text">
+                            <strong>Factures PDF &amp; Email</strong>
+                            <span>Partage WhatsApp &amp; Email</span>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <div class="mockup-wrap">
-                <div class="float-card float-1">
-                    <div class="fc-icon">💰</div>
-                    <div>Facture réglée<br><span style="color:var(--text-muted);font-weight:500;">Il y a 2 min</span></div>
-                </div>
-
-                <div class="mockup">
-                    <div class="mockup-bar"><span></span><span></span><span></span></div>
-                    <div class="mockup-body">
-                        <div class="mockup-row">
-                            <div class="mockup-card">
-                                <div class="mc-label">CHIFFRE D'AFFAIRES</div>
-                                <div class="mc-value up">+18,4%</div>
+            <!-- ARCHITECTURAL OVERVIEW (100% FACTUAL, NO FAKE DATA) -->
+            <div class="erp-preview" aria-label="Architecture opérationnelle MerchandBlock">
+                <div class="erp-window">
+                    <div class="erp-topbar">
+                        <div class="erp-topbar-left">
+                            <svg width="18" height="18" viewBox="0 0 120 120" fill="none">
+                                <rect width="120" height="120" rx="22" fill="#08244B"/>
+                                <path d="M26 92V32H43L60 58L77 32H91L94 35V92H77V57L60 82L43 57V92H26Z" fill="#FFFFFF"/>
+                                <polygon points="79,22 100,22 100,43" fill="#F26722"/>
+                            </svg>
+                            <span>Architecture Opérationnelle MerchandBlock</span>
+                        </div>
+                        <span class="erp-status-pill">Flux B2B Intégré</span>
+                    </div>
+                    <div class="erp-body">
+                        <div class="arch-list">
+                            <div class="arch-item">
+                                <div class="arch-item-left">
+                                    <div class="arch-step-badge">01</div>
+                                    <div>
+                                        <div class="arch-item-title">Dépôt Central &amp; Approvisionnements</div>
+                                        <div class="arch-item-desc">Catalogue produits, entrées fournisseurs et seuils d'alerte de stock.</div>
+                                    </div>
+                                </div>
+                                <span class="arch-pill">Stock Dépôt</span>
                             </div>
-                            <div class="mockup-card">
-                                <div class="mc-label">VENTES CE MOIS</div>
-                                <div class="mc-value">1 284</div>
+
+                            <div class="arch-item">
+                                <div class="arch-item-left">
+                                    <div class="arch-step-badge">02</div>
+                                    <div>
+                                        <div class="arch-item-title">Flotte d'Engins &amp; Chargements</div>
+                                        <div class="arch-item-desc">Affectation des lots aux véhicules de tournée et contrôle des retours.</div>
+                                    </div>
+                                </div>
+                                <span class="arch-pill">Logistique</span>
+                            </div>
+
+                            <div class="arch-item">
+                                <div class="arch-item-left">
+                                    <div class="arch-step-badge">03</div>
+                                    <div>
+                                        <div class="arch-item-title">Portail Vendeur Terrain</div>
+                                        <div class="arch-item-desc">Connexion par identifiant agent et saisie des ventes sur stock chargé.</div>
+                                    </div>
+                                </div>
+                                <span class="arch-pill orange">Terrain</span>
+                            </div>
+
+                            <div class="arch-item">
+                                <div class="arch-item-left">
+                                    <div class="arch-step-badge">04</div>
+                                    <div>
+                                        <div class="arch-item-title">Facturation PDF A5 &amp; Règlements</div>
+                                        <div class="arch-item-desc">Édition PDF avec logo d'entreprise, envoi WhatsApp/Email et suivi des créances.</div>
+                                    </div>
+                                </div>
+                                <span class="arch-pill">Comptabilité</span>
                             </div>
                         </div>
-                        <div class="mockup-chart">
-                            <div class="bar" style="height:35%;"></div>
-                            <div class="bar" style="height:55%;"></div>
-                            <div class="bar" style="height:40%;"></div>
-                            <div class="bar" style="height:72%;"></div>
-                            <div class="bar" style="height:58%;"></div>
-                            <div class="bar" style="height:90%;"></div>
-                            <div class="bar" style="height:66%;"></div>
+
+                        <div class="erp-footer-bar">
+                            <span>Double accès : Back-Office Direction &amp; Portail Agent</span>
+                            <span style="color: var(--mb-orange);">Format PDF A5</span>
                         </div>
                     </div>
-                </div>
-
-                <div class="float-card float-2">
-                    <div class="fc-icon">📦</div>
-                    <div>Stock synchronisé<br><span style="color:var(--text-muted);font-weight:500;">En temps réel</span></div>
                 </div>
             </div>
         </div>
     </section>
 
-    <div class="social-proof">
-        <div class="social-proof-label">Conçu pour les commerces, distributeurs et équipes de vente terrain</div>
-        <div class="logo-row">
-            <span>🏪 Commerces</span>
-            <span>🚚 Distributeurs</span>
-            <span>🏭 Grossistes</span>
-            <span>🛠️ Prestataires</span>
-            <span>🌍 Import / Export</span>
+    <!-- WORKFLOW STRIP -->
+    <section class="workflow-band" id="workflow">
+        <div class="container">
+            <div class="workflow-grid">
+                <div class="wf-step">
+                    <span class="wf-num">ÉTAPE 01</span>
+                    <h3>Approvisionnement Dépôt</h3>
+                    <p>Enregistrez vos entrées fournisseurs, gérez votre catalogue produits et surveillez vos seuils d'alerte de stock en temps réel.</p>
+                </div>
+                <div class="wf-step">
+                    <span class="wf-num">ÉTAPE 02</span>
+                    <h3>Chargement des Engins</h3>
+                    <p>Affectez des lots de marchandises du dépôt vers un engin (camion, tricycle, moto) et un agent vendeur dédié.</p>
+                </div>
+                <div class="wf-step">
+                    <span class="wf-num">ÉTAPE 03</span>
+                    <h3>Vente Terrain Mobile</h3>
+                    <p>Vos vendeurs saisissent leurs ventes au comptant ou à crédit depuis leur téléphone dans la limite exacte du stock chargé.</p>
+                </div>
+                <div class="wf-step">
+                    <span class="wf-num">ÉTAPE 04</span>
+                    <h3>Facturation &amp; Encaissement</h3>
+                    <p>Générez la facture PDF A5 officielle avec le logo de votre entreprise, envoyez-la sur WhatsApp ou par email et suivez les soldes clients.</p>
+                </div>
+            </div>
         </div>
-    </div>
+    </section>
 
-    <section class="section reveal" id="features">
-        <div class="wrap">
-            <div class="section-head">
-                <span class="section-kicker">Fonctionnalités</span>
-                <h2>Tout votre back-office, au même endroit</h2>
-                <p>Fini les tableurs éparpillés et les carnets de commandes perdus. Une seule plateforme pour piloter votre activité du stock jusqu'au paiement.</p>
+    <!-- CORE FEATURES -->
+    <section class="section" id="features">
+        <div class="container">
+            <div class="section-header">
+                <div class="section-tag">Modules intégrés</div>
+                <h2 class="section-title">Une architecture complète pour structurer votre activité commerciale</h2>
+                <p class="section-desc">Chaque module de MerchandBlock répond à un besoin opérationnel précis, sans ressaisie entre le terrain et la comptabilité.</p>
             </div>
 
             <div class="features-grid">
                 <div class="feature-card">
-                    <div class="feature-icon" style="background:rgba(99,102,241,0.15);">📊</div>
-                    <h3>Gestion de stock en temps réel</h3>
-                    <p>Chaque vente et chaque approvisionnement met à jour votre stock automatiquement. Fini les ruptures surprises.</p>
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                    </div>
+                    <h3>Facturation PDF Personnalisée</h3>
+                    <p>Éditez des factures PDF A5 professionnelles intégrant le logo et les coordonnées de votre entreprise. Partagez-les instantanément par WhatsApp ou par email.</p>
                 </div>
+
                 <div class="feature-card">
-                    <div class="feature-icon" style="background:rgba(16,185,129,0.15);">📄</div>
-                    <h3>Factures professionnelles</h3>
-                    <p>Générez des factures PDF soignées en un clic, avec suivi des paiements partiels et relances automatiques.</p>
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24"><path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>
+                    </div>
+                    <h3>Stocks &amp; Approvisionnements</h3>
+                    <p>Suivez vos réceptions fournisseurs, les coûts d'achat et la valorisation de votre stock dépôt. Identifiez immédiatement les références en rupture ou stock faible.</p>
                 </div>
+
                 <div class="feature-card">
-                    <div class="feature-icon" style="background:rgba(56,189,248,0.15);">👥</div>
-                    <h3>Clients & fournisseurs</h3>
-                    <p>Centralisez tous vos contacts commerciaux et retrouvez leur historique complet en un instant.</p>
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24"><rect x="1" y="3" width="15" height="13" rx="2"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+                    </div>
+                    <h3>Flotte d'Engins &amp; Chargements</h3>
+                    <p>Associez chaque vendeur à son véhicule de livraison. Contrôlez les quantités chargées au départ, les quantités vendues et le stock restant à bord.</p>
                 </div>
+
                 <div class="feature-card">
-                    <div class="feature-icon" style="background:rgba(245,158,11,0.15);">💳</div>
-                    <h3>Paiements multi-devises</h3>
-                    <p>Travaillez en EUR, USD ou XOF selon votre marché, avec un suivi précis de chaque versement.</p>
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+                    </div>
+                    <h3>Suivi des Crédits &amp; Règlements</h3>
+                    <p>Distinguez clairement le chiffre d'affaires facturé, les montants encaissés et les créances clients en attente grâce aux statuts Payé, Partiel et Impayé.</p>
                 </div>
+
                 <div class="feature-card">
-                    <div class="feature-icon" style="background:rgba(147,51,234,0.15);">🧑‍💼</div>
-                    <h3>Équipe & vendeurs terrain</h3>
-                    <p>Donnez à vos vendeurs itinérants un espace dédié pour vendre et encaisser, même en déplacement.</p>
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
+                    </div>
+                    <h3>Rôles &amp; Habilitations d'Agents</h3>
+                    <p>Créez des rôles sur mesure (vendeur, magasinier, superviseur) et attribuez des identifiants dédiés à vos équipes sans exposer vos paramètres d'administration.</p>
                 </div>
+
                 <div class="feature-card">
-                    <div class="feature-icon" style="background:rgba(244,63,94,0.15);">🔒</div>
-                    <h3>Données isolées & sécurisées</h3>
-                    <p>Chaque entreprise évolue dans son espace privé, totalement cloisonné des autres comptes.</p>
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>
+                    </div>
+                    <h3>Analytique &amp; Classements</h3>
+                    <p>Visualisez l'évolution mensuelle de vos ventes et de vos coûts d'approvisionnement, les produits les plus rentables et la performance de chaque agent.</p>
                 </div>
             </div>
         </div>
     </section>
 
-    <section class="section reveal" id="how-it-works" style="background:rgba(255,255,255,0.015);">
-        <div class="wrap">
-            <div class="section-head">
-                <span class="section-kicker">Démarrage rapide</span>
-                <h2>Opérationnel en moins de 5 minutes</h2>
-                <p>Aucune installation, aucune formation nécessaire.</p>
+    <!-- DUAL PORTAL SECTION -->
+    <section class="section section-alt" id="spaces">
+        <div class="container">
+            <div class="section-header">
+                <div class="section-tag">Deux interfaces complémentaires</div>
+                <h2 class="section-title">Un Back-Office de direction et un Portail Vendeur mobile</h2>
+                <p class="section-desc">Chaque acteur dispose d'un environnement adapté à ses responsabilités quotidiennes.</p>
             </div>
 
-            <div class="steps">
-                <div class="step-card">
-                    <div class="step-num">1</div>
-                    <h3>Créez votre compte</h3>
-                    <p>Renseignez le nom de votre entreprise et votre devise. Les autres informations peuvent attendre.</p>
+            <div class="dual-grid">
+                <div class="space-box">
+                    <div>
+                        <span class="space-badge">Direction &amp; Gestionnaires</span>
+                        <h3>Espace Administration Entreprise</h3>
+                        <p>Le centre de contrôle complet pour superviser l'ensemble des opérations commerciales et financières.</p>
+                        <ul class="check-list">
+                            <li>
+                                <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+                                <span>Tableau de bord financier (CA, encaissements, créances, graphiques)</span>
+                            </li>
+                            <li>
+                                <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+                                <span>Gestion du catalogue produits, des fournisseurs et des entrées de stock</span>
+                            </li>
+                            <li>
+                                <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+                                <span>Création des chargements d'engins et attribution aux agents</span>
+                            </li>
+                            <li>
+                                <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+                                <span>Personnalisation des factures PDF A5 (logo, coordonnées, devise)</span>
+                            </li>
+                        </ul>
+                    </div>
+                    <div>
+                        <a href="{% url 'register' %}" class="btn btn-navy">Ouvrir un compte entreprise</a>
+                    </div>
                 </div>
-                <div class="step-card">
-                    <div class="step-num">2</div>
-                    <h3>Ajoutez vos produits</h3>
-                    <p>Importez votre catalogue et vos premiers stocks en quelques clics.</p>
-                </div>
-                <div class="step-card">
-                    <div class="step-num">3</div>
-                    <h3>Vendez et facturez</h3>
-                    <p>Enregistrez vos ventes, générez vos factures et suivez vos encaissements en direct.</p>
-                </div>
-            </div>
-        </div>
-    </section>
 
-    <section class="section reveal">
-        <div class="wrap benefits-wrap">
-            <div>
-                <span class="section-kicker">Pourquoi InvoiceApp</span>
-                <h2 style="font-size:30px;font-weight:800;margin-bottom:20px;">Pensé pour les équipes qui n'ont pas de temps à perdre</h2>
-                <div class="benefit-list">
-                    <div class="benefit-item">
-                        <div class="benefit-check">✓</div>
-                        <div><h3>Interface intuitive</h3><p>Prise en main immédiate, sans formation ni documentation à lire.</p></div>
+                <div class="space-box navy">
+                    <div>
+                        <span class="space-badge">Agents Commerciaux &amp; Livreurs</span>
+                        <h3>Portail Vendeur Terrain</h3>
+                        <p>Une interface mobile rapide, pensée pour enregistrer les ventes directement chez le client en quelques secondes.</p>
+                        <ul class="check-list">
+                            <li>
+                                <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+                                <span>Connexion directe par identifiant agent sécurisé</span>
+                            </li>
+                            <li>
+                                <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+                                <span>Consultation en temps réel des quantités disponibles sur son chargement</span>
+                            </li>
+                            <li>
+                                <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+                                <span>Saisie rapide multi-articles et sélection ou création instantanée du client</span>
+                            </li>
+                            <li>
+                                <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+                                <span>Génération immédiate de la facture PDF à transmettre au client</span>
+                            </li>
+                        </ul>
                     </div>
-                    <div class="benefit-item">
-                        <div class="benefit-check">✓</div>
-                        <div><h3>Vos données, isolées</h3><p>Chaque entreprise dispose de son propre espace, totalement séparé des autres.</p></div>
-                    </div>
-                    <div class="benefit-item">
-                        <div class="benefit-check">✓</div>
-                        <div><h3>Rapide au quotidien</h3><p>Moins de saisie manuelle, plus de temps pour votre cœur de métier.</p></div>
-                    </div>
-                    <div class="benefit-item">
-                        <div class="benefit-check">✓</div>
-                        <div><h3>Toujours modifiable</h3><p>Modifiez vos informations d'entreprise à tout moment depuis les paramètres.</p></div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="benefit-visual">
-                <div class="bv-row">
-                    <div class="bv-icon" style="background:rgba(16,185,129,0.15);">✅</div>
-                    <div class="bv-text"><b>Approvisionnement enregistré</b><span>Stock mis à jour automatiquement</span></div>
-                </div>
-                <div class="bv-row">
-                    <div class="bv-icon" style="background:rgba(99,102,241,0.15);">🧾</div>
-                    <div class="bv-text"><b>Facture #INV-0242 générée</b><span>Envoyée au client en PDF</span></div>
-                </div>
-                <div class="bv-row">
-                    <div class="bv-icon" style="background:rgba(56,189,248,0.15);">👤</div>
-                    <div class="bv-text"><b>Nouveau vendeur ajouté</b><span>Accès à son espace dédié activé</span></div>
-                </div>
-                <div class="bv-row">
-                    <div class="bv-icon" style="background:rgba(245,158,11,0.15);">💵</div>
-                    <div class="bv-text"><b>Versement de 150 000 FCFA reçu</b><span>Solde de facture mis à jour</span></div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <div class="stats-band reveal">
-        <div class="wrap stats-grid">
-            <div class="stat-item"><h3>500+</h3><p>Entreprises actives</p></div>
-            <div class="stat-item"><h3>50k+</h3><p>Factures créées</p></div>
-            <div class="stat-item"><h3>99.9%</h3><p>Disponibilité</p></div>
-            <div class="stat-item"><h3>24/7</h3><p>Accès à vos données</p></div>
-        </div>
-    </div>
-
-    <section class="section reveal" id="testimonials">
-        <div class="wrap">
-            <div class="section-head">
-                <span class="section-kicker">Avis clients</span>
-                <h2>Ils gèrent déjà leur activité avec InvoiceApp</h2>
-            </div>
-
-            <div class="testimonials-grid">
-                <div class="testimonial-card">
-                    <div class="testimonial-stars">★★★★★</div>
-                    <p class="quote">"Depuis qu'on a arrêté le tableur Excel, on ne perd plus de temps à recompter le stock à la main. Tout se met à jour tout seul."</p>
-                    <div class="testimonial-author">
-                        <div class="ta-avatar" style="background:#6366F1;">A</div>
-                        <div><div class="ta-name">Aïcha K.</div><div class="ta-role">Gérante, commerce de détail</div></div>
-                    </div>
-                </div>
-                <div class="testimonial-card">
-                    <div class="testimonial-stars">★★★★★</div>
-                    <p class="quote">"Nos vendeurs terrain enregistrent leurs ventes directement depuis leur téléphone. Le suivi des règlements est devenu simple."</p>
-                    <div class="testimonial-author">
-                        <div class="ta-avatar" style="background:#10B981;">M</div>
-                        <div><div class="ta-name">Moussa D.</div><div class="ta-role">Responsable distribution</div></div>
-                    </div>
-                </div>
-                <div class="testimonial-card">
-                    <div class="testimonial-stars">★★★★★</div>
-                    <p class="quote">"La facturation multi-devises nous a fait gagner un temps fou pour nos clients à l'international."</p>
-                    <div class="testimonial-author">
-                        <div class="ta-avatar" style="background:#F59E0B;">S</div>
-                        <div><div class="ta-name">Sophie L.</div><div class="ta-role">Fondatrice, import/export</div></div>
+                    <div>
+                        <a href="{% url 'vendor_login' %}" class="btn btn-orange">Accéder au portail vendeur</a>
                     </div>
                 </div>
             </div>
         </div>
     </section>
 
-    <div class="cta-final reveal">
-        <div class="glow glow-emerald" style="width:260px;height:260px;bottom:-120px;left:-80px;opacity:0.25;"></div>
-        <h2>Prêt à simplifier votre gestion ?</h2>
-        <p>Créez votre compte en quelques minutes. Aucune carte bancaire requise pour démarrer.</p>
-        <div class="cta-buttons">
-            <a href="{% url 'register' %}" class="btn btn-primary btn-lg">Créer mon compte gratuitement</a>
-            <a href="{% url 'login' %}" class="btn btn-ghost btn-lg">J'ai déjà un compte</a>
-        </div>
-    </div>
+    <!-- SECTORS / CONCRETE USE CASES -->
+    <section class="section">
+        <div class="container">
+            <div class="section-header">
+                <div class="section-tag">Cas d'usage métier</div>
+                <h2 class="section-title">Adapté aux réalités du commerce et de la distribution</h2>
+                <p class="section-desc">MerchandBlock structure les flux physiques et financiers des entreprises commerciales.</p>
+            </div>
 
-    <footer>
-        <div class="wrap">
+            <div class="sectors-grid">
+                <div class="sector-card">
+                    <h3>Distribution &amp; Flottes Mobiles</h3>
+                    <p>Idéal pour les entreprises qui chargent des camions, fourgonnettes ou tricycles chaque matin et souhaitent éviter les écarts d'inventaire au retour de tournée.</p>
+                    <div class="sector-meta">Contrôle par chargement • Suivi par engin</div>
+                </div>
+
+                <div class="sector-card highlight">
+                    <h3>Grossistes &amp; Import-Export</h3>
+                    <p>Gérez de gros volumes d'approvisionnements fournisseurs, suivez les ventes à crédit ou à paiement partiel et éditez des factures normalisées pour vos clients professionnels.</p>
+                    <div class="sector-meta">Gestion des créances • Multi-devises</div>
+                </div>
+
+                <div class="sector-card">
+                    <h3>Commerces &amp; Dépôts Multi-Agents</h3>
+                    <p>Centralisez les ventes réalisées par plusieurs commerciaux en boutique ou à distance tout en gardant une vue consolidée de la trésorerie et des stocks.</p>
+                    <div class="sector-meta">Habilitations par rôle • Historique complet</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FINAL CTA -->
+    <section class="section" style="padding-top: 0;">
+        <div class="container">
+            <div class="cta-box">
+                <div>
+                    <h2>Prêt à structurer votre gestion commerciale ?</h2>
+                    <p>Configurez votre entreprise, votre devise et votre catalogue en quelques minutes sur MerchandBlock.</p>
+                </div>
+                <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+                    <a href="{% url 'register' %}" class="btn btn-orange btn-lg">Créer un compte entreprise</a>
+                    <a href="{% url 'contact' %}" class="btn btn-outline btn-lg" style="background: transparent; color: #FFFFFF; border-color: rgba(255,255,255,0.28);">Contacter notre équipe</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer class="footer">
+        <div class="container">
             <div class="footer-grid">
-                <div class="footer-brand">
-                    <div class="brand"><div class="brand-mark">📦</div> InvoiceApp</div>
-                    <p>La plateforme de gestion commerciale pensée pour les PME et leurs équipes terrain.</p>
+                <div>
+                    <a href="{% url 'landing' %}" class="brand">
+                        <span class="brand-mark">
+                            <svg viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <rect width="120" height="120" rx="22" fill="#08244B"/>
+                                <path d="M26 92V32H43L60 58L77 32H91L94 35V92H77V57L60 82L43 57V92H26Z" fill="#FFFFFF"/>
+                                <polygon points="79,22 100,22 100,43" fill="#F26722"/>
+                            </svg>
+                        </span>
+                        <span class="brand-name">MerchandBlock</span>
+                    </a>
+                    <p class="footer-desc">
+                        Plateforme B2B de gestion des stocks, de suivi des chargements vendeurs et de facturation professionnelle.
+                    </p>
                 </div>
+
                 <div class="footer-col">
-                    <h4>Produit</h4>
-                    <a href="#features">Fonctionnalités</a>
-                    <a href="#how-it-works">Comment ça marche</a>
-                    <a href="{% url 'pricing' %}">Tarifs & Abonnements</a>
-                    <a href="{% url 'register' %}">Essai gratuit</a>
+                    <h4>Plateforme</h4>
+                    <ul>
+                        <li><a href="#features">Fonctionnalités</a></li>
+                        <li><a href="#workflow">Flux opérationnel</a></li>
+                        <li><a href="{% url 'pricing' %}">Tarifs &amp; Plans</a></li>
+                        <li><a href="{% url 'vendor_login' %}">Espace Vendeur</a></li>
+                    </ul>
                 </div>
+
                 <div class="footer-col">
-                    <h4>Accès</h4>
-                    <a href="{% url 'login' %}">Connexion entreprise</a>
-                    <a href="{% url 'vendor_login' %}">Connexion vendeur</a>
-                    <a href="{% url 'register' %}">Créer un compte</a>
+                    <h4>Assistance</h4>
+                    <ul>
+                        <li><a href="{% url 'help_center' %}">Centre d'aide</a></li>
+                        <li><a href="{% url 'contact' %}">Nous contacter</a></li>
+                        <li><a href="{% url 'service_status' %}">État du service</a></li>
+                    </ul>
                 </div>
+
                 <div class="footer-col">
-                    <h4>Ressources</h4>
-                    <a href="{% url 'help_center' %}">Centre d'aide</a>
-                    <a href="{% url 'contact' %}">Contact</a>
-                    <a href="{% url 'service_status' %}">Statut du service</a>
+                    <h4>Informations légales</h4>
+                    <ul>
+                        <li><a href="{% url 'terms_of_service' %}">Conditions d'utilisation</a></li>
+                        <li><a href="{% url 'privacy_policy' %}">Politique de confidentialité</a></li>
+                    </ul>
                 </div>
             </div>
 
             <div class="footer-bottom">
-                <span>&copy; 2026 InvoiceApp. Tous droits réservés.</span>
-                <div class="legal-links">
-                    <a href="{% url 'terms_of_service' %}">Conditions d'utilisation</a>
-                    <a href="{% url 'privacy_policy' %}">Confidentialité</a>
-                </div>
+                <span>&copy; {% now "Y" %} MerchandBlock. Tous droits réservés.</span>
+                <span>Conçu pour les entreprises commerciales et réseaux de distribution.</span>
             </div>
         </div>
     </footer>
 
     <script>
-        const burgerBtn = document.getElementById('burgerBtn');
-        const mobileNav = document.getElementById('mobileNav');
-        burgerBtn.addEventListener('click', () => mobileNav.classList.toggle('open'));
-        mobileNav.querySelectorAll('a').forEach(link => {
-            link.addEventListener('click', () => mobileNav.classList.remove('open'));
-        });
-
-        const revealEls = document.querySelectorAll('.reveal');
-        if ('IntersectionObserver' in window) {
-            const observer = new IntersectionObserver((entries) => {
-                entries.forEach(entry => {
-                    if (entry.isIntersecting) {
-                        entry.target.classList.add('in-view');
-                        observer.unobserve(entry.target);
-                    }
-                });
-            }, { threshold: 0.12 });
-            revealEls.forEach(el => observer.observe(el));
-        } else {
-            revealEls.forEach(el => el.classList.add('in-view'));
+        const mobileBtn = document.getElementById('mobileMenuBtn');
+        const mobileMenu = document.getElementById('mobileMenu');
+        if (mobileBtn && mobileMenu) {
+            mobileBtn.addEventListener('click', function () {
+                mobileMenu.classList.toggle('open');
+            });
+        }
+        function closeMobile() {
+            if (mobileMenu) mobileMenu.classList.remove('open');
         }
     </script>
 </body>

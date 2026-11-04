@@ -1,172 +1,124 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Espace Vendeur — {{ company_name }}</title>
+    <title>Espace Vendeur — {{ company_name }} | MerchandBlock</title>
+    <link rel="stylesheet" href="{% static 'InvoiceApp/css/merchandblock.css' %}">
+    <script src="{% static 'InvoiceApp/js/merchandblock.js' %}"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
-
-        :root {
-            --bg-base: #0F1629;
-            --bg-card: #1A2238;
-            --border: rgba(99, 102, 241, 0.15);
-            --indigo: #6366F1;
-            --indigo-light: #818CF8;
-            --emerald: #10B981;
-            --amber: #F59E0B;
-            --rose: #F43F5E;
-            --text-primary: #E2E8F0;
-            --text-secondary: #94A3B8;
-            --text-muted: #64748B;
-            --radius: 16px;
-            --radius-sm: 10px;
-            --shadow: 0 4px 24px rgba(0,0,0,0.4);
+        .vendor-topbar {
+            background: var(--mb-navy);
+            color: #ffffff;
+            padding: 14px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            flex-wrap: wrap;
+            gap: 12px;
+            box-shadow: 0 2px 10px rgba(8, 36, 75, 0.15);
         }
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: 'Inter', sans-serif;
-            background: var(--bg-base);
-            color: var(--text-primary);
-            min-height: 100vh;
-            font-size: 14px;
-            line-height: 1.6;
-        }
-
-        .topbar {
-            background: var(--bg-card);
-            border-bottom: 1px solid var(--border);
-            padding: 16px 24px;
-            display: flex; align-items: center; justify-content: space-between;
-            position: sticky; top: 0; z-index: 50;
-            flex-wrap: wrap; gap: 12px;
-        }
-        .topbar-left { display: flex; align-items: center; gap: 12px; }
-        .logo-mark {
-            width: 40px; height: 40px;
-            background: linear-gradient(135deg, var(--indigo), #9333EA);
-            border-radius: 10px;
+        .vendor-topbar-left { display: flex; align-items: center; gap: 12px; }
+        .vendor-logo-mark {
+            width: 38px; height: 38px;
+            background: rgba(255, 255, 255, 0.12);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 9px;
             display: flex; align-items: center; justify-content: center;
-            font-size: 18px; font-weight: 800; color: white; flex-shrink: 0;
+            font-size: 16px; font-weight: 800; color: white; flex-shrink: 0;
         }
-        .topbar-title { font-size: 16px; font-weight: 700; }
-        .topbar-sub { font-size: 12px; color: var(--text-muted); }
-
-        .btn {
-            display: inline-flex; align-items: center; gap: 6px;
-            padding: 9px 16px; border-radius: var(--radius-sm);
-            font-size: 13px; font-weight: 600; cursor: pointer;
-            text-decoration: none; border: none; transition: all 0.2s;
-            font-family: 'Inter', sans-serif;
+        .vendor-topbar-title { font-size: 15px; font-weight: 700; color: #ffffff; }
+        .vendor-topbar-sub { font-size: 12px; color: rgba(255, 255, 255, 0.72); }
+        .vendor-topbar-actions { display: flex; align-items: center; gap: 8px; }
+        .vendor-topbar .theme-toggle-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.2);
+            color: #ffffff;
         }
-        .btn-primary { background: var(--indigo); color: white; }
-        .btn-primary:hover { background: #5254CC; }
-        .btn-ghost { background: rgba(255,255,255,0.06); color: var(--text-secondary); border: 1px solid var(--border); }
-        .btn-ghost:hover { background: rgba(255,255,255,0.1); color: var(--text-primary); }
-        .btn-sm { padding: 6px 12px; font-size: 12px; }
-        .btn-danger-soft { background: rgba(244,63,94,0.1); color: var(--rose); border: 1px solid rgba(244,63,94,0.2); }
+        .vendor-logout-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #ffffff;
+            padding: 7px 12px;
+            border-radius: 8px;
+            font-size: 12.5px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: background 0.15s;
+        }
+        .vendor-logout-btn:hover { background: rgba(255, 255, 255, 0.18); }
 
-        .content { padding: 24px; max-width: 1100px; margin: 0 auto; }
-
-        .section-title { font-size: 15px; font-weight: 700; margin: 28px 0 14px; }
-        .section-title:first-child { margin-top: 0; }
+        .vendor-content { padding: 24px; max-width: 1120px; margin: 0 auto 80px; }
+        .section-header-bar {
+            display: flex; align-items: center; justify-content: space-between;
+            margin: 26px 0 14px; flex-wrap: wrap; gap: 10px;
+        }
+        .section-header-bar:first-child { margin-top: 0; }
+        .section-title { font-size: 15px; font-weight: 700; color: var(--text-primary); }
 
         .product-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(185px, 1fr));
             gap: 14px;
         }
         .product-card {
             background: var(--bg-card);
             border: 1px solid var(--border);
             border-radius: var(--radius);
-            padding: 16px;
+            padding: 14px;
+            box-shadow: var(--shadow-sm);
         }
         .product-image-placeholder, .product-image {
-            width: 100%; height: 90px;
-            border-radius: 10px;
-            background: rgba(255,255,255,0.04);
+            width: 100%; height: 92px;
+            border-radius: 8px;
+            background: var(--bg-subtle);
+            border: 1px solid var(--border);
             display: flex; align-items: center; justify-content: center;
-            font-size: 26px;
-            margin-bottom: 12px;
+            color: var(--text-muted);
+            margin-bottom: 10px;
             object-fit: cover;
         }
-        .product-name { font-weight: 600; font-size: 13.5px; margin-bottom: 4px; }
-        .product-price { font-weight: 800; font-size: 15px; color: var(--indigo-light); margin-bottom: 4px; }
-        .product-stock { font-size: 11.5px; color: var(--text-muted); }
-        .stock-empty { color: var(--rose); }
+        .product-name { font-weight: 600; font-size: 13.5px; color: var(--text-primary); margin-bottom: 4px; }
+        .product-price { font-weight: 800; font-size: 15px; color: var(--mb-orange); margin-bottom: 4px; }
+        .product-stock { font-size: 11.5px; color: var(--text-secondary); font-weight: 500; }
+        .stock-empty { color: var(--rose); font-weight: 600; }
 
         .status-badge {
             display: inline-flex; align-items: center; padding: 3px 9px;
-            border-radius: 20px; font-size: 11px; font-weight: 600; white-space: nowrap;
+            border-radius: 6px; font-size: 11px; font-weight: 600; white-space: nowrap;
         }
-        .status-paid { background: rgba(16,185,129,0.12); color: var(--emerald); }
-        .status-partial { background: rgba(245,158,11,0.12); color: var(--amber); }
-        .status-pending { background: rgba(148,163,184,0.15); color: var(--text-secondary); }
-        .status-overdue { background: rgba(244,63,94,0.12); color: var(--rose); }
-
-        .table-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
-        .table-wrap { overflow-x: auto; }
-        table { width: 100%; border-collapse: collapse; }
-        thead th {
-            padding: 11px 16px; text-align: left; font-size: 10.5px; font-weight: 600; color: var(--text-muted);
-            text-transform: uppercase; letter-spacing: 0.08em; background: rgba(255,255,255,0.02);
-            border-bottom: 1px solid var(--border); white-space: nowrap;
-        }
-        tbody tr { border-bottom: 1px solid rgba(255,255,255,0.04); }
-        tbody tr:last-child { border-bottom: none; }
-        td { padding: 12px 16px; font-size: 13px; color: var(--text-primary); }
-        .empty-state { text-align: center; padding: 30px 16px; color: var(--text-muted); font-size: 13px; }
+        .status-paid { background: var(--emerald-bg); color: var(--emerald); }
+        .status-partial { background: var(--amber-bg); color: var(--amber); }
+        .status-pending { background: var(--sky-bg); color: var(--sky); }
+        .status-overdue { background: var(--rose-bg); color: var(--rose); }
 
         .fab {
             position: fixed; bottom: 24px; right: 24px;
-            width: 58px; height: 58px; border-radius: 50%;
-            background: var(--indigo); color: white; border: none;
-            font-size: 26px; cursor: pointer;
-            box-shadow: 0 6px 20px rgba(99,102,241,0.5);
-            display: flex; align-items: center; justify-content: center;
-            transition: transform 0.2s;
+            height: 52px; padding: 0 20px; border-radius: 999px;
+            background: var(--mb-orange); color: white; border: none;
+            font-size: 14px; font-weight: 700; cursor: pointer;
+            box-shadow: 0 8px 22px rgba(242, 103, 34, 0.38);
+            display: flex; align-items: center; gap: 8px;
+            transition: transform 0.15s, background 0.15s;
             z-index: 400;
         }
-        .fab:hover { transform: scale(1.06); }
+        .fab:hover { transform: translateY(-2px); background: var(--mb-orange-hover); }
 
-        .form-group { margin-bottom: 14px; }
-        .form-label { display: block; font-size: 12.5px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; }
-        .form-control, .form-select {
-            width: 100%; background: rgba(255,255,255,0.04); border: 1px solid var(--border);
-            border-radius: var(--radius-sm); padding: 10px 12px; color: var(--text-primary);
-            font-size: 13.5px; font-family: 'Inter', sans-serif; outline: none;
-        }
-        .form-control:focus, .form-select:focus { border-color: var(--indigo); }
-        .form-select, select {
-            cursor: pointer;
-            color-scheme: dark !important;
-            background-color: #1A2238 !important;
-            color: #FFFFFF !important;
-        }
-        option, .form-select option, select option {
-            background-color: #1A2238 !important;
-            color: #FFFFFF !important;
-            padding: 8px 12px !important;
-            font-weight: 500 !important;
-        }
-        optgroup, .form-select optgroup, select optgroup {
-            background-color: #0F1629 !important;
-            color: #94A3B8 !important;
-            font-weight: 700 !important;
-        }
-        option:checked, option:hover, .form-select option:checked, select option:checked {
-            background-color: #4F46E5 !important;
-            color: #FFFFFF !important;
-        }
-        .form-error { color: var(--rose); font-size: 12px; margin-top: 4px; display: none; }
         .tabs { display: flex; gap: 6px; margin-bottom: 14px; }
         .tab-btn {
-            flex: 1; padding: 8px; border-radius: var(--radius-sm); text-align: center;
+            flex: 1; padding: 8px; border-radius: 8px; text-align: center;
             font-size: 12.5px; font-weight: 600; cursor: pointer;
-            background: rgba(255,255,255,0.04); color: var(--text-secondary); border: 1px solid var(--border);
+            background: var(--bg-subtle); color: var(--text-secondary); border: 1px solid var(--border);
         }
-        .tab-btn.active { background: rgba(99,102,241,0.15); color: var(--indigo-light); border-color: rgba(99,102,241,0.35); }
+        .tab-btn.active {
+            background: rgba(242, 103, 34, 0.12);
+            color: var(--mb-orange);
+            border-color: rgba(242, 103, 34, 0.35);
+        }
 
         .cart-row { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; }
         .cart-row select { flex: 2; }
@@ -177,163 +129,81 @@
             font-weight: 700; font-size: 15px;
         }
         .cart-total-line span:last-child { color: var(--emerald); }
+        .form-error { color: var(--rose); font-size: 12px; margin-top: 4px; display: none; }
 
-        .modal-overlay {
-            display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7);
-            z-index: 500; align-items: center; justify-content: center; padding: 16px;
+        .share-summary-box {
+            background: var(--bg-subtle); border: 1px solid var(--border);
+            border-radius: 10px; padding: 14px; margin-bottom: 16px;
         }
-        .modal-overlay.open { display: flex; }
-        .modal-box {
-            background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius);
-            padding: 28px; max-width: 460px; width: 100%; box-shadow: var(--shadow);
-            max-height: 90vh; overflow-y: auto;
-        }
-        .modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
-        .modal-title { font-size: 16px; font-weight: 700; }
-        .modal-close { background: none; border: none; color: var(--text-muted); font-size: 20px; cursor: pointer; }
-        .modal-icon { font-size: 40px; text-align: center; margin-bottom: 10px; }
-
-        .toast {
-            position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px);
-            background: #1E293B; border: 1px solid var(--border); border-radius: var(--radius-sm);
-            padding: 12px 18px; font-size: 13px; font-weight: 500;
-            box-shadow: var(--shadow); opacity: 0; transition: all 0.3s; z-index: 999;
-            max-width: 90vw; text-align: center;
-        }
-        .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
-        .toast.success { border-color: rgba(16,185,129,0.4); color: var(--emerald); }
-        .toast.error { border-color: rgba(244,63,94,0.4); color: var(--rose); }
-
-        /* ── RESPONSIVE ── */
-        .table-wrap table {
-            min-width: 580px;
+        .share-channel-box {
+            background: var(--bg-subtle); border: 1px solid var(--border);
+            border-radius: 10px; padding: 12px 14px;
         }
 
         @media (max-width: 768px) {
-            .topbar {
-                padding: 12px 16px;
-            }
-            .content {
-                padding: 16px 12px;
-            }
-            .product-grid {
-                grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-                gap: 10px;
-            }
-            .product-card {
-                padding: 12px;
-            }
-            .product-image-placeholder, .product-image {
-                height: 75px;
-            }
-            .product-name {
-                font-size: 12.5px;
-            }
-            .product-price {
-                font-size: 14px;
-            }
-            .fab {
-                bottom: 18px;
-                right: 18px;
-                width: 52px;
-                height: 52px;
-                font-size: 24px;
-            }
+            .vendor-topbar { padding: 12px 16px; }
+            .vendor-content { padding: 16px 12px 84px; }
+            .product-grid { grid-template-columns: repeat(auto-fill, minmax(145px, 1fr)); gap: 10px; }
         }
-
         @media (max-width: 480px) {
-            .topbar {
-                flex-direction: row;
-                justify-content: space-between;
-                align-items: center;
-            }
-            .topbar-left {
-                gap: 8px;
-                max-width: calc(100% - 110px);
-            }
-            .logo-mark {
-                width: 34px;
-                height: 34px;
-                font-size: 15px;
-            }
-            .topbar-title {
-                font-size: 14px;
-                white-space: nowrap;
-                overflow: hidden;
-                text-overflow: ellipsis;
-            }
-            .topbar-sub {
-                font-size: 11px;
-                white-space: nowrap;
-                overflow: hidden;
-                text-overflow: ellipsis;
-            }
-            .modal-box {
-                padding: 18px 14px;
-                border-radius: var(--radius-sm);
-            }
-            .cart-row {
-                flex-wrap: wrap;
-                gap: 6px;
-                padding-bottom: 8px;
-                border-bottom: 1px solid rgba(255,255,255,0.04);
-            }
-            .cart-row select {
-                flex: 1 1 100%;
-            }
-            .cart-row input {
-                flex: 1 1 50%;
-            }
-            .tab-btn {
-                padding: 10px 6px;
-                font-size: 11.5px;
-            }
-            .btn {
-                min-height: 40px;
-            }
+            .cart-row { flex-wrap: wrap; }
+            .cart-row select { flex: 1 1 100%; }
+            .cart-row input { flex: 1 1 55%; }
         }
     </style>
 </head>
 <body>
 
-<header class="topbar">
-    <div class="topbar-left">
+<header class="vendor-topbar">
+    <div class="vendor-topbar-left">
         {% if company_logo_url %}
-        <img src="{{ company_logo_url }}" alt="Logo" style="width:40px;height:40px;object-fit:contain;border-radius:10px;background:#fff;padding:3px;">
+        <img src="{{ company_logo_url }}" alt="Logo" style="width:38px;height:38px;object-fit:contain;border-radius:8px;background:#fff;padding:3px;">
         {% else %}
-        <div class="logo-mark">{{ company_name|first|upper }}</div>
+        <div class="vendor-logo-mark">{{ company_name|first|upper }}</div>
         {% endif %}
         <div>
-            <div class="topbar-title">{{ company_name }}</div>
-            <div class="topbar-sub">Vendeur : {{ agent.name }}</div>
+            <div class="vendor-topbar-title">{{ company_name }}</div>
+            <div class="vendor-topbar-sub">Agent en tournée : {{ agent.name }}</div>
         </div>
     </div>
-    <a href="{% url 'vendor_logout' %}" class="btn btn-ghost btn-sm">🚪 Déconnexion</a>
+    <div class="vendor-topbar-actions">
+        <button type="button" class="theme-toggle-btn" id="themeToggleBtn" onclick="window.toggleMerchandTheme()" title="Basculer le thème"></button>
+        <a href="{% url 'vendor_logout' %}" class="vendor-logout-btn">Déconnexion</a>
+    </div>
 </header>
 
-<main class="content">
+<main class="vendor-content">
+    <div class="section-header-bar">
+        <div class="section-title">Mon stock embarqué (tournée en cours)</div>
+        <button type="button" class="btn btn-primary btn-sm" onclick="openSaleModal()">+ Enregistrer une vente</button>
+    </div>
 
-    <div class="section-title">🚚 Mon stock (chargé pour cette tournée)</div>
     <div class="product-grid">
         {% for stock in agent_stocks %}
         <div class="product-card">
             {% if stock.product.image %}
             <img src="{{ stock.product.image.url }}" alt="{{ stock.product.name }}" class="product-image">
             {% else %}
-            <div class="product-image-placeholder">📦</div>
+            <div class="product-image-placeholder">
+                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+            </div>
             {% endif %}
             <div class="product-name">{{ stock.product.name }}</div>
             <div class="product-price">{{ stock.formatted_unit_price }}</div>
             <div class="product-stock {% if stock.quantity == 0 %}stock-empty{% endif %}">
-                {% if stock.quantity > 0 %}{{ stock.quantity }} disponible{% else %}Épuisé{% endif %}
+                {% if stock.quantity > 0 %}{{ stock.quantity }} en stock{% else %}Stock épuisé{% endif %}
             </div>
         </div>
         {% empty %}
-        <div class="empty-state">Tu n'as encore aucun produit chargé. Demande à ton entreprise de te charger du stock.</div>
+        <div class="empty-state" style="grid-column: 1 / -1; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius);">
+            Vous n'avez aucun produit chargé pour l'instant. Demandez un chargement de tournée à votre gestionnaire.
+        </div>
         {% endfor %}
     </div>
 
-    <div class="section-title">🧾 Mes dernières ventes</div>
+    <div class="section-header-bar">
+        <div class="section-title">Mes dernières ventes & factures</div>
+    </div>
     <div class="table-card">
         <div class="table-wrap">
             <table>
@@ -344,13 +214,13 @@
                         <th>Total</th>
                         <th>Statut</th>
                         <th>Date</th>
-                        <th></th>
+                        <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for sale in sales %}
                     <tr>
-                        <td>{{ sale.client.name }}</td>
+                        <td style="font-weight:600;">{% if sale.client %}{{ sale.client.name }}{% else %}Client supprimé{% endif %}</td>
                         <td>{{ sale.item_names }}</td>
                         <td><strong>{{ sale.formatted_total_price }}</strong></td>
                         <td>
@@ -369,13 +239,13 @@
                         <td>{{ sale.date|date:"d/m/Y H:i" }}</td>
                         <td style="display:flex; gap:6px; flex-wrap:wrap; align-items:center;">
                             {% if sale.invoice %}
-                            <a href="{% url 'vendor_invoice_pdf' sale.invoice.id %}" target="_blank" class="btn btn-ghost btn-sm" title="Télécharger le PDF A5">📄 PDF</a>
+                            <a href="{% url 'vendor_invoice_pdf' sale.invoice.id %}" target="_blank" class="btn btn-ghost btn-sm" title="Télécharger le PDF A5">PDF A5</a>
                             <button type="button" class="btn btn-ghost btn-sm share-sale-btn"
                                     data-invoice-id="{{ sale.invoice.id }}"
                                     data-invoice-number="{{ sale.invoice.invoice_number }}"
-                                    data-client-name="{{ sale.client.shop_name|default:sale.client.name }}"
-                                    data-client-phone="{{ sale.client.phone|default:'' }}"
-                                    data-client-email="{{ sale.client.email|default:'' }}"
+                                    data-client-name="{% if sale.client %}{{ sale.client.shop_name|default:sale.client.name }}{% else %}Client{% endif %}"
+                                    data-client-phone="{% if sale.client %}{{ sale.client.phone }}{% endif %}"
+                                    data-client-email="{% if sale.client %}{{ sale.client.email }}{% endif %}"
                                     data-total="{{ sale.formatted_total_price }}"
                                     data-balance="{{ sale.invoice.formatted_balance_due }}"
                                     data-is-paid="{% if sale.invoice.status == 'paid' %}true{% else %}false{% endif %}"
@@ -383,12 +253,12 @@
                                     data-send-email-url="{% url 'vendor_send_invoice_email' sale.invoice.id %}"
                                     data-send-whatsapp-url="{% url 'vendor_send_invoice_whatsapp' sale.invoice.id %}"
                                     data-company-name="{{ company_name }}"
-                                    data-date="{{ sale.invoice.issued_date|date:'d/m/Y' }}">📤 Partager</button>
+                                    data-date="{{ sale.invoice.issued_date|date:'d/m/Y' }}">Partager</button>
                             {% if whatsapp_enabled and sale.invoice.whatsapp_status_label %}
-                            <span class="status-badge" style="background: rgba(16,185,129,0.15); color: #10B981; font-size:11px; padding:3px 6px;" title="Statut WhatsApp Meta">{{ sale.invoice.whatsapp_status_label }}</span>
+                            <span class="status-badge status-paid" style="font-size:11px; padding:3px 6px;" title="Statut WhatsApp Meta">{{ sale.invoice.whatsapp_status_label }}</span>
                             {% endif %}
                             {% if sale.invoice.balance_due > 0 %}
-                            <button type="button" class="btn btn-primary btn-sm" onclick="openPaymentModal('{{ sale.invoice.id }}', '{{ sale.client.name|escapejs }}', '{{ sale.invoice.formatted_balance_due|escapejs }}')">💰 Encaisser</button>
+                            <button type="button" class="btn btn-primary btn-sm" onclick="openPaymentModal('{{ sale.invoice.id }}', '{% if sale.client %}{{ sale.client.name|escapejs }}{% else %}Client{% endif %}', '{{ sale.invoice.formatted_balance_due|escapejs }}')">Encaisser</button>
                             {% endif %}
                             {% endif %}
                         </td>
@@ -400,16 +270,17 @@
             </table>
         </div>
     </div>
-
 </main>
 
-<button class="fab" onclick="openSaleModal()" title="Nouvelle vente">＋</button>
+<button class="fab" onclick="openSaleModal()" title="Nouvelle vente">
+    <span>+ Nouvelle vente</span>
+</button>
 
 <!-- MODAL NOUVELLE VENTE -->
 <div class="modal-overlay" id="saleModal">
     <div class="modal-box">
         <div class="modal-header">
-            <div class="modal-title">Nouvelle vente</div>
+            <div class="modal-title">Nouvelle vente terrain</div>
             <button type="button" class="modal-close" onclick="closeSaleModal()">&times;</button>
         </div>
 
@@ -437,13 +308,15 @@
                 <label class="form-label" for="newClientShopName">Nom du magasin</label>
                 <input type="text" class="form-control" id="newClientShopName" name="new_client_shop_name" style="margin-bottom: 10px;">
                 <label class="form-label" for="newClientPhone">Téléphone</label>
-                <input type="text" class="form-control" id="newClientPhone" name="new_client_phone">
+                <input type="text" class="form-control" id="newClientPhone" name="new_client_phone" style="margin-bottom: 10px;">
+                <label class="form-label" for="newClientEmail">Email (pour envoi de la facture)</label>
+                <input type="email" class="form-control" id="newClientEmail" name="new_client_email" placeholder="client@domaine.com">
             </div>
 
             <div class="form-group">
                 <label class="form-label">Produits commandés *</label>
                 <div id="cartContainer"></div>
-                <button type="button" class="btn btn-ghost btn-sm" style="margin-top: 6px;" onclick="addCartRow()">＋ Ajouter un produit</button>
+                <button type="button" class="btn btn-ghost btn-sm" style="margin-top: 6px;" onclick="addCartRow()">+ Ajouter un produit</button>
             </div>
             <input type="hidden" id="saleItemsInput" name="sale_items" value="[]">
 
@@ -475,9 +348,9 @@
 
             <div class="form-error" id="formError"></div>
 
-            <div class="modal-header" style="margin-top: 16px; margin-bottom: 0;">
+            <div class="modal-actions" style="margin-top: 18px;">
                 <button type="button" class="btn btn-ghost" style="flex:1;" onclick="closeSaleModal()">Annuler</button>
-                <button type="submit" class="btn btn-primary" style="flex:1;" id="submitBtn">💾 Valider la vente</button>
+                <button type="submit" class="btn btn-primary" style="flex:1;" id="submitBtn">Valider la vente</button>
             </div>
         </form>
     </div>
@@ -487,17 +360,14 @@
 <div class="modal-overlay" id="invoiceModal">
     <div class="modal-box" style="max-width: 490px;">
         <div class="modal-header">
-            <div class="modal-title" style="display:flex; align-items:center; gap:8px;">
-                <span>🧾</span> <span id="shareModalTitle">Facture émise</span>
-            </div>
+            <div class="modal-title" id="shareModalTitle">Facture émise</div>
             <button type="button" class="modal-close" onclick="closeInvoiceModal()">&times;</button>
         </div>
 
-        <!-- Récapitulatif facture -->
-        <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border); border-radius: 12px; padding: 14px; margin-bottom: 16px;">
+        <div class="share-summary-box">
             <div style="display: flex; justify-content: space-between; align-items: flex-start;">
                 <div>
-                    <div style="font-size: 16px; font-weight: 800; color: var(--indigo-light);" id="generatedInvoiceNumber"></div>
+                    <div style="font-size: 16px; font-weight: 800; color: var(--mb-orange);" id="generatedInvoiceNumber"></div>
                     <div style="font-size: 13px; color: var(--text-secondary); margin-top: 2px;" id="shareClientName"></div>
                 </div>
                 <div style="text-align: right;">
@@ -511,31 +381,28 @@
             </div>
         </div>
 
-        <!-- 3 Canaux de partage / expédition -->
         <div style="display: flex; flex-direction: column; gap: 12px;">
-            <!-- 1. Téléchargement PDF A5 -->
-            <div style="background: rgba(99, 102, 241, 0.05); border: 1px solid rgba(99, 102, 241, 0.2); border-radius: 10px; padding: 12px; display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+            <div class="share-channel-box" style="display: flex; align-items: center; justify-content: space-between; gap: 10px;">
                 <div>
-                    <div style="font-weight: 600; font-size: 13px; color: var(--text-primary);">📄 Document PDF (Format A5)</div>
+                    <div style="font-weight: 600; font-size: 13px; color: var(--text-primary);">Document PDF (Format A5)</div>
                     <div style="font-size: 11px; color: var(--text-muted);">Format commercial compact officiel (148 × 210 mm)</div>
                 </div>
-                <a href="#" id="downloadInvoiceLink" target="_blank" class="btn btn-ghost btn-sm" style="border: 1px solid var(--border); white-space: nowrap;">
-                    ⬇️ Télécharger
+                <a href="#" id="downloadInvoiceLink" target="_blank" class="btn btn-ghost btn-sm" style="white-space: nowrap;">
+                    Télécharger
                 </a>
             </div>
 
             {% if whatsapp_enabled %}
-            <!-- 2. Partage WhatsApp -->
-            <div style="background: rgba(16, 185, 129, 0.05); border: 1px solid rgba(16, 185, 129, 0.25); border-radius: 10px; padding: 12px;">
-                <div style="font-weight: 600; font-size: 13px; color: #10B981; margin-bottom: 4px; display:flex; align-items:center; gap:6px;">
-                    <span>💬 Partager sur WhatsApp</span>
+            <div class="share-channel-box">
+                <div style="font-weight: 600; font-size: 13px; color: var(--emerald); margin-bottom: 4px;">
+                    Partager sur WhatsApp
                 </div>
                 <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">
                     Partage natif avec PDF joint sur mobile, ou ouverture directe de WhatsApp avec message prérempli.
                 </div>
                 <div style="display: flex; gap: 8px;">
                     <input type="tel" id="shareWhatsAppPhone" class="form-control" style="font-size: 12.5px; padding: 6px 10px;" placeholder="Ex: 77 123 45 67 ou +221...">
-                    <button type="button" id="shareWhatsAppBtn" class="btn btn-sm" style="background: #10B981; color: white; white-space: nowrap; font-weight:600;">
+                    <button type="button" id="shareWhatsAppBtn" class="btn btn-sm" style="background: var(--emerald); color: white; white-space: nowrap; font-weight:600; border:none;">
                         Partager
                     </button>
                 </div>
@@ -543,17 +410,16 @@
             </div>
             {% endif %}
 
-            <!-- 3. Envoi par Email -->
-            <div style="background: rgba(56, 189, 248, 0.05); border: 1px solid rgba(56, 189, 248, 0.25); border-radius: 10px; padding: 12px;">
-                <div style="font-weight: 600; font-size: 13px; color: #38BDF8; margin-bottom: 4px; display:flex; align-items:center; gap:6px;">
-                    <span>✉️ Envoyer par Email</span>
+            <div class="share-channel-box">
+                <div style="font-weight: 600; font-size: 13px; color: var(--sky); margin-bottom: 4px;">
+                    Envoyer par Email
                 </div>
                 <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">
                     Expédié par le serveur avec la facture A5 attachée en pièce jointe PDF.
                 </div>
                 <div style="display: flex; gap: 8px;">
                     <input type="email" id="shareEmailInput" class="form-control" style="font-size: 12.5px; padding: 6px 10px;" placeholder="client@domaine.com">
-                    <button type="button" id="shareEmailBtn" class="btn btn-sm" style="background: #0284C7; color: #ffffff; white-space: nowrap; font-weight: 600; padding: 7px 16px; border-radius: 6px; border: none; cursor: pointer;">
+                    <button type="button" id="shareEmailBtn" class="btn btn-secondary btn-sm" style="white-space: nowrap;">
                         Envoyer
                     </button>
                 </div>
@@ -561,7 +427,7 @@
             </div>
         </div>
 
-        <div style="margin-top: 16px; text-align: right;">
+        <div style="margin-top: 16px;">
             <button type="button" class="btn btn-primary" style="width: 100%;" onclick="closeInvoiceModal()">Terminer</button>
         </div>
     </div>
@@ -571,11 +437,11 @@
 <div class="modal-overlay" id="paymentModal">
     <div class="modal-box">
         <div class="modal-header">
-            <div class="modal-title">💰 Encaisser un paiement</div>
+            <div class="modal-title">Encaisser un règlement</div>
             <button type="button" class="modal-close" onclick="closePaymentModal()">&times;</button>
         </div>
         <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 4px;">Client : <strong id="paymentClientName" style="color: var(--text-primary);"></strong></p>
-        <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 18px;">Solde restant : <strong id="paymentBalanceDue" style="color: var(--amber);"></strong></p>
+        <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 18px;">Solde restant : <strong id="paymentBalanceDue" style="color: var(--mb-orange);"></strong></p>
         <form id="paymentForm">
             {% csrf_token %}
             <input type="hidden" id="paymentInvoiceId" name="invoice_id" value="">
@@ -584,7 +450,7 @@
                 <input type="number" class="form-control" id="paymentAmount" name="amount" min="0.01" step="0.01" required>
             </div>
             <div class="form-error" id="paymentFormError"></div>
-            <div class="modal-header" style="margin-top: 8px; margin-bottom: 0;">
+            <div class="modal-actions" style="margin-top: 16px;">
                 <button type="button" class="btn btn-ghost" style="flex:1;" onclick="closePaymentModal()">Annuler</button>
                 <button type="submit" class="btn btn-primary" style="flex:1;" id="paymentSubmitBtn">Encaisser</button>
             </div>
@@ -610,7 +476,7 @@
 
     function showToast(message, type = 'success') {
         const toast = document.getElementById('toast');
-        toast.textContent = (type === 'success' ? '✅ ' : '⚠️ ') + message;
+        toast.textContent = message;
         toast.className = 'toast show ' + type;
         setTimeout(() => toast.classList.remove('show'), 3500);
     }
@@ -668,11 +534,11 @@
         const row = document.createElement('div');
         row.className = 'cart-row';
 
-        const options = PRODUCTS.map(p => `<option value="${p.id}" data-price="${p.price}" data-stock="${p.stock}" style="background-color: #1A2238 !important; color: #FFFFFF !important;">${p.name} — ${p.price}</option>`).join('');
+        const options = PRODUCTS.map(p => `<option value="${p.id}" data-price="${p.price}" data-stock="${p.stock}">${p.name} — ${p.price}</option>`).join('');
 
         row.innerHTML = `
-            <select class="form-select cart-product" style="color-scheme: dark !important; background-color: #1A2238 !important; color: #FFFFFF !important;" required>
-                <option value="" style="background-color: #1A2238 !important; color: #94A3B8 !important;">Produit...</option>
+            <select class="form-select cart-product" required>
+                <option value="">Produit...</option>
                 ${options}
             </select>
             <input type="number" class="form-control cart-qty" min="1" value="1" required>
@@ -788,11 +654,11 @@
             }
         } catch (err) {
             console.error(err);
-            errorBox.textContent = 'Erreur serveur, réessaie';
+            errorBox.textContent = 'Erreur serveur, réessayez';
             errorBox.style.display = 'block';
         } finally {
             submitBtn.disabled = false;
-            submitBtn.textContent = '💾 Valider la vente';
+            submitBtn.textContent = 'Valider la vente';
         }
     });
 
@@ -875,7 +741,7 @@
             const btn = vendorWaBtn;
             if (feedback) {
                 feedback.style.display = 'block';
-                feedback.style.color = '#94A3B8';
+                feedback.style.color = 'var(--text-secondary)';
                 feedback.textContent = 'Connexion à WhatsApp...';
             }
 
@@ -890,7 +756,7 @@
                 btn.disabled = true;
                 if (feedback) {
                     feedback.style.display = 'block';
-                    feedback.style.color = '#94A3B8';
+                    feedback.style.color = 'var(--text-secondary)';
                     feedback.textContent = 'Préparation du partage...';
                 }
 
@@ -898,7 +764,7 @@
                 text += `Voici votre facture *${activeShareData.invoiceNumber}* émise le ${activeShareData.date} par *${activeShareData.companyName}*.\n\n`;
                 text += `• Montant total : *${activeShareData.totalPrice}*\n`;
                 if (activeShareData.isPaid) {
-                    text += `• Statut : *Payée en totalité* ✅\n\n`;
+                    text += `• Statut : *Payée en totalité*\n\n`;
                 } else {
                     text += `• Reste à payer : *${activeShareData.balanceDue}*\n\n`;
                 }
@@ -906,7 +772,6 @@
 
                 const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 
-                // Sur mobile uniquement : partage natif qui attache directement le PDF
                 if (isMobile && navigator.share && navigator.canShare) {
                     try {
                         const resp = await fetch(activeShareData.pdfUrl, { credentials: 'same-origin' });
@@ -923,7 +788,7 @@
                                 files: [file]
                             });
                             if (feedback) {
-                                feedback.style.color = '#10B981';
+                                feedback.style.color = 'var(--emerald)';
                                 feedback.textContent = 'Partage ouvert dans votre application.';
                             }
                             btn.disabled = false;
@@ -940,7 +805,6 @@
                     }
                 }
 
-                // Sur PC / Desktop : téléchargement automatique du PDF et ouverture directe de la discussion WhatsApp du client
                 const dlLink = document.createElement('a');
                 dlLink.href = activeShareData.pdfUrl;
                 dlLink.download = `${activeShareData.invoiceNumber}.pdf`;
@@ -954,7 +818,7 @@
 
                 window.open(waUrl, '_blank');
                 if (feedback) {
-                    feedback.style.color = '#10B981';
+                    feedback.style.color = 'var(--emerald)';
                     feedback.textContent = phone
                         ? 'Discussion WhatsApp du client ouverte & PDF téléchargé.'
                         : 'WhatsApp ouvert & PDF téléchargé.';
@@ -963,7 +827,6 @@
                 btn.textContent = oldText;
             }
 
-            // 1. Tentative d'envoi automatique via l'API officielle Meta WhatsApp Cloud si configurée
             if (activeShareData.sendWhatsAppUrl) {
                 try {
                     const formData = new FormData();
@@ -978,8 +841,8 @@
 
                     if (respApi.ok && resJson.success && resJson.mode === 'cloud_api') {
                         if (feedback) {
-                            feedback.style.color = '#10B981';
-                            feedback.textContent = '✅ ' + (resJson.message || 'Facture expédiée via WhatsApp Business !');
+                            feedback.style.color = 'var(--emerald)';
+                            feedback.textContent = resJson.message || 'Facture expédiée via WhatsApp Business !';
                         }
                         btn.disabled = false;
                         btn.textContent = oldText;
@@ -990,13 +853,9 @@
                         btn.disabled = false;
                         btn.textContent = oldText;
                         if (feedback) {
-                            feedback.style.color = '#EF4444';
+                            feedback.style.color = 'var(--rose)';
                             const errMsg = resJson.error || 'Erreur lors de l’envoi.';
-                            if (errMsg.includes('131030')) {
-                                feedback.innerHTML = '⚠️ Ce numéro n’est pas encore enregistré dans la liste des numéros autorisés sur Meta for Developers.<br><button type="button" id="useFallbackShareBtn" style="margin-top:6px; background:transparent; border:1px solid rgba(255,255,255,0.2); color:#60A5FA; padding:3px 8px; border-radius:6px; cursor:pointer; font-size:12px;">📲 Utiliser le partage WhatsApp manuel</button>';
-                            } else {
-                                feedback.innerHTML = '❌ ' + errMsg + '<br><button type="button" id="useFallbackShareBtn" style="margin-top:6px; background:transparent; border:1px solid rgba(255,255,255,0.2); color:#60A5FA; padding:3px 8px; border-radius:6px; cursor:pointer; font-size:12px;">📲 Utiliser le partage WhatsApp manuel</button>';
-                            }
+                            feedback.innerHTML = errMsg + '<br><button type="button" id="useFallbackShareBtn" class="btn btn-ghost btn-sm" style="margin-top:6px;">Utiliser le partage WhatsApp manuel</button>';
                             document.getElementById('useFallbackShareBtn')?.addEventListener('click', triggerManualFallbackShare);
                         }
                         return;
@@ -1006,11 +865,9 @@
                 }
             }
 
-            // 2. Bascule transparente vers Web Share API / wa.me uniquement si le Cloud API n'est pas configuré
             await triggerManualFallbackShare();
         });
     }
-
 
     document.getElementById('shareEmailBtn').addEventListener('click', async function() {
         if (!activeShareData) return;
@@ -1021,7 +878,7 @@
 
         if (!email || !email.includes('@')) {
             feedback.style.display = 'block';
-            feedback.style.color = '#F43F5E';
+            feedback.style.color = 'var(--rose)';
             feedback.textContent = 'Veuillez saisir une adresse email valide.';
             emailInput.focus();
             return;
@@ -1031,7 +888,7 @@
         const oldText = btn.textContent;
         btn.textContent = 'Envoi…';
         feedback.style.display = 'block';
-        feedback.style.color = '#94A3B8';
+        feedback.style.color = 'var(--text-secondary)';
         feedback.textContent = 'Génération du PDF A5 et envoi du courriel...';
 
         const formData = new FormData();
@@ -1046,15 +903,15 @@
             });
             const resData = await resp.json();
             if (resp.ok && resData.success) {
-                feedback.style.color = '#10B981';
-                feedback.textContent = '✅ ' + (resData.message || 'Facture envoyée avec succès !');
+                feedback.style.color = 'var(--emerald)';
+                feedback.textContent = resData.message || 'Facture envoyée avec succès !';
             } else {
-                feedback.style.color = '#F43F5E';
-                feedback.textContent = '⚠️ ' + (resData.error || "Erreur lors de l'envoi.");
+                feedback.style.color = 'var(--rose)';
+                feedback.textContent = resData.error || "Erreur lors de l'envoi.";
             }
         } catch (err) {
-            feedback.style.color = '#F43F5E';
-            feedback.textContent = "⚠️ Erreur réseau ou serveur.";
+            feedback.style.color = 'var(--rose)';
+            feedback.textContent = "Erreur réseau ou serveur.";
         } finally {
             btn.disabled = false;
             btn.textContent = oldText;

@@ -1,265 +1,79 @@
-<!DOCTYPE html>
 {% load static %}
+<!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Stock Vendeurs — {{ company_name }}</title>
+    <title>Stock Vendeurs — {{ company_name }} | MerchandBlock</title>
+    <link rel="stylesheet" href="{% static 'InvoiceApp/css/merchandblock.css' %}">
+    <link rel="stylesheet" href="{% static 'InvoiceApp/css/responsive.css' %}">
+    <script src="{% static 'InvoiceApp/js/merchandblock.js' %}"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
-
-        :root {
-            --bg-base: #0F1629;
-            --bg-card: #1A2238;
-            --border: rgba(99, 102, 241, 0.15);
-            --indigo: #6366F1;
-            --indigo-light: #818CF8;
-            --emerald: #10B981;
-            --amber: #F59E0B;
-            --rose: #F43F5E;
-            --text-primary: #E2E8F0;
-            --text-secondary: #94A3B8;
-            --text-muted: #64748B;
-            --radius: 16px;
-            --radius-sm: 10px;
-            --shadow: 0 4px 24px rgba(0,0,0,0.4);
+        .section-title {
+            font-size: 14px; font-weight: 700; color: var(--text-primary);
+            margin: 22px 0 10px;
+            display: flex; align-items: center; gap: 8px;
         }
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Inter', sans-serif; background: var(--bg-base); color: var(--text-primary); min-height: 100vh; font-size: 14px; line-height: 1.6; }
-
-        .sidebar {
-            position: fixed; left: 0; top: 0; bottom: 0; width: 240px;
-            background: var(--bg-card); border-right: 1px solid var(--border);
-            display: flex; flex-direction: column; z-index: 100;
+        .section-title:first-of-type { margin-top: 0; }
+        .muted-cell { color: var(--text-secondary); font-size: 12.5px; }
+        .cart-row {
+            display: flex; gap: 8px; align-items: center;
+            margin-bottom: 8px; flex-wrap: wrap;
         }
-        .sidebar-logo { padding: 24px 20px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 12px; }
-        .logo-mark {
-            width: 36px; height: 36px; background: linear-gradient(135deg, var(--indigo), #9333EA);
-            border-radius: 10px; display: flex; align-items: center; justify-content: center;
-            font-size: 18px; font-weight: 800; color: white; flex-shrink: 0;
-        }
-        .logo-text { font-size: 15px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .sidebar-nav { flex: 1; padding: 16px 12px; overflow-y: auto; }
-        .nav-section-label { font-size: 10px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.12em; padding: 12px 8px 6px; }
-        .nav-item {
-            display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: var(--radius-sm);
-            color: var(--text-secondary); text-decoration: none; font-weight: 500; font-size: 13.5px;
-            transition: all 0.18s; margin-bottom: 2px;
-        }
-        .nav-item:hover, .nav-item.active { background: rgba(99, 102, 241, 0.12); color: var(--indigo-light); }
-        .nav-item.active { font-weight: 600; }
-        .nav-item .nav-icon { font-size: 16px; width: 20px; text-align: center; }
-        .sidebar-footer { padding: 16px 12px; border-top: 1px solid var(--border); }
-        .user-block { display: flex; align-items: center; gap: 10px; padding: 10px; border-radius: var(--radius-sm); background: rgba(255,255,255,0.04); }
-        .user-avatar {
-            width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, var(--emerald), #059669);
-            display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; color: white; flex-shrink: 0;
-        }
-        .user-name { font-weight: 600; font-size: 13px; }
-        .user-role { font-size: 11px; color: var(--text-muted); }
-        .logout-btn {
-            margin-top: 10px; display: block; text-align: center; padding: 8px;
-            background: rgba(244, 63, 94, 0.1); color: var(--rose); border-radius: var(--radius-sm);
-            text-decoration: none; font-size: 13px; font-weight: 500;
-        }
-
-        .main { margin-left: 240px; min-height: 100vh; display: flex; flex-direction: column; }
-        .topbar {
-            background: var(--bg-card); border-bottom: 1px solid var(--border); padding: 14px 32px;
-            display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 50;
-            flex-wrap: wrap; gap: 10px;
-        }
-        .topbar-title { font-size: 17px; font-weight: 700; }
-        .topbar-sub { font-size: 12px; color: var(--text-muted); margin-top: 1px; }
-        .topbar-actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
-
-        .btn {
-            display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: var(--radius-sm);
-            font-size: 13px; font-weight: 600; cursor: pointer; text-decoration: none; border: none;
-            transition: all 0.2s; font-family: 'Inter', sans-serif;
-        }
-        .btn-primary { background: var(--indigo); color: white; }
-        .btn-primary:hover { background: #5254CC; }
-        .btn-ghost { background: rgba(255,255,255,0.06); color: var(--text-secondary); border: 1px solid var(--border); }
-        .btn-ghost:hover { background: rgba(255,255,255,0.1); color: var(--text-primary); }
-        .btn-sm { padding: 6px 12px; font-size: 12px; }
-        .btn-danger-soft { background: rgba(244,63,94,0.1); color: var(--rose); border: 1px solid rgba(244,63,94,0.2); }
-
-        .content { padding: 28px 32px; flex: 1; }
-        .section-title { font-size: 15px; font-weight: 700; margin: 26px 0 12px; }
-        .section-title:first-child { margin-top: 0; }
-
-        .table-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-bottom: 8px; }
-        .table-wrap { overflow-x: auto; }
-        table { width: 100%; border-collapse: collapse; }
-        thead th {
-            padding: 12px 18px; text-align: left; font-size: 10.5px; font-weight: 600; color: var(--text-muted);
-            text-transform: uppercase; letter-spacing: 0.08em; background: rgba(255,255,255,0.02);
-            border-bottom: 1px solid var(--border); white-space: nowrap;
-        }
-        tbody tr { border-bottom: 1px solid rgba(255,255,255,0.04); }
-        tbody tr:last-child { border-bottom: none; }
-        td { padding: 11px 18px; font-size: 13px; color: var(--text-primary); }
-        .muted-cell { color: var(--text-muted); }
-        .empty-state { text-align: center; padding: 30px 16px; color: var(--text-muted); font-size: 13px; }
-
-        .form-group { margin-bottom: 14px; }
-        .form-label { display: block; font-size: 12.5px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; }
-        .form-control, .form-select {
-            width: 100%; background: rgba(255,255,255,0.04); border: 1px solid var(--border);
-            border-radius: var(--radius-sm); padding: 9px 12px; color: var(--text-primary);
-            font-size: 13.5px; font-family: 'Inter', sans-serif; outline: none;
-        }
-        .form-control:focus, .form-select:focus { border-color: var(--indigo); }
-        .form-select, select {
-            cursor: pointer;
-            color-scheme: dark;
-        }
-        .form-select option, select option {
-            background-color: #1E293B !important;
-            color: #F8FAFC !important;
-            padding: 8px 12px;
-        }
-        .form-select optgroup, select optgroup {
-            background-color: #0F172A !important;
-            color: #94A3B8 !important;
-        }
-        .form-error { color: var(--rose); font-size: 12px; margin-top: 4px; display: none; }
-
-        .cart-row { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; }
-        .cart-row select { flex: 2; }
-        .cart-row input { flex: 1; }
-
-        .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.65); z-index: 500; align-items: center; justify-content: center; padding: 16px; }
-        .modal-overlay.open { display: flex; }
-        .modal-box {
-            background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius);
-            padding: 28px; max-width: 500px; width: 100%; box-shadow: var(--shadow);
-            max-height: 90vh; overflow-y: auto;
-        }
-        .modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
-        .modal-title { font-size: 16px; font-weight: 700; }
-        .modal-close { background: none; border: none; color: var(--text-muted); font-size: 20px; cursor: pointer; }
-        .modal-actions { display: flex; gap: 10px; margin-top: 16px; }
-        .modal-actions .btn { flex: 1; justify-content: center; }
-
-        .toast {
-            position: fixed; bottom: 24px; right: 24px; background: #1E293B; border: 1px solid var(--border);
-            border-radius: var(--radius-sm); padding: 12px 18px; font-size: 13px; font-weight: 500;
-            display: flex; align-items: center; gap: 10px; box-shadow: var(--shadow);
-            transform: translateY(80px); opacity: 0; transition: all 0.3s; z-index: 999; pointer-events: none;
-        }
-        .toast.show { transform: translateY(0); opacity: 1; }
-        .toast.success { border-color: rgba(16,185,129,0.4); color: var(--emerald); }
-        .toast.error { border-color: rgba(244,63,94,0.4); color: var(--rose); }
-
-        @media (max-width: 900px) {
-            .main { margin-left: 0; }
-            .content { padding: 16px 12px; }
-            .topbar { padding: 12px 16px; }
+        .cart-row .load-product { flex: 2; min-width: 150px; }
+        .cart-row .load-qty { flex: 1; min-width: 75px; }
+        .cart-row .load-price { flex: 1; min-width: 100px; }
+        .cart-row .return-qty { width: 110px; }
+        .form-error {
+            background: var(--rose-bg);
+            border: 1px solid rgba(225, 29, 72, 0.28);
+            border-radius: var(--radius-sm);
+            padding: 10px 14px;
+            font-size: 12.5px; color: var(--rose);
+            margin-bottom: 14px; display: none;
         }
     </style>
-    <link rel="stylesheet" href="{% static 'InvoiceApp/css/responsive.css' %}">
 </head>
 <body>
 
-<aside class="sidebar">
-    <div class="sidebar-logo">
-        {% if company_logo_url %}
-        <img src="{{ company_logo_url }}" alt="Logo" style="width:36px;height:36px;object-fit:contain;border-radius:10px;background:#fff;padding:4px;">
-        {% else %}
-        <div class="logo-mark">{{ company_name|first|upper }}</div>
-        {% endif %}
-        <span class="logo-text">{{ company_name }}</span>
-        <button type="button" class="sidebar-close-btn" id="sidebarCloseBtn" aria-label="Fermer le menu">&times;</button>
-    </div>
-        <nav class="sidebar-nav">
-        <div class="nav-section-label">Général</div>
-        <a href="{% url 'dashboard' %}" class="nav-item">
-            <span class="nav-icon">📊</span> Tableau de bord
-        </a>
-
-        <div class="nav-section-label">Gestion</div>
-        <a href="{% url 'list_agents' %}" class="nav-item">
-            <span class="nav-icon">👥</span> Agents
-        </a>
-        <a href="{% url 'manage_agent_roles' %}" class="nav-item">
-            <span class="nav-icon">🎭</span> Rôles
-        </a>
-        <a href="{% url 'list_engines' %}" class="nav-item">
-            <span class="nav-icon">⚙️</span> Engins
-        </a>
-        <a href="{% url 'list_stock_loads' %}" class="nav-item active">
-            <span class="nav-icon">🚚</span> Stock Vendeurs
-        </a>
-        <a href="{% url 'list_products' %}" class="nav-item">
-            <span class="nav-icon">📦</span> Produits
-        </a>
-
-        <div class="nav-section-label">Commerce</div>
-        <a href="{% url 'list_clients' %}" class="nav-item">
-            <span class="nav-icon">🤝</span> Clients
-        </a>
-        <a href="{% url 'list_suppliers' %}" class="nav-item">
-            <span class="nav-icon">🏭</span> Fournisseurs
-        </a>
-        <a href="{% url 'list_sales' %}" class="nav-item">
-            <span class="nav-icon">💹</span> Ventes
-        </a>
-        <a href="{% url 'list_supplies' %}" class="nav-item">
-            <span class="nav-icon">🛒</span> Appros
-        </a>
-        <a href="{% url 'list_invoices' %}" class="nav-item">
-            <span class="nav-icon">🧾</span> Factures
-        </a>
-</nav>
-<div class="sidebar-footer">
-        <div class="user-block">
-            <div class="user-avatar">A</div>
-            <div><div class="user-name">Admin</div><div class="user-role">Administrateur</div></div>
-        </div>
-        <a href="{% url 'logout' %}" class="logout-btn">🚪 Se déconnecter</a>
-    </div>
-</aside>
-<div class="sidebar-overlay" id="sidebarOverlay"></div>
+{% include 'includes/sidebar.html' with active_page='stock_loads' %}
 
 <div class="main">
     <header class="topbar">
-        <div style="display:flex; align-items:center; gap:12px;">
+        <div class="topbar-left">
             <button type="button" class="sidebar-toggle-btn" id="sidebarToggleBtn" aria-label="Menu de navigation">
                 <span></span><span></span><span></span>
             </button>
             <div>
-                <div class="topbar-title">Stock Vendeurs</div>
-                <div class="topbar-sub">Ce que chaque vendeur transporte, séparé du stock magasin</div>
+                <div class="topbar-title">Stock Vendeurs & Tournées</div>
+                <div class="topbar-sub">Suivi du stock ambulant confié à chaque agent commercial</div>
             </div>
         </div>
         <div class="topbar-actions">
-            <button type="button" class="btn btn-primary" onclick="openLoadModal()">🚚 Charger un vendeur</button>
-            <button type="button" class="btn btn-ghost" onclick="openReturnModal()">↩ Enregistrer un retour</button>
+            <button type="button" class="btn btn-primary" onclick="openLoadModal()">+ Charger un vendeur</button>
+            <button type="button" class="btn btn-secondary" onclick="openReturnModal()">↩ Enregistrer un retour</button>
             <a href="{% url 'dashboard' %}" class="btn btn-ghost">← Tableau de bord</a>
         </div>
     </header>
 
     <main class="content">
-
         {% if messages %}
             {% for message in messages %}
             <div class="django-msg" data-type="{{ message.tags }}" data-text="{{ message }}" style="display:none;"></div>
             {% endfor %}
         {% endif %}
 
-        <div class="section-title">📋 Stock actuel par vendeur</div>
-        <div class="table-card">
+        <div class="section-title">Stock actuel par vendeur</div>
+        <div class="table-card" style="margin-bottom: 24px;">
             <div class="table-wrap">
                 <table>
                     <thead>
-                        <tr><th>Agent</th><th>Produit</th><th>Quantité</th><th>Prix fixé</th><th>Maj</th></tr>
+                        <tr><th>Agent</th><th>Produit</th><th>Quantité embarquée</th><th>Prix fixé</th><th>Mise à jour</th></tr>
                     </thead>
                     <tbody>
                         {% for stock in agent_stocks %}
                         <tr>
-                            <td>{{ stock.agent.name }}</td>
+                            <td style="font-weight:600;">{{ stock.agent.name }}</td>
                             <td>{{ stock.product.name }}</td>
                             <td><strong>{{ stock.quantity }}</strong></td>
                             <td>{{ stock.formatted_unit_price }}</td>
@@ -273,25 +87,25 @@
             </div>
         </div>
 
-        <div class="section-title">🚚 Derniers chargements</div>
-        <div class="table-card">
+        <div class="section-title">Derniers chargements de tournées</div>
+        <div class="table-card" style="margin-bottom: 24px;">
             <div class="table-wrap">
                 <table>
                     <thead>
-                        <tr><th>Agent</th><th>Engin</th><th>Produits chargés</th><th>Note</th><th>Date</th><th></th></tr>
+                        <tr><th>Agent</th><th>Engin</th><th>Produits chargés</th><th>Note</th><th>Date</th><th>Actions</th></tr>
                     </thead>
                     <tbody>
                         {% for load in loads %}
                         <tr>
-                            <td>{{ load.agent.name }}</td>
+                            <td style="font-weight:600;">{{ load.agent.name }}</td>
                             <td class="muted-cell">{% if load.engine %}{{ load.engine.name }}{% elif load.agent.engine %}{{ load.agent.engine.name }}{% else %}—{% endif %}</td>
                             <td class="muted-cell">
-                                {% for item in load.items.all %}{{ item.product.name }} ({{ item.quantity }}){% if not forloop.last %}, {% endif %}{% endfor %}
+                                {% for item in load.items.all %}{% if item.product %}{{ item.product.name }}{% else %}Produit supprimé{% endif %} ({{ item.quantity }}){% if not forloop.last %}, {% endif %}{% endfor %}
                             </td>
                             <td class="muted-cell">{{ load.note|default:"—" }}</td>
                             <td class="muted-cell">{{ load.date|date:"d/m/Y H:i" }}</td>
                             <td style="white-space:nowrap;">
-                                <button type="button" class="btn btn-ghost btn-sm" onclick="openLoadModal({{ load.id }})">Modifier</button>
+                                <button type="button" class="btn btn-edit-soft btn-sm" onclick="openLoadModal({{ load.id }})">Modifier</button>
                                 <button type="button" class="btn btn-danger-soft btn-sm" onclick="openDeleteModal('load', {{ load.id }}, '{{ load.agent.name|escapejs }}')">Supprimer</button>
                             </td>
                         </tr>
@@ -303,24 +117,24 @@
             </div>
         </div>
 
-        <div class="section-title">↩ Derniers retours</div>
+        <div class="section-title">Derniers retours en dépôt</div>
         <div class="table-card">
             <div class="table-wrap">
                 <table>
                     <thead>
-                        <tr><th>Agent</th><th>Produits retournés</th><th>Note</th><th>Date</th><th></th></tr>
+                        <tr><th>Agent</th><th>Produits retournés</th><th>Note</th><th>Date</th><th>Actions</th></tr>
                     </thead>
                     <tbody>
                         {% for ret in returns %}
                         <tr>
-                            <td>{{ ret.agent.name }}</td>
+                            <td style="font-weight:600;">{{ ret.agent.name }}</td>
                             <td class="muted-cell">
-                                {% for item in ret.items.all %}{{ item.product.name }} ({{ item.quantity }}){% if not forloop.last %}, {% endif %}{% endfor %}
+                                {% for item in ret.items.all %}{% if item.product %}{{ item.product.name }}{% else %}Produit supprimé{% endif %} ({{ item.quantity }}){% if not forloop.last %}, {% endif %}{% endfor %}
                             </td>
                             <td class="muted-cell">{{ ret.note|default:"—" }}</td>
                             <td class="muted-cell">{{ ret.date|date:"d/m/Y H:i" }}</td>
                             <td style="white-space:nowrap;">
-                                <button type="button" class="btn btn-ghost btn-sm" onclick="openReturnModal({{ ret.id }})">Modifier</button>
+                                <button type="button" class="btn btn-edit-soft btn-sm" onclick="openReturnModal({{ ret.id }})">Modifier</button>
                                 <button type="button" class="btn btn-danger-soft btn-sm" onclick="openDeleteModal('return', {{ ret.id }}, '{{ ret.agent.name|escapejs }}')">Supprimer</button>
                             </td>
                         </tr>
@@ -331,7 +145,6 @@
                 </table>
             </div>
         </div>
-
     </main>
 </div>
 
@@ -339,7 +152,7 @@
 <div class="modal-overlay" id="loadModal">
     <div class="modal-box">
         <div class="modal-header">
-            <div class="modal-title">🚚 Charger un vendeur</div>
+            <div class="modal-title">Charger un vendeur</div>
             <button type="button" class="modal-close" onclick="closeLoadModal()">&times;</button>
         </div>
         <form id="loadForm">
@@ -370,13 +183,13 @@
             <div class="form-group">
                 <label class="form-label">Produits chargés *</label>
                 <div id="loadCartContainer"></div>
-                <button type="button" class="btn btn-ghost btn-sm" style="margin-top:6px;" onclick="addLoadRow()">＋ Ajouter un produit</button>
+                <button type="button" class="btn btn-ghost btn-sm" style="margin-top:6px;" onclick="addLoadRow()">+ Ajouter un produit</button>
             </div>
             <input type="hidden" id="loadItemsInput" name="items" value="[]">
             <div class="form-error" id="loadFormError"></div>
             <div class="modal-actions">
                 <button type="button" class="btn btn-ghost" onclick="closeLoadModal()">Annuler</button>
-                <button type="submit" class="btn btn-primary" id="loadSubmitBtn">💾 Enregistrer le chargement</button>
+                <button type="submit" class="btn btn-primary" id="loadSubmitBtn">Enregistrer le chargement</button>
             </div>
         </form>
     </div>
@@ -386,7 +199,7 @@
 <div class="modal-overlay" id="returnModal">
     <div class="modal-box">
         <div class="modal-header">
-            <div class="modal-title">↩ Enregistrer un retour</div>
+            <div class="modal-title">Enregistrer un retour</div>
             <button type="button" class="modal-close" onclick="closeReturnModal()">&times;</button>
         </div>
         <form id="returnForm">
@@ -408,14 +221,14 @@
             <div class="form-group">
                 <label class="form-label">Produits à retourner *</label>
                 <div id="returnCartContainer">
-                    <p class="muted-cell" style="font-size:12.5px;">Choisis d'abord un vendeur pour voir son stock.</p>
+                    <p class="muted-cell" style="font-size:12.5px;">Choisissez d'abord un vendeur pour voir son stock.</p>
                 </div>
             </div>
             <input type="hidden" id="returnItemsInput" name="items" value="[]">
             <div class="form-error" id="returnFormError"></div>
             <div class="modal-actions">
                 <button type="button" class="btn btn-ghost" onclick="closeReturnModal()">Annuler</button>
-                <button type="submit" class="btn btn-primary" id="returnSubmitBtn">💾 Enregistrer le retour</button>
+                <button type="submit" class="btn btn-primary" id="returnSubmitBtn">Enregistrer le retour</button>
             </div>
         </form>
     </div>
@@ -423,17 +236,19 @@
 
 <!-- MODAL CONFIRMATION SUPPRESSION -->
 <div class="modal-overlay" id="deleteModal">
-    <div class="modal-box" style="max-width:400px; text-align:center;">
-        <div style="font-size:36px; margin-bottom:12px;">⚠️</div>
-        <div style="font-size:17px; font-weight:700; margin-bottom:12px;">Confirmer la suppression</div>
-        <div style="font-size:13.5px; color:var(--text-secondary); margin-bottom:24px; line-height:1.7;">
-            Es-tu sûr de vouloir supprimer ce <span id="deleteModalKind"></span> pour <strong id="deleteModalName"></strong> ?
+    <div class="modal-box" style="max-width:420px;">
+        <div class="modal-header">
+            <div class="modal-title">Confirmer la suppression</div>
+            <button type="button" class="modal-close" onclick="closeDeleteModal()">&times;</button>
+        </div>
+        <div style="font-size:13.5px; color:var(--text-secondary); margin-bottom:20px; line-height:1.6;">
+            Êtes-vous sûr de vouloir supprimer ce <span id="deleteModalKind"></span> pour <strong id="deleteModalName" style="color:var(--text-primary);"></strong> ?
             <br>Le stock correspondant sera automatiquement remis à jour.
             <br>Cette action est <strong>irréversible</strong>.
         </div>
         <div class="modal-actions">
             <button type="button" class="btn btn-ghost" onclick="closeDeleteModal()">Annuler</button>
-            <button type="button" class="btn btn-danger-solid" id="confirmDeleteBtn">🗑️ Supprimer</button>
+            <button type="button" class="btn btn-danger-solid" id="confirmDeleteBtn">Supprimer</button>
         </div>
     </div>
 </div>
@@ -447,30 +262,27 @@
         {% endfor %}
     ];
 
-    // Stock personnel actuel par agent, construit depuis agent_stocks
     const AGENT_STOCKS = {};
     {% for stock in agent_stocks %}
     AGENT_STOCKS['{{ stock.agent.id }}'] = AGENT_STOCKS['{{ stock.agent.id }}'] || [];
     AGENT_STOCKS['{{ stock.agent.id }}'].push({ productId: '{{ stock.product.id }}', name: '{{ stock.product.name|escapejs }}', quantity: {{ stock.quantity }} });
     {% endfor %}
 
-    // Engin par défaut de chaque agent, pour pré-remplir automatiquement au chargement
     const AGENT_DEFAULT_ENGINE = {
         {% for agent in agents %}
         '{{ agent.id }}': '{{ agent.engine.id|default:"" }}'{% if not forloop.last %},{% endif %}
         {% endfor %}
     };
 
-    // Détail des chargements/retours existants, pour pré-remplir le modal en mode édition
     const LOADS_DATA = {};
     {% for load in loads %}
     LOADS_DATA['{{ load.id }}'] = {
         agentId: '{{ load.agent.id }}',
-        engineId: '{{ load.engine.id|default:load.agent.engine.id|default:"" }}',
+        engineId: '{% if load.engine %}{{ load.engine.id }}{% elif load.agent.engine %}{{ load.agent.engine.id }}{% endif %}',
         note: '{{ load.note|escapejs }}',
         items: [
             {% for item in load.items.all %}
-            { productId: '{{ item.product.id }}', productName: '{{ item.product.name|escapejs }}', quantity: {{ item.quantity }}, unitPrice: {{ item.unit_price }} }{% if not forloop.last %},{% endif %}
+            {% if item.product %}{ productId: '{{ item.product.id }}', productName: '{{ item.product.name|escapejs }}', quantity: {{ item.quantity }}, unitPrice: {{ item.unit_price }} },{% endif %}
             {% endfor %}
         ]
     };
@@ -483,7 +295,7 @@
         note: '{{ ret.note|escapejs }}',
         items: [
             {% for item in ret.items.all %}
-            { productId: '{{ item.product.id }}', quantity: {{ item.quantity }} }{% if not forloop.last %},{% endif %}
+            {% if item.product %}{ productId: '{{ item.product.id }}', quantity: {{ item.quantity }} },{% endif %}
             {% endfor %}
         ]
     };
@@ -499,7 +311,7 @@
 
     function showToast(message, type = 'success') {
         const toast = document.getElementById('toast');
-        toast.textContent = (type === 'success' ? '✅ ' : '⚠️ ') + message;
+        toast.textContent = message;
         toast.className = 'toast show ' + type;
         setTimeout(() => toast.classList.remove('show'), 3500);
     }
@@ -508,7 +320,6 @@
         showToast(el.dataset.text, type);
     });
 
-    /* ── CHARGEMENT ── */
     function openLoadModal(loadId) {
         document.getElementById('loadForm').reset();
         document.getElementById('loadCartContainer').innerHTML = '';
@@ -520,15 +331,15 @@
 
         if (loadId && LOADS_DATA[loadId]) {
             const data = LOADS_DATA[loadId];
-            modalTitle.textContent = '✏️ Modifier le chargement';
-            submitBtn.textContent = '💾 Enregistrer les modifications';
+            modalTitle.textContent = 'Modifier le chargement';
+            submitBtn.textContent = 'Enregistrer les modifications';
             document.getElementById('loadAgent').value = data.agentId;
             document.getElementById('loadEngine').value = data.engineId || '';
             document.getElementById('loadNote').value = data.note;
             data.items.forEach(item => addLoadRow(item));
         } else {
-            modalTitle.textContent = '🚚 Charger un vendeur';
-            submitBtn.textContent = '💾 Enregistrer le chargement';
+            modalTitle.textContent = 'Charger un vendeur';
+            submitBtn.textContent = 'Enregistrer le chargement';
             addLoadRow();
         }
 
@@ -541,10 +352,10 @@
         const container = document.getElementById('loadCartContainer');
         const row = document.createElement('div');
         row.className = 'cart-row';
-        const options = PRODUCTS.map(p => `<option value="${p.id}" data-price="${p.price}" style="background-color: #1E293B !important; color: #FFFFFF !important;">${p.name} (stock magasin: ${p.stock})</option>`).join('');
+        const options = PRODUCTS.map(p => `<option value="${p.id}" data-price="${p.price}">${p.name} (stock magasin: ${p.stock})</option>`).join('');
         row.innerHTML = `
-            <select class="form-select load-product" style="color-scheme: dark !important; background-color: #1E293B !important; color: #FFFFFF !important;" required>
-                <option value="" style="background-color: #1E293B !important; color: #94A3B8 !important;">Produit...</option>
+            <select class="form-select load-product" required>
+                <option value="">Produit...</option>
                 ${options}
             </select>
             <input type="number" class="form-control load-qty" min="1" value="${prefill ? prefill.quantity : 1}" required placeholder="Qté">
@@ -611,11 +422,10 @@
             errorBox.textContent = 'Erreur serveur'; errorBox.style.display = 'block';
         } finally {
             btn.disabled = false;
-            btn.textContent = document.getElementById('loadIdInput').value ? '💾 Enregistrer les modifications' : '💾 Enregistrer le chargement';
+            btn.textContent = document.getElementById('loadIdInput').value ? 'Enregistrer les modifications' : 'Enregistrer le chargement';
         }
     });
 
-    /* ── RETOUR ── */
     function openReturnModal(returnId) {
         document.getElementById('returnForm').reset();
         document.getElementById('returnFormError').style.display = 'none';
@@ -626,14 +436,14 @@
 
         if (returnId && RETURNS_DATA[returnId]) {
             const data = RETURNS_DATA[returnId];
-            modalTitle.textContent = '✏️ Modifier le retour';
-            submitBtn.textContent = '💾 Enregistrer les modifications';
+            modalTitle.textContent = 'Modifier le retour';
+            submitBtn.textContent = 'Enregistrer les modifications';
             document.getElementById('returnAgent').value = data.agentId;
             document.getElementById('returnNote').value = data.note;
             renderReturnRows(data.items);
         } else {
-            modalTitle.textContent = '↩ Enregistrer un retour';
-            submitBtn.textContent = '💾 Enregistrer le retour';
+            modalTitle.textContent = 'Enregistrer un retour';
+            submitBtn.textContent = 'Enregistrer le retour';
             renderReturnRows();
         }
 
@@ -648,13 +458,11 @@
         let stocks = (AGENT_STOCKS[agentId] || []).slice();
 
         if (!agentId) {
-            container.innerHTML = '<p class="muted-cell" style="font-size:12.5px;">Choisis d\'abord un vendeur pour voir son stock.</p>';
+            container.innerHTML = '<p class="muted-cell" style="font-size:12.5px;">Choisissez d\'abord un vendeur pour voir son stock.</p>';
             document.getElementById('returnItemsInput').value = '[]';
             return;
         }
 
-        // En édition : les produits déjà présents dans ce retour doivent apparaître
-        // même s'ils n'ont plus de stock disponible chez le vendeur actuellement.
         const prefillMap = {};
         (prefillItems || []).forEach(item => { prefillMap[item.productId] = item.quantity; });
         const knownIds = new Set(stocks.map(s => s.productId));
@@ -673,7 +481,6 @@
 
         container.innerHTML = stocks.map(s => {
             const prefillQty = prefillMap[s.productId] || 0;
-            // En édition, la quantité modifiable max = ce qui est dispo maintenant + ce qui était déjà dans ce retour
             const maxQty = s.quantity + prefillQty;
             return `
             <div class="cart-row">
@@ -729,12 +536,11 @@
             errorBox.textContent = 'Erreur serveur'; errorBox.style.display = 'block';
         } finally {
             btn.disabled = false;
-            btn.textContent = document.getElementById('returnIdInput').value ? '💾 Enregistrer les modifications' : '💾 Enregistrer le retour';
+            btn.textContent = document.getElementById('returnIdInput').value ? 'Enregistrer les modifications' : 'Enregistrer le retour';
         }
     });
 
-    /* ── SUPPRESSION (chargement ou retour) ── */
-    let deleteTarget = null; // { kind: 'load' | 'return', id: ... }
+    let deleteTarget = null;
 
     function openDeleteModal(kind, id, agentName) {
         deleteTarget = { kind, id };
@@ -778,11 +584,10 @@
             closeDeleteModal();
         } finally {
             btn.disabled = false;
-            btn.textContent = '🗑️ Supprimer';
+            btn.textContent = 'Supprimer';
         }
     });
 </script>
-
 <script src="{% static 'InvoiceApp/js/responsive.js' %}"></script>
 <script src="{% static 'InvoiceApp/js/ai_assistant.js' %}"></script>
 </body>

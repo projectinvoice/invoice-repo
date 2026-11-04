@@ -1,413 +1,27 @@
 {% load static %}
-{% load custom_filters %}
 <!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Rôles d'agent - {{ company_name }}</title>
+    <title>Rôles d'agent — {{ company_name }} | MerchandBlock</title>
+    <link rel="stylesheet" href="{% static 'InvoiceApp/css/merchandblock.css' %}">
+    <link rel="stylesheet" href="{% static 'InvoiceApp/css/responsive.css' %}">
+    <script src="{% static 'InvoiceApp/js/merchandblock.js' %}"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
-
-        :root {
-            --bg-base: #0F1629;
-            --bg-card: #1A2238;
-            --bg-card-hover: #1F2A44;
-            --border: rgba(99, 102, 241, 0.15);
-            --border-hover: rgba(99, 102, 241, 0.45);
-            --indigo: #6366F1;
-            --indigo-light: #818CF8;
-            --emerald: #10B981;
-            --amber: #F59E0B;
-            --rose: #F43F5E;
-            --sky: #38BDF8;
-            --text-primary: #E2E8F0;
-            --text-secondary: #94A3B8;
-            --text-muted: #64748B;
-            --radius: 16px;
-            --radius-sm: 10px;
-            --shadow: 0 4px 24px rgba(0,0,0,0.4);
-        }
-
-        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-
-        body {
-            font-family: 'Inter', sans-serif;
-            background: var(--bg-base);
-            color: var(--text-primary);
-            min-height: 100vh;
-            font-size: 14px;
-            line-height: 1.6;
-        }
-
-        .sidebar {
-            position: fixed;
-            left: 0; top: 0; bottom: 0;
-            width: 240px;
-            background: var(--bg-card);
-            border-right: 1px solid var(--border);
-            display: flex;
-            flex-direction: column;
-            z-index: 100;
-        }
-
-        .sidebar-logo {
-            padding: 24px 20px 20px;
-            border-bottom: 1px solid var(--border);
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .logo-mark {
-            width: 36px; height: 36px;
-            background: linear-gradient(135deg, var(--indigo), #9333EA);
-            border-radius: 10px;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 18px; font-weight: 800; color: white;
-            flex-shrink: 0;
-        }
-
-        .logo-text {
-            font-size: 15px; font-weight: 700;
-            color: var(--text-primary);
-            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-        }
-
-        .sidebar-nav { flex: 1; padding: 16px 12px; overflow-y: auto; }
-
-        .nav-section-label {
-            font-size: 10px; font-weight: 600;
-            color: var(--text-muted);
-            text-transform: uppercase; letter-spacing: 0.12em;
-            padding: 12px 8px 6px;
-        }
-
-        .nav-item {
-            display: flex; align-items: center; gap: 10px;
-            padding: 9px 12px; border-radius: var(--radius-sm);
-            color: var(--text-secondary); text-decoration: none;
-            font-weight: 500; font-size: 13.5px;
-            transition: all 0.18s; margin-bottom: 2px;
-        }
-
-        .nav-item:hover, .nav-item.active {
-            background: rgba(99, 102, 241, 0.12);
-            color: var(--indigo-light);
-        }
-
-        .nav-item.active { font-weight: 600; }
-        .nav-item .nav-icon { font-size: 16px; width: 20px; text-align: center; }
-
-        .sidebar-footer { padding: 16px 12px; border-top: 1px solid var(--border); }
-
-        .user-block {
-            display: flex; align-items: center; gap: 10px;
-            padding: 10px; border-radius: var(--radius-sm);
-            background: rgba(255,255,255,0.04);
-        }
-
-        .user-avatar {
-            width: 32px; height: 32px; border-radius: 50%;
-            background: linear-gradient(135deg, var(--emerald), #059669);
-            display: flex; align-items: center; justify-content: center;
-            font-size: 13px; font-weight: 700; color: white; flex-shrink: 0;
-        }
-
-        .user-name { font-weight: 600; font-size: 13px; }
-        .user-role { font-size: 11px; color: var(--text-muted); }
-
-        .logout-btn {
-            margin-top: 10px; display: block; text-align: center;
-            padding: 8px;
-            background: rgba(244, 63, 94, 0.1);
-            color: var(--rose); border-radius: var(--radius-sm);
-            text-decoration: none; font-size: 13px; font-weight: 500;
-            transition: background 0.2s;
-        }
-        .logout-btn:hover { background: rgba(244, 63, 94, 0.2); }
-
-        .main { margin-left: 240px; min-height: 100vh; display: flex; flex-direction: column; }
-
-        .topbar {
-            background: var(--bg-card);
-            border-bottom: 1px solid var(--border);
-            padding: 14px 32px;
-            display: flex; align-items: center; justify-content: space-between;
-            position: sticky; top: 0; z-index: 50;
-        }
-
-        .topbar-title { font-size: 17px; font-weight: 700; }
-        .topbar-sub { font-size: 12px; color: var(--text-muted); margin-top: 1px; }
-        .topbar-actions { display: flex; gap: 10px; align-items: center; }
-
-        .btn {
-            display: inline-flex; align-items: center; gap: 6px;
-            padding: 8px 16px; border-radius: var(--radius-sm);
-            font-size: 13px; font-weight: 600; cursor: pointer;
-            text-decoration: none; border: none;
-            transition: all 0.2s; font-family: 'Inter', sans-serif;
-        }
-        .btn-primary { background: var(--indigo); color: white; }
-        .btn-primary:hover { background: #5254CC; transform: translateY(-1px); }
-        .btn-ghost {
-            background: rgba(255,255,255,0.06);
-            color: var(--text-secondary);
-            border: 1px solid var(--border);
-        }
-        .btn-ghost:hover { background: rgba(255,255,255,0.1); color: var(--text-primary); }
-        .btn-sm { padding: 6px 12px; font-size: 12px; }
-        .btn-danger-soft {
-            background: rgba(244,63,94,0.1);
-            color: var(--rose);
-            border: 1px solid rgba(244,63,94,0.2);
-        }
-        .btn-danger-soft:hover { background: rgba(244,63,94,0.22); }
-        .btn-edit-soft {
-            background: rgba(99,102,241,0.1);
-            color: var(--indigo-light);
-            border: 1px solid rgba(99,102,241,0.2);
-        }
-        .btn-edit-soft:hover { background: rgba(99,102,241,0.2); }
-
-        .content { padding: 28px 32px; flex: 1; }
-
-        .toolbar {
-            display: flex; align-items: center; gap: 12px;
-            margin-bottom: 20px; flex-wrap: wrap;
-        }
-
-        .search-wrap { position: relative; flex: 1; min-width: 220px; }
-        .search-icon {
-            position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
-            color: var(--text-muted); font-size: 15px; pointer-events: none;
-        }
-        .search-input {
-            width: 100%;
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: var(--radius-sm);
-            padding: 9px 14px 9px 36px;
-            color: var(--text-primary);
-            font-size: 13px; font-family: 'Inter', sans-serif;
-            outline: none; transition: border-color 0.2s;
-        }
-        .search-input::placeholder { color: var(--text-muted); }
-        .search-input:focus { border-color: var(--indigo); }
-
-        .table-card {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
-            box-shadow: var(--shadow);
-            overflow: hidden;
-        }
-
-        .table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        .table th {
-            background: rgba(255,255,255,0.04);
-            color: var(--text-secondary);
-            text-align: left;
-            padding: 12px 16px;
-            font-size: 12px;
-            font-weight: 700;
-            letter-spacing: 0.06em;
-            text-transform: uppercase;
-        }
-
-        .table td {
-            padding: 14px 16px;
-            border-top: 1px solid var(--border);
-            color: var(--text-primary);
-            vertical-align: middle;
-        }
-
-        .role-row:hover { background: var(--bg-card-hover); }
-        .role-muted { color: var(--text-secondary); font-size: 12px; }
-        .empty-state {
-            padding: 24px; text-align: center;
-            color: var(--text-secondary);
-        }
-
-        .modal-overlay {
-            position: fixed;
-            inset: 0;
-            background: rgba(0, 0, 0, 0.7);
-            display: none;
-            align-items: center;
-            justify-content: center;
-            z-index: 1000;
-            padding: 24px;
-        }
-        .modal-overlay.show { display: flex; }
-        .modal-icon { font-size: 36px; margin-bottom: 12px; text-align: center; }
-        .modal-msg { font-size: 13.5px; color: var(--text-secondary); margin-bottom: 24px; line-height: 1.7; text-align: center; }
-        .modal-msg strong { color: var(--text-primary); }
-        .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 8px; }
-        .btn-danger-solid { background: var(--rose); color: white; border: none; }
-        .btn-danger-solid:hover { background: #e0294a; }
-        .confirm-content { max-width: 400px; }
-        .toast {
-            position: fixed; bottom: 24px; right: 24px;
-            background: #1E293B; border: 1px solid var(--border);
-            border-radius: var(--radius-sm);
-            padding: 12px 18px;
-            font-size: 13px; font-weight: 500;
-            display: flex; align-items: center; gap: 10px;
-            box-shadow: var(--shadow);
-            transform: translateY(80px); opacity: 0;
-            transition: all 0.3s cubic-bezier(0.22,1,0.36,1);
-            z-index: 999;
-            pointer-events: none;
-        }
-        .toast.show { transform: translateY(0); opacity: 1; }
-        .toast.success { border-color: rgba(16,185,129,0.4); color: var(--emerald); }
-        .toast.error { border-color: rgba(244,63,94,0.4); color: var(--rose); }
-        .modal-content {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
-            padding: 28px;
-            max-width: 640px;
-            width: 100%;
-            max-height: 85vh;
-            overflow-y: auto;
-            box-shadow: var(--shadow);
-            animation: slideIn 0.25s ease;
-        }
-        @keyframes slideIn { from { transform: translateY(-20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-
-        .close-btn {
-            float: right;
-            font-size: 28px;
-            font-weight: bold;
-            color: var(--text-muted);
-            cursor: pointer;
-        }
-        .close-btn:hover { color: var(--text-primary); }
-
-        .form-label {
-            display: block;
-            margin-bottom: 6px;
-            color: var(--text-secondary);
-            font-size: 13px;
-            font-weight: 600;
-        }
-        .form-control, textarea {
-            width: 100%;
-            background: rgba(255,255,255,0.04);
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            padding: 10px 12px;
-            color: var(--text-primary);
-            font-family: 'Inter', sans-serif;
-            outline: none;
-        }
-        .form-control:focus, textarea:focus {
-            border-color: var(--indigo);
-            box-shadow: 0 0 0 3px rgba(99,102,241,0.15);
-        }
+        .role-name { font-weight: 600; color: var(--text-primary); }
+        .role-muted { font-size: 13px; color: var(--text-secondary); }
         .mb-3 { margin-bottom: 14px; }
         .d-flex { display: flex; gap: 10px; flex-wrap: wrap; }
-        .alert { padding: 10px 12px; border-radius: 10px; margin-top: 12px; }
-        .alert-success { background: rgba(16,185,129,0.15); color: #A7F3D0; }
-        .alert-danger { background: rgba(244,63,94,0.15); color: #FECACA; }
-
-        @media (max-width: 900px) {
-            .main { margin-left: 0; }
-            .topbar { padding: 12px 16px; }
-            .content { padding: 16px 12px; }
-        }
     </style>
-    <link rel="stylesheet" href="{% static 'InvoiceApp/css/responsive.css' %}">
 </head>
 <body>
 
-<div class="sidebar">
-    <div class="sidebar-logo">
-        {% if company_logo_url %}
-        <img src="{{ company_logo_url }}" alt="Logo" style="width:36px;height:36px;object-fit:contain;border-radius:10px;background:#fff;padding:4px;">
-        {% else %}
-        <div class="logo-mark">{{ company_name|first|upper }}</div>
-        {% endif %}
-        <div class="logo-text">{{ company_name }}</div>
-        <button type="button" class="sidebar-close-btn" id="sidebarCloseBtn" aria-label="Fermer le menu">&times;</button>
-    </div>
-
-    <nav class="sidebar-nav">
-        <div class="nav-section-label">Général</div>
-        <a href="{% url 'dashboard' %}" class="nav-item">
-            <span class="nav-icon">📊</span> Tableau de bord
-        </a>
-
-        <div class="nav-section-label">Gestion</div>
-        <a href="{% url 'list_agents' %}" class="nav-item">
-            <span class="nav-icon">👥</span> Agents
-        </a>
-        <a href="{% url 'manage_agent_roles' %}" class="nav-item active">
-            <span class="nav-icon">🎭</span> Rôles
-        </a>
-        <a href="{% url 'list_engines' %}" class="nav-item">
-            <span class="nav-icon">⚙️</span> Engins
-        </a>
-        <a href="{% url 'list_stock_loads' %}" class="nav-item">
-            <span class="nav-icon">🚚</span> Stock Vendeurs
-        </a>
-        <a href="{% url 'list_products' %}" class="nav-item">
-            <span class="nav-icon">📦</span> Produits
-        </a>
-
-        <div class="nav-section-label">Commerce</div>
-        <a href="{% url 'list_clients' %}" class="nav-item">
-            <span class="nav-icon">🤝</span> Clients
-        </a>
-        <a href="{% url 'list_suppliers' %}" class="nav-item">
-            <span class="nav-icon">🏭</span> Fournisseurs
-        </a>
-        <a href="{% url 'list_sales' %}" class="nav-item">
-            <span class="nav-icon">💹</span> Ventes
-        </a>
-        <a href="{% url 'list_supplies' %}" class="nav-item">
-            <span class="nav-icon">🛒</span> Appros
-        </a>
-        <a href="{% url 'list_invoices' %}" class="nav-item">
-            <span class="nav-icon">🧾</span> Factures
-        </a>
-
-        <div class="nav-section-label">Entreprise</div>
-        <a href="{% url 'company_settings' %}" class="nav-item">
-            <span class="nav-icon">⚙️</span> Paramètres
-        </a>
-        <a href="{% url 'subscription' %}" class="nav-item">
-            <span class="nav-icon">💳</span> Abonnement
-        </a>
-        {% if request.user.is_staff %}
-        <a href="{% url 'promo_codes_admin' %}" class="nav-item">
-            <span class="nav-icon">🎟️</span> Codes promo
-        </a>
-        {% endif %}
-    </nav>
-
-    <div class="sidebar-footer">
-        <div class="user-block">
-            <div class="user-avatar">{{ company_name|slice:":1"|upper|default:"A" }}</div>
-            <div>
-                <div class="user-name">{{ company_name|default:request.user.username }}</div>
-                <div class="user-role">Administrateur</div>
-            </div>
-        </div>
-        <a href="{% url 'logout' %}" class="logout-btn">🚪 Se déconnecter</a>
-    </div>
-</div>
-<div class="sidebar-overlay" id="sidebarOverlay"></div>
+{% include 'includes/sidebar.html' with active_page='agent_roles' %}
 
 <div class="main">
-    <div class="topbar">
-        <div style="display:flex; align-items:center; gap:12px;">
+    <header class="topbar">
+        <div class="topbar-left">
             <button type="button" class="sidebar-toggle-btn" id="sidebarToggleBtn" aria-label="Menu de navigation">
                 <span></span><span></span><span></span>
             </button>
@@ -417,58 +31,64 @@
             </div>
         </div>
         <div class="topbar-actions">
-            <button onclick="openRoleModal(null)" class="btn btn-primary">＋ Ajouter</button>
+            <button onclick="openRoleModal(null)" class="btn btn-primary">+ Ajouter un rôle</button>
             <a href="{% url 'dashboard' %}" class="btn btn-ghost">← Tableau de bord</a>
         </div>
-    </div>
+    </header>
 
-    <div class="content">
+    <main class="content">
         <div class="toolbar">
             <div class="search-wrap">
-                <span class="search-icon">🔎</span>
+                <span class="search-icon">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                </span>
                 <input type="text" id="searchInput" class="search-input" placeholder="Rechercher un rôle...">
             </div>
         </div>
 
         <div class="table-card">
-            <table class="table">
-                <thead>
-                    <tr>
-                        <th>#</th>
-                        <th>Nom du rôle</th>
-                        <th>Description</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for role in agent_roles %}
-                    <tr class="role-row">
-                        <td>{{ forloop.counter }}</td>
-                        <td class="role-name">{{ role.name }}</td>
-                        <td><span class="role-muted">{{ role.description|default:"Aucune description" }}</span></td>
-                        <td>
-                            <button type="button" class="btn btn-edit-soft btn-sm" onclick="openRoleModal({{ role.id }}, '{{ role.name|escapejs }}', '{{ role.description|default:''|escapejs }}')">Modifier</button>
-                            <button type="button" class="btn btn-danger-soft btn-sm" onclick="openDeleteModal({{ role.id }}, '{{ role.name|escapejs }}')">Supprimer</button>
-                        </td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="4">
-                            <div class="empty-state">Aucun rôle enregistré</div>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+            <div class="table-wrap">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Nom du rôle</th>
+                            <th>Description</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for role in agent_roles %}
+                        <tr class="role-row">
+                            <td>{{ forloop.counter }}</td>
+                            <td class="role-name">{{ role.name }}</td>
+                            <td><span class="role-muted">{{ role.description|default:"Aucune description" }}</span></td>
+                            <td>
+                                <button type="button" class="btn btn-edit-soft btn-sm" onclick="openRoleModal({{ role.id }}, '{{ role.name|escapejs }}', '{{ role.description|default:''|escapejs }}')">Modifier</button>
+                                <button type="button" class="btn btn-danger-soft btn-sm" onclick="openDeleteModal({{ role.id }}, '{{ role.name|escapejs }}')">Supprimer</button>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="4">
+                                <div class="empty-state">Aucun rôle enregistré</div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         </div>
-    </div>
+    </main>
 </div>
 
 <div class="modal-overlay" id="roleModal">
     <div class="modal-content">
-        <span class="close-btn" onclick="closeRoleModal()">&times;</span>
-        <h3 id="modalTitle">Ajouter un rôle</h3>
-        <form id="roleForm" style="margin-top: 20px;">
+        <div class="modal-header">
+            <h3 class="modal-title" id="modalTitle">Ajouter un rôle</h3>
+            <span class="close-btn" onclick="closeRoleModal()">&times;</span>
+        </div>
+        <form id="roleForm">
             {% csrf_token %}
             <input type="hidden" name="role_id" id="roleId" value="">
             <div class="mb-3">
@@ -479,32 +99,33 @@
                 <label for="description" class="form-label">Description</label>
                 <textarea class="form-control" id="description" name="description" rows="3"></textarea>
             </div>
-            <div class="d-flex">
-                <button type="submit" class="btn btn-primary">💾 Enregistrer</button>
+            <div class="d-flex" style="justify-content:flex-end; margin-top:18px;">
                 <button type="button" class="btn btn-ghost" onclick="closeRoleModal()">Annuler</button>
+                <button type="submit" class="btn btn-primary">Enregistrer</button>
             </div>
         </form>
         <div id="message" style="margin-top: 15px;"></div>
     </div>
 </div>
 
-<!-- ══════════════ MODAL CONFIRMATION SUPPRESSION ══════════════ -->
+<!-- MODAL CONFIRMATION SUPPRESSION -->
 <div class="modal-overlay" id="deleteModal">
-    <div class="modal-content confirm-content">
-        <div class="modal-icon">⚠️</div>
-        <div style="font-size:17px;font-weight:700;margin-bottom:12px;text-align:center;">Confirmer la suppression</div>
-        <div class="modal-msg">
-            Êtes-vous sûr de vouloir supprimer le rôle <strong id="modal-item-name"></strong> ?
+    <div class="modal-content" style="max-width: 420px;">
+        <div class="modal-header">
+            <div class="modal-title">Confirmer la suppression</div>
+            <span class="close-btn" onclick="closeDeleteModal()">&times;</span>
+        </div>
+        <div class="modal-msg" style="font-size:13.5px; color:var(--text-secondary); margin-bottom:20px; line-height:1.6;">
+            Êtes-vous sûr de vouloir supprimer le rôle <strong id="modal-item-name" style="color:var(--text-primary);"></strong> ?
             <br>Cette action est <strong>irréversible</strong>.
         </div>
         <div class="modal-actions">
             <button type="button" class="btn btn-ghost" onclick="closeDeleteModal()">Annuler</button>
-            <button type="button" class="btn btn-danger-solid" id="confirmDeleteBtn">🗑️ Supprimer</button>
+            <button type="button" class="btn btn-danger-solid" id="confirmDeleteBtn">Supprimer</button>
         </div>
     </div>
 </div>
 
-<!-- ══════════════ TOAST ══════════════ -->
 <div class="toast" id="toast"></div>
 
 <script>
@@ -541,7 +162,7 @@
         return cookieValue;
     }
 
-    const csrfToken = getCookie('csrftoken');
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || getCookie('csrftoken');
 
     document.getElementById('roleForm').addEventListener('submit', async function(e) {
         e.preventDefault();
@@ -549,39 +170,27 @@
         const response = await fetch('{% url "add_agent_role" %}', {
             method: 'POST',
             body: formData,
-            headers: {
-                'X-CSRFToken': csrfToken
-            },
+            headers: { 'X-CSRFToken': csrfToken },
             credentials: 'same-origin'
         });
         const message = document.getElementById('message');
+        const data = await response.json().catch(() => ({}));
 
-        if (!response.ok) {
-            const text = await response.text();
-            message.innerHTML = '<div class="alert alert-danger">Erreur serveur: ' + response.status + '</div>';
-            console.error('Server error:', response.status, text);
-            return;
-        }
-
-        const data = await response.json();
-
-        if (data.success) {
+        if (response.ok && data.success) {
             message.innerHTML = '<div class="alert alert-success">' + (data.message || 'Enregistré') + '</div>';
             setTimeout(() => location.reload(), 1200);
         } else {
-            message.innerHTML = '<div class="alert alert-danger">' + (data.error || 'Erreur') + '</div>';
+            message.innerHTML = '<div class="alert alert-danger">' + (data.error || ('Erreur serveur: ' + response.status)) + '</div>';
         }
     });
 
-    /* ── TOAST ── */
     function showToast(message, type = 'success') {
         const toast = document.getElementById('toast');
-        toast.textContent = (type === 'success' ? '✅ ' : '⚠️ ') + message;
+        toast.textContent = message;
         toast.className = 'toast show ' + type;
         setTimeout(() => { toast.classList.remove('show'); }, 3500);
     }
 
-    /* ── SUPPRESSION ── */
     let itemToDelete = null;
 
     function openDeleteModal(roleId, name) {
@@ -613,20 +222,13 @@
                 credentials: 'same-origin'
             });
 
-            if (!response.ok) {
-                const text = await response.text();
-                console.error('Server error:', response.status, text);
-                showToast('Erreur serveur: ' + response.status, 'error');
-                return;
-            }
-
-            const data = await response.json();
-            if (data.success) {
+            const data = await response.json().catch(() => ({}));
+            if (response.ok && data.success) {
                 showToast('Rôle supprimé', 'success');
                 closeDeleteModal();
                 setTimeout(() => location.reload(), 800);
             } else {
-                showToast(data.error || 'Erreur lors de la suppression', 'error');
+                showToast(data.error || ('Erreur serveur: ' + response.status), 'error');
             }
         } catch (err) {
             console.error(err);
