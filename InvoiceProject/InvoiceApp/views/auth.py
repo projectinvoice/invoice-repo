@@ -17,17 +17,17 @@ def _send_transactional_email(subject, to_email, greeting_name, intro_html, cta_
   <p>{intro_html}</p>
   <p style="text-align: center; margin: 32px 0;">
     <a href="{escape(cta_url)}"
-       style="background-color: #2563eb; color: #ffffff; text-decoration: none;
+       style="background-color: #F26722; color: #ffffff; text-decoration: none;
               padding: 12px 24px; border-radius: 6px; font-weight: bold; display: inline-block;">
       {escape(cta_label)}
     </a>
   </p>
   <p style="font-size: 13px; color: #6b7280;">
     Si le bouton ne fonctionne pas, copiez-collez ce lien dans votre navigateur :<br>
-    <a href="{escape(cta_url)}" style="color: #2563eb; word-break: break-all;">{escape(cta_url)}</a>
+    <a href="{escape(cta_url)}" style="color: #08244B; word-break: break-all;">{escape(cta_url)}</a>
   </p>
   <p>{outro_html}</p>
-  <p>Cordialement,<br>L'équipe {escape(settings.PLATFORM_NAME)}</p>
+  <p>Cordialement,<br>L'équipe MerchandBlock</p>
 </div>
 """
     msg = EmailMultiAlternatives(subject, text_body, settings.DEFAULT_FROM_EMAIL, [to_email])
@@ -46,22 +46,22 @@ def _send_activation_email(user):
     token = default_token_generator.make_token(user)
     activation_link = settings.SITE_BASE_URL.rstrip('/') + reverse('activate_account', kwargs={'uidb64': uid, 'token': token})
 
-    subject = f"Activez votre compte {settings.PLATFORM_NAME}"
+    subject = "Activez votre compte MerchandBlock"
     text_body = (
         f"Bonjour {user.company_name},\n\n"
-        f"Votre compte {settings.PLATFORM_NAME} a bien été créé. Il ne vous reste qu'une étape avant de "
+        f"Votre compte MerchandBlock a bien été créé. Il ne vous reste qu'une étape avant de "
         f"pouvoir commencer à l'utiliser : confirmer votre adresse email.\n\n"
         f"Activez votre compte via ce lien :\n{activation_link}\n\n"
         f"Ce lien est valable 24 heures.\n\n"
         f"Si vous n'êtes pas à l'origine de cette inscription, vous pouvez ignorer cet email "
         f"en toute sécurité.\n\n"
-        f"Cordialement,\nL'équipe {settings.PLATFORM_NAME}\n"
+        f"Cordialement,\nL'équipe MerchandBlock\n"
     )
     _send_transactional_email(
         subject=subject,
         to_email=user.email,
         greeting_name=user.company_name,
-        intro_html=f"Votre compte {escape(settings.PLATFORM_NAME)} a bien été créé. Il ne vous reste qu'une étape avant de "
+        intro_html="Votre compte MerchandBlock a bien été créé. Il ne vous reste qu'une étape avant de "
                     "pouvoir commencer à l'utiliser : confirmer votre adresse email.",
         cta_label="Activer mon compte",
         cta_url=activation_link,
@@ -217,16 +217,16 @@ def forgot_password(request):
         reset_link = settings.SITE_BASE_URL.rstrip('/') + reverse('reset_password_confirm', kwargs={'uidb64': uid, 'token': token})
 
         hours = settings.PASSWORD_RESET_TIMEOUT // 3600
-        subject = f"Réinitialisation de votre mot de passe {settings.PLATFORM_NAME}"
+        subject = "Réinitialisation de votre mot de passe MerchandBlock"
         text_body = (
             f"Bonjour {user.company_name},\n\n"
             f"Nous avons bien reçu une demande de réinitialisation du mot de passe associé "
-            f"à votre compte {settings.PLATFORM_NAME}.\n\n"
+            f"à votre compte MerchandBlock.\n\n"
             f"Choisissez un nouveau mot de passe via ce lien :\n{reset_link}\n\n"
             f"Ce lien est valable {hours} heures.\n\n"
             f"Si vous n'êtes pas à l'origine de cette demande, aucune action n'est nécessaire : "
             f"votre mot de passe actuel reste inchangé.\n\n"
-            f"Cordialement,\nL'équipe {settings.PLATFORM_NAME}\n"
+            f"Cordialement,\nL'équipe MerchandBlock\n"
         )
         try:
             _send_transactional_email(
@@ -234,7 +234,7 @@ def forgot_password(request):
                 to_email=email,
                 greeting_name=user.company_name,
                 intro_html="Nous avons bien reçu une demande de réinitialisation du mot de passe associé "
-                            f"à votre compte {escape(settings.PLATFORM_NAME)}.",
+                            "à votre compte MerchandBlock.",
                 cta_label="Choisir un nouveau mot de passe",
                 cta_url=reset_link,
                 outro_html=f"Ce lien est valable {hours} heures. Si vous n'êtes pas à l'origine de cette demande, "

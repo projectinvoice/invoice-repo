@@ -1,184 +1,180 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Codes promo — Administration</title>
-    {% load static %}
+    <title>Codes Promo (Admin) — MerchandBlock</title>
+    <link rel="stylesheet" href="{% static 'InvoiceApp/css/merchandblock.css' %}">
     <link rel="stylesheet" href="{% static 'InvoiceApp/css/responsive.css' %}">
+    <script src="{% static 'InvoiceApp/js/merchandblock.js' %}"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
-        :root {
-            --bg-base: #0F1629; --bg-card: #1A2238; --border: rgba(99, 102, 241, 0.15);
-            --indigo: #6366F1; --indigo-light: #818CF8; --emerald: #10B981; --amber: #F59E0B; --rose: #F43F5E;
-            --text-primary: #E2E8F0; --text-secondary: #94A3B8; --text-muted: #64748B;
-            --radius: 16px; --radius-sm: 10px;
-        }
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Inter', sans-serif; background: var(--bg-base); color: var(--text-primary); font-size: 14px; line-height: 1.6; }
-
-        .topbar {
-            background: var(--bg-card); border-bottom: 1px solid var(--border);
-            padding: 16px 32px; display: flex; align-items: center; justify-content: space-between;
-            gap: 12px; flex-wrap: wrap;
-        }
-        @media (max-width: 600px) {
-            .topbar { padding: 14px 16px; }
-            .topbar .btn { width: 100%; justify-content: center; }
-        }
-        .topbar-title { font-size: 17px; font-weight: 700; }
-        .topbar-sub { font-size: 12px; color: var(--text-muted); margin-top: 1px; }
-
-        .btn {
-            display: inline-flex; align-items: center; gap: 6px;
-            padding: 9px 18px; border-radius: var(--radius-sm);
-            font-size: 13px; font-weight: 600; cursor: pointer;
-            text-decoration: none; border: none; transition: all 0.2s; font-family: 'Inter', sans-serif;
-            min-height: 38px;
-        }
-        .btn-primary { background: var(--indigo); color: white; }
-        .btn-primary:hover { background: #5254CC; }
-        .btn-ghost { background: rgba(255,255,255,0.06); color: var(--text-secondary); border: 1px solid var(--border); }
-        .btn-ghost:hover { background: rgba(255,255,255,0.1); color: var(--text-primary); }
-        .btn-sm { padding: 6px 12px; font-size: 12px; min-height: 32px; }
-
-        .content { padding: 32px; max-width: 1100px; margin: 0 auto; }
-        @media (max-width: 600px) { .content { padding: 16px 12px; } }
-
         .form-card {
-            background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius);
-            padding: 24px; margin-bottom: 32px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: var(--shadow);
         }
-        @media (max-width: 600px) { .form-card { padding: 16px; } }
-        .section-title { font-size: 15px; font-weight: 700; margin-bottom: 16px; }
-        .form-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; align-items: end; }
-        @media (max-width: 900px) { .form-row { grid-template-columns: 1fr 1fr; } }
-        @media (max-width: 540px) { .form-row { grid-template-columns: 1fr; } }
-        .form-group label { display: block; margin-bottom: 6px; font-size: 12.5px; color: var(--text-secondary); }
-        .form-group input {
-            width: 100%; background: rgba(255,255,255,0.04); border: 1px solid var(--border);
-            border-radius: var(--radius-sm); padding: 9px 12px; color: var(--text-primary);
-            font-family: 'Inter', sans-serif; font-size: 13px; outline: none; min-height: 40px;
-        }
-        .form-group input:focus { border-color: var(--indigo); }
-        .form-group .hint { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
 
-        .table-card {
-            background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius);
-            overflow-x: auto; -webkit-overflow-scrolling: touch;
+        .section-title {
+            font-size: 15px;
+            font-weight: 700;
+            margin-bottom: 14px;
+            color: var(--text-primary);
         }
-        table { width: 100%; min-width: 680px; border-collapse: collapse; }
-        th, td { padding: 11px 16px; text-align: left; font-size: 13px; border-bottom: 1px solid var(--border); }
-        th { color: var(--text-muted); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: .06em; }
-        tr:last-child td { border-bottom: none; }
-        .code-value { font-family: 'Courier New', monospace; font-weight: 700; letter-spacing: .04em; color: var(--indigo-light); }
-        .pill { padding: 3px 10px; border-radius: 999px; font-size: 11.5px; font-weight: 600; }
-        .pill-active { background: rgba(16,185,129,0.15); color: #A7F3D0; }
-        .pill-inactive { background: rgba(148,163,184,0.15); color: var(--text-muted); }
-        .copy-btn { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 13px; }
-        .copy-btn:hover { color: var(--indigo-light); }
-        .empty-state { text-align: center; padding: 24px; color: var(--text-muted); }
 
-        .message { margin-top: 14px; padding: 10px 14px; border-radius: var(--radius-sm); font-size: 13px; display: none; }
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 14px;
+            align-items: end;
+        }
+
+        .code-value {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            font-size: 13.5px;
+            font-weight: 700;
+            color: var(--mb-navy);
+            letter-spacing: 0.06em;
+        }
+
+        [data-theme="dark"] .code-value {
+            color: #FB923C;
+        }
+
+        .copy-btn {
+            background: var(--bg-subtle);
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 11px;
+            font-weight: 600;
+            margin-left: 8px;
+            padding: 2px 7px;
+            border-radius: 5px;
+        }
+
+        .copy-btn:hover { color: var(--text-primary); border-color: var(--border-hover); }
+
+        .pill {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 6px;
+            font-size: 11.5px;
+            font-weight: 600;
+        }
+
+        .pill-active { background: rgba(5, 150, 105, 0.1); color: var(--emerald); }
+        .pill-inactive { background: rgba(225, 29, 72, 0.1); color: var(--rose); }
+
+        .message {
+            padding: 12px 16px;
+            border-radius: var(--radius-sm);
+            margin-top: 12px;
+            display: none;
+            font-size: 13px;
+        }
+
         .message.show { display: block; }
-        .message.error { background: rgba(244,63,94,0.15); color: #FECACA; }
-        .message.success { background: rgba(16,185,129,0.15); color: #A7F3D0; }
+        .message.error { background: rgba(225, 29, 72, 0.08); color: var(--rose); border: 1px solid rgba(225, 29, 72, 0.25); }
+        .message.success { background: rgba(5, 150, 105, 0.08); color: var(--emerald); border: 1px solid rgba(5, 150, 105, 0.25); }
     </style>
 </head>
 <body>
 
-<div class="topbar">
-    <div>
-        <div class="topbar-title">🎟️ Codes promo</div>
-        <div class="topbar-sub">Offrez un accès temporaire complet à la plateforme sans paiement</div>
+{% include 'includes/sidebar.html' with active_page='promo_codes' company_name=request.user.company_name %}
+
+<div class="main">
+    <div class="topbar">
+        <div>
+            <div class="topbar-title">Gestion des codes promotionnels</div>
+            <div class="topbar-sub">Générez des codes d'accès temporaire pour vos entreprises partenaires</div>
+        </div>
+        <div class="topbar-actions">
+            <a href="{% url 'dashboard' %}" class="btn btn-ghost">&larr; Tableau de bord</a>
+        </div>
     </div>
-    <a href="{% url 'dashboard' %}" class="btn btn-ghost">← Tableau de bord</a>
+
+    <div class="content">
+        <div class="form-card">
+            <div class="section-title">Générer un nouveau code</div>
+            <form id="promoForm">
+                {% csrf_token %}
+                <div class="form-grid">
+                    <div class="form-group" style="margin:0;">
+                        <label for="duration_days" class="form-label">Durée d'accès (jours) *</label>
+                        <input type="number" id="duration_days" name="duration_days" class="form-input" value="30" min="1" required>
+                    </div>
+                    <div class="form-group" style="margin:0;">
+                        <label for="max_redemptions" class="form-label">Nombre max d'entreprises *</label>
+                        <input type="number" id="max_redemptions" name="max_redemptions" class="form-input" value="1" min="1" required>
+                    </div>
+                    <div class="form-group" style="margin:0;">
+                        <label for="custom_code" class="form-label">Code personnalisé (optionnel)</label>
+                        <input type="text" id="custom_code" name="custom_code" class="form-input" placeholder="Auto si vide">
+                    </div>
+                    <div class="form-group" style="margin:0;">
+                        <label for="note" class="form-label">Note (client, motif...)</label>
+                        <input type="text" id="note" name="note" class="form-input" placeholder="Ex : Client démo">
+                    </div>
+                    <div>
+                        <button type="submit" class="btn btn-primary" id="submitBtn" style="width:100%;">+ Générer le code</button>
+                    </div>
+                </div>
+                <div id="message" class="message"></div>
+            </form>
+        </div>
+
+        <div class="section-title">Codes existants</div>
+        <div class="table-card">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Code</th>
+                        <th>Durée</th>
+                        <th>Note</th>
+                        <th>Utilisations</th>
+                        <th>Limite</th>
+                        <th>Statut</th>
+                        <th>Créé le</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody id="codesTableBody">
+                    {% for promo in codes %}
+                    <tr data-promo-id="{{ promo.id }}">
+                        <td>
+                            <span class="code-value">{{ promo.code }}</span>
+                            <button type="button" class="copy-btn" onclick="copyCode('{{ promo.code }}')" title="Copier">Copier</button>
+                        </td>
+                        <td>{{ promo.duration_days }} j</td>
+                        <td>{{ promo.note|default:"-" }}</td>
+                        <td>{{ promo.redemptions_count }}</td>
+                        <td>{{ promo.max_redemptions|default:"Illimité" }}</td>
+                        <td class="status-cell">
+                            <span class="pill {% if promo.is_active %}pill-active{% else %}pill-inactive{% endif %}">
+                                {% if promo.is_active %}Actif{% else %}Inactif{% endif %}
+                            </span>
+                        </td>
+                        <td>{{ promo.created_at|date:"d/m/Y" }}</td>
+                        <td>
+                            <button type="button" class="btn btn-ghost btn-sm toggle-btn" data-promo-id="{{ promo.id }}">
+                                {% if promo.is_active %}Désactiver{% else %}Activer{% endif %}
+                            </button>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="8"><div class="empty-state">Aucun code promo enregistré</div></td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
 </div>
 
-<div class="content">
-
-    <div class="form-card">
-        <div class="section-title">Générer un nouveau code</div>
-        <form id="promoForm">
-            <div class="form-row">
-                <div class="form-group">
-                    <label for="duration_days">Durée offerte (jours) *</label>
-                    <input type="number" id="duration_days" name="duration_days" min="1" required placeholder="Ex: 30">
-                </div>
-                <div class="form-group">
-                    <label for="note">Note / campagne</label>
-                    <input type="text" id="note" name="note" placeholder="Ex: Lancement bêta">
-                </div>
-                <div class="form-group">
-                    <label for="max_redemptions">Utilisations max</label>
-                    <input type="number" id="max_redemptions" name="max_redemptions" min="1" placeholder="Illimité si vide">
-                </div>
-                <div class="form-group">
-                    <label for="valid_until">Date limite d'utilisation</label>
-                    <input type="date" id="valid_until" name="valid_until">
-                </div>
-            </div>
-            <div class="form-row" style="margin-top:14px;">
-                <div class="form-group">
-                    <label for="code">Code personnalisé (optionnel)</label>
-                    <input type="text" id="code" name="code" placeholder="Auto-généré si vide">
-                    <div class="hint">Laissez vide pour un code aléatoire (ex: A3F9-K2QZ)</div>
-                </div>
-                <div class="form-group" style="align-self:end;">
-                    <button type="submit" class="btn btn-primary" id="submitBtn">＋ Générer le code</button>
-                </div>
-            </div>
-            <div id="message" class="message"></div>
-        </form>
-    </div>
-
-    <div class="section-title">Codes existants</div>
-    <div class="table-card">
-        <table>
-            <thead>
-                <tr>
-                    <th>Code</th>
-                    <th>Durée</th>
-                    <th>Note</th>
-                    <th>Utilisations</th>
-                    <th>Limite</th>
-                    <th>Statut</th>
-                    <th>Créé le</th>
-                    <th>Action</th>
-                </tr>
-            </thead>
-            <tbody id="codesTableBody">
-                {% for promo in codes %}
-                <tr data-promo-id="{{ promo.id }}">
-                    <td>
-                        <span class="code-value">{{ promo.code }}</span>
-                        <button type="button" class="copy-btn" onclick="copyCode('{{ promo.code }}')" title="Copier">📋</button>
-                    </td>
-                    <td>{{ promo.duration_days }} j</td>
-                    <td>{{ promo.note|default:"-" }}</td>
-                    <td>{{ promo.redemptions_count }}</td>
-                    <td>{{ promo.max_redemptions|default:"Illimité" }}</td>
-                    <td class="status-cell">
-                        <span class="pill {% if promo.is_active %}pill-active{% else %}pill-inactive{% endif %}">
-                            {% if promo.is_active %}Actif{% else %}Inactif{% endif %}
-                        </span>
-                    </td>
-                    <td>{{ promo.created_at|date:"d/m/Y" }}</td>
-                    <td>
-                        <button type="button" class="btn btn-ghost btn-sm toggle-btn" data-promo-id="{{ promo.id }}">
-                            {% if promo.is_active %}Désactiver{% else %}Activer{% endif %}
-                        </button>
-                    </td>
-                </tr>
-                {% empty %}
-                <tr><td colspan="8"><div class="empty-state">Aucun code promo pour l'instant</div></td></tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-
-</div>
-
+<script src="{% static 'InvoiceApp/js/responsive.js' %}"></script>
 <script>
     function getCookie(name) {
         let cookieValue = null;
@@ -235,7 +231,7 @@
         }
 
         submitBtn.disabled = false;
-        submitBtn.textContent = '＋ Générer le code';
+        submitBtn.textContent = '+ Générer le code';
     });
 
     document.querySelectorAll('.toggle-btn').forEach(btn => {
@@ -260,6 +256,5 @@
         });
     });
 </script>
-
 </body>
 </html>

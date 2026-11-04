@@ -3,438 +3,613 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Inscription — Plateforme de Gestion de Stock</title>
+    <title>Créer un compte entreprise — MerchandBlock</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap');
 
         :root {
-            --bg-base: #0F1629;
-            --bg-card: #1A2238;
-            --border: rgba(99, 102, 241, 0.15);
-            --indigo: #6366F1;
-            --indigo-light: #818CF8;
-            --emerald: #10B981;
-            --rose: #F43F5E;
-            --text-primary: #E2E8F0;
-            --text-secondary: #94A3B8;
+            --mb-navy: #08244B;
+            --mb-navy-hover: #0D3268;
+            --mb-orange: #F26722;
+            --mb-orange-hover: #D95514;
+            --bg-page: #F1F5F9;
+            --bg-card: #FFFFFF;
+            --bg-subtle: #F8FAFC;
+            --border: #E2E8F0;
+            --border-strong: #CBD5E1;
+            --text-primary: #0F172A;
+            --text-secondary: #475569;
             --text-muted: #64748B;
-            --radius: 16px;
-            --radius-sm: 10px;
-            --shadow: 0 4px 24px rgba(0,0,0,0.4);
+            --emerald: #059669;
+            --rose: #E11D48;
+            --radius: 14px;
+            --radius-sm: 9px;
         }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        *, *::before, *::after {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
         body {
-            font-family: 'Inter', sans-serif;
-            background: var(--bg-base);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-page);
             color: var(--text-primary);
             min-height: 100vh;
             display: flex;
-            align-items: center;
+            flex-direction: column;
             justify-content: center;
-            padding: 20px;
+            align-items: center;
+            padding: 32px 20px;
+            -webkit-font-smoothing: antialiased;
         }
 
-        .container {
+        .auth-shell {
+            width: 100%;
+            max-width: 540px;
+        }
+
+        .top-back {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 18px;
+            transition: color 0.15s ease;
+        }
+
+        .top-back:hover {
+            color: var(--mb-navy);
+        }
+
+        .register-container {
             background: var(--bg-card);
             border: 1px solid var(--border);
             border-radius: var(--radius);
-            padding: 36px;
-            max-width: 460px;
+            box-shadow: 0 12px 32px rgba(8, 36, 75, 0.07);
+            padding: 36px 36px 32px;
             width: 100%;
-            box-shadow: var(--shadow);
         }
 
-        .header { text-align: center; margin-bottom: 24px; }
-        .logo-mark {
-            width: 48px; height: 48px; margin: 0 auto 14px;
-            background: linear-gradient(135deg, var(--indigo), #9333EA);
-            border-radius: 14px; display: flex; align-items: center; justify-content: center;
-            font-size: 22px; font-weight: 800; color: white;
+        .logo-section {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin-bottom: 24px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--border);
         }
-        h1 { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
-        .subtitle { font-size: 13px; color: var(--text-secondary); }
 
-        /* ── Barre de progression ── */
-        .progress-wrap { margin-bottom: 28px; }
-        .progress-label {
-            display: flex; justify-content: space-between; align-items: center;
-            font-size: 12px; color: var(--text-muted); margin-bottom: 8px;
+        .logo-badge {
+            width: 44px;
+            height: 44px;
+            border-radius: 10px;
+            overflow: hidden;
+            flex-shrink: 0;
+            box-shadow: 0 3px 8px rgba(8, 36, 75, 0.18);
         }
-        .progress-track {
-            width: 100%; height: 6px; background: rgba(255,255,255,0.08);
-            border-radius: 999px; overflow: hidden;
+
+        .logo-badge svg {
+            width: 100%;
+            height: 100%;
+            display: block;
         }
+
+        .logo-section h1 {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            color: var(--mb-navy);
+            font-size: 19px;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            line-height: 1.2;
+        }
+
+        .logo-section p {
+            color: var(--text-muted);
+            font-size: 13px;
+            margin-top: 2px;
+        }
+
+        .progress-wrap {
+            margin-bottom: 24px;
+        }
+
+        .progress-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        .progress-meta .step-counter {
+            color: var(--mb-navy);
+            font-weight: 700;
+        }
+
+        .progress-bar {
+            height: 6px;
+            background: var(--bg-subtle);
+            border: 1px solid var(--border);
+            border-radius: 999px;
+            overflow: hidden;
+        }
+
         .progress-fill {
-            height: 100%; background: linear-gradient(90deg, var(--indigo), var(--indigo-light));
-            border-radius: 999px; transition: width 0.3s ease;
-            width: 14.28%;
+            height: 100%;
+            width: 33%;
+            background: var(--mb-orange);
+            border-radius: 999px;
+            transition: width 0.25s ease;
         }
 
-        /* ── Étapes ── */
-        .step-viewport { overflow: hidden; position: relative; }
         .step {
             display: none;
-            animation: fadeSlide 0.3s ease;
-        }
-        .step.active { display: block; }
-        @keyframes fadeSlide {
-            from { opacity: 0; transform: translateX(16px); }
-            to { opacity: 1; transform: translateX(0); }
         }
 
-        .step-icon { font-size: 28px; margin-bottom: 10px; }
-        .step-title { font-size: 17px; font-weight: 700; margin-bottom: 4px; }
-        .step-hint { font-size: 13px; color: var(--text-secondary); margin-bottom: 20px; }
-        .optional-badge {
-            display: inline-block; font-size: 10px; font-weight: 700;
-            text-transform: uppercase; letter-spacing: 0.06em;
-            color: var(--text-muted); background: rgba(255,255,255,0.06);
-            padding: 2px 8px; border-radius: 999px; margin-left: 8px; vertical-align: middle;
+        .step.active {
+            display: block;
         }
 
-        .form-group { margin-bottom: 16px; }
-        label {
-            display: block; margin-bottom: 8px; color: var(--text-secondary);
-            font-weight: 600; font-size: 13px;
-        }
-        .required { color: var(--rose); }
-
-        .plan-choice-group { display: flex; flex-direction: column; gap: 12px; }
-        .plan-choice { position: relative; cursor: pointer; display: block; }
-        .plan-choice input { position: absolute; opacity: 0; width: 0; height: 0; }
-        .plan-choice-card {
-            display: flex; align-items: center; justify-content: space-between;
-            padding: 16px 18px; border: 1px solid var(--border); border-radius: var(--radius-sm);
-            background: rgba(255,255,255,0.03); transition: all .15s ease;
-        }
-        .plan-choice input:checked + .plan-choice-card {
-            border-color: var(--indigo); background: rgba(99, 102, 241, 0.12);
-            box-shadow: 0 0 0 1px var(--indigo);
-        }
-        .plan-choice-title { font-weight: 600; color: var(--text-primary); display: flex; align-items: center; gap: 8px; }
-        .plan-choice-badge {
-            font-size: 11px; font-weight: 700; color: var(--emerald);
-            background: rgba(16, 185, 129, 0.15); padding: 2px 8px; border-radius: 999px;
-        }
-        .plan-choice-price { font-weight: 700; color: var(--indigo-light); font-size: 15px; }
-        .plan-choice-period { font-weight: 400; color: var(--text-secondary); font-size: 12px; margin-left: 2px; }
-
-        input, select, textarea {
-            width: 100%;
-            background: rgba(255,255,255,0.04);
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            padding: 12px 14px;
-            font-size: 14px;
-            font-family: 'Inter', sans-serif;
+        .step-title {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            font-size: 17px;
+            font-weight: 700;
             color: var(--text-primary);
-            outline: none;
-            transition: border-color 0.2s, box-shadow 0.2s;
-        }
-        input::placeholder, textarea::placeholder { color: var(--text-muted); }
-        input:focus, select:focus, textarea:focus {
-            border-color: var(--indigo);
-            box-shadow: 0 0 0 3px rgba(99,102,241,0.15);
-        }
-        textarea { resize: vertical; min-height: 80px; }
-        select {
-            cursor: pointer;
-            color-scheme: dark !important;
-            background-color: #1A2238 !important;
-            color: #FFFFFF !important;
-        }
-        select option {
-            background-color: #1A2238 !important;
-            color: #FFFFFF !important;
+            margin-bottom: 4px;
         }
 
-        input[type="file"] {
-            padding: 10px 14px;
-            color: var(--text-secondary);
+        .step-hint {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-bottom: 20px;
         }
-        input[type="file"]::file-selector-button {
-            background: rgba(99,102,241,0.15);
-            color: var(--indigo-light);
-            border: none;
-            border-radius: 8px;
-            padding: 7px 12px;
-            font-family: 'Inter', sans-serif;
+
+        .optional-badge {
+            display: inline-block;
+            margin-left: 6px;
+            padding: 1px 8px;
+            font-size: 11px;
             font-weight: 600;
-            font-size: 12px;
-            margin-right: 10px;
-            cursor: pointer;
+            color: var(--text-muted);
+            background: var(--bg-subtle);
+            border: 1px solid var(--border);
+            border-radius: 5px;
+            vertical-align: middle;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 6px;
+            color: var(--text-secondary);
+            font-weight: 600;
+            font-size: 12.5px;
+        }
+
+        input[type="text"],
+        input[type="email"],
+        input[type="password"],
+        input[type="tel"],
+        input[type="file"],
+        select,
+        textarea {
+            width: 100%;
+            padding: 10px 13px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-strong);
+            border-radius: var(--radius-sm);
+            font-size: 13.5px;
+            font-family: inherit;
+            color: var(--text-primary);
+            transition: border-color 0.15s ease, box-shadow 0.15s ease;
+        }
+
+        input:focus,
+        select:focus,
+        textarea:focus {
+            outline: none;
+            border-color: var(--mb-navy);
+            box-shadow: 0 0 0 3px rgba(8, 36, 75, 0.08);
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 76px;
+        }
+
+        .required {
+            color: var(--rose);
+        }
+
+        .logo-upload-row {
+            display: flex;
+            align-items: center;
+            gap: 14px;
         }
 
         .logo-preview {
-            width: 56px; height: 56px; border-radius: 12px; object-fit: contain;
-            background: rgba(255,255,255,0.06); border: 1px solid var(--border);
-            display: flex; align-items: center; justify-content: center;
-            font-size: 22px; margin-bottom: 12px;
-        }
-
-        .step-error {
-            display: none;
-            background: rgba(244,63,94,0.12);
-            color: #FECACA;
-            border: 1px solid rgba(244,63,94,0.3);
+            width: 52px;
+            height: 52px;
             border-radius: 10px;
-            padding: 10px 12px;
-            font-size: 12.5px;
-            margin-top: 12px;
-        }
-        .step-error.show { display: block; }
-
-        /* ── Navigation ── */
-        .nav-row {
-            display: flex; gap: 10px; margin-top: 26px; flex-wrap: wrap;
-        }
-        button {
-            flex: 1;
-            min-width: 100px;
-            padding: 12px 16px;
-            border: none;
-            border-radius: 10px;
-            font-size: 14px;
+            background: var(--bg-subtle);
+            border: 1px dashed var(--border-strong);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-muted);
+            flex-shrink: 0;
+            overflow: hidden;
+            font-size: 11px;
             font-weight: 600;
-            font-family: 'Inter', sans-serif;
-            cursor: pointer;
-            transition: all 0.2s;
         }
-        .btn-primary { background: var(--indigo); color: white; }
-        .btn-primary:hover { background: #5254CC; transform: translateY(-1px); }
-        .btn-ghost {
-            background: rgba(255,255,255,0.06); color: var(--text-secondary);
-            border: 1px solid var(--border); flex: 0 0 auto;
-        }
-        .btn-ghost:hover { background: rgba(255,255,255,0.1); color: var(--text-primary); }
-        .btn-skip {
-            background: transparent; color: var(--text-muted);
-            border: 1px dashed var(--border); flex: 0 0 auto;
-        }
-        .btn-skip:hover { color: var(--text-secondary); border-color: var(--text-muted); }
-        button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
 
-        /* ── Message final ── */
-        .message {
-            margin-top: 18px; padding: 12px 14px; border-radius: 10px;
-            font-size: 13.5px; display: none;
+        .nav-row {
+            display: flex;
+            gap: 10px;
+            margin-top: 22px;
+            padding-top: 18px;
+            border-top: 1px solid var(--border);
         }
-        .message.show { display: block; }
-        .message.success { background: rgba(16,185,129,0.15); color: #A7F3D0; }
-        .message.error { background: rgba(244,63,94,0.15); color: #FECACA; }
+
+        .btn-primary,
+        .btn-ghost,
+        .btn-skip {
+            padding: 11px 18px;
+            border-radius: var(--radius-sm);
+            font-size: 13.5px;
+            font-weight: 600;
+            font-family: inherit;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            border: 1px solid transparent;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .btn-primary {
+            flex: 1;
+            background: var(--mb-navy);
+            color: #FFFFFF;
+            border-color: var(--mb-navy);
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            background: var(--mb-navy-hover);
+            transform: translateY(-1px);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.65;
+            cursor: not-allowed;
+        }
+
+        .btn-ghost {
+            background: var(--bg-card);
+            color: var(--text-secondary);
+            border-color: var(--border-strong);
+        }
+
+        .btn-ghost:hover {
+            background: var(--bg-subtle);
+            color: var(--text-primary);
+        }
+
+        .btn-skip {
+            background: transparent;
+            color: var(--text-muted);
+            border-color: var(--border);
+        }
+
+        .btn-skip:hover {
+            color: var(--text-primary);
+            border-color: var(--border-strong);
+        }
 
         .login-link {
-            text-align: center; margin-top: 22px; font-size: 13.5px; color: var(--text-secondary);
+            text-align: center;
+            color: var(--text-secondary);
+            font-size: 13.5px;
+            margin-top: 20px;
         }
-        .login-link a { color: var(--indigo-light); text-decoration: none; font-weight: 600; }
-        .login-link a:hover { text-decoration: underline; }
 
-        /* ── Responsive ── */
-        @media (max-width: 480px) {
-            body { padding: 12px; }
-            .container { padding: 22px 16px; border-radius: 14px; }
-            h1 { font-size: 18px; }
-            .step-title { font-size: 15px; }
-            .step-hint { font-size: 12px; }
-            .plan-choice-card { padding: 12px 14px; flex-wrap: wrap; gap: 8px; }
-            .nav-row { flex-direction: column; gap: 8px; }
-            .nav-row button { width: 100%; min-height: 42px; }
-            .btn-ghost, .btn-skip { order: 2; }
-            .btn-primary { order: 1; }
+        .login-link a {
+            color: var(--mb-orange);
+            text-decoration: none;
+            font-weight: 700;
         }
-        @media (max-width: 360px) {
-            .container { padding: 18px 12px; }
-            .step-icon { font-size: 24px; margin-bottom: 6px; }
-            .plan-choice-price { font-size: 13.5px; }
+
+        .login-link a:hover {
+            text-decoration: underline;
+        }
+
+        .message,
+        .step-error {
+            padding: 11px 14px;
+            margin-top: 12px;
+            border-radius: var(--radius-sm);
+            display: none;
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        .message.success {
+            background: rgba(5, 150, 105, 0.08);
+            color: var(--emerald);
+            border: 1px solid rgba(5, 150, 105, 0.25);
+        }
+
+        .message.error,
+        .step-error {
+            background: rgba(225, 29, 72, 0.08);
+            color: var(--rose);
+            border: 1px solid rgba(225, 29, 72, 0.25);
+        }
+
+        .message.show,
+        .step-error.show {
+            display: block;
+        }
+
+        .plan-choice-group {
+            display: flex;
+            flex-direction: column;
+            gap: 9px;
+        }
+
+        .plan-choice {
+            display: block;
+            cursor: pointer;
+            margin: 0;
+        }
+
+        .plan-choice input[type="radio"] {
+            display: none;
+        }
+
+        .plan-choice-card {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 15px;
+            background: var(--bg-subtle);
+            border: 1.5px solid var(--border);
+            border-radius: var(--radius-sm);
+            transition: all 0.15s ease;
+        }
+
+        .plan-choice input[type="radio"]:checked + .plan-choice-card {
+            border-color: var(--mb-navy);
+            background: rgba(8, 36, 75, 0.04);
+            box-shadow: 0 0 0 2px rgba(8, 36, 75, 0.08);
+        }
+
+        .plan-choice-title {
+            font-size: 13.5px;
+            font-weight: 700;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .plan-choice-badge {
+            background: rgba(242, 103, 34, 0.14);
+            color: var(--mb-orange);
+            font-size: 10.5px;
+            font-weight: 700;
+            padding: 2px 7px;
+            border-radius: 5px;
+        }
+
+        .plan-choice-price {
+            font-size: 14px;
+            font-weight: 800;
+            color: var(--mb-navy);
+        }
+
+        .plan-choice-period {
+            font-size: 11.5px;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        @media (max-width: 520px) {
+            .register-container { padding: 26px 20px; }
+            .form-grid-2 { grid-template-columns: 1fr; }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <div class="logo-mark">📦</div>
-            <h1>Créer votre compte entreprise</h1>
-            <div class="subtitle">Quelques étapes rapides pour démarrer</div>
+    <div class="auth-shell">
+        <a href="{% url 'landing' %}" class="top-back">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+            Retour à l'accueil MerchandBlock
+        </a>
+
+        <div class="register-container">
+            <div class="logo-section">
+                <div class="logo-badge">
+                    <svg viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect width="120" height="120" rx="22" fill="#08244B"/>
+                        <path d="M26 92V32H43L60 58L77 32H91L94 35V92H77V57L60 82L43 57V92H26Z" fill="#FFFFFF"/>
+                        <polygon points="79,22 100,22 100,43" fill="#F26722"/>
+                    </svg>
+                </div>
+                <div>
+                    <h1>Créer votre espace MerchandBlock</h1>
+                    <p>Configurez votre entreprise en 3 étapes rapides</p>
+                </div>
+            </div>
+
+            <div class="progress-wrap">
+                <div class="progress-meta">
+                    <span class="step-counter" id="stepCounter">Étape 1 sur 3</span>
+                    <span id="stepPercent">33%</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+            </div>
+
+            <form id="registerForm" method="POST" enctype="multipart/form-data" novalidate>
+                {% csrf_token %}
+
+                <div>
+                    <!-- Étape 1 : Identifiants & Entreprise -->
+                    <div class="step active" data-step-id="password">
+                        <div class="step-title">1. Informations du compte administrateur</div>
+                        <div class="step-hint">Renseignez la raison sociale de votre entreprise et vos identifiants de connexion.</div>
+
+                        <div class="form-group">
+                            <label for="company_name">Nom de l'entreprise <span class="required">*</span></label>
+                            <input type="text" id="company_name" name="company_name" required placeholder="Ex : Atlas Distribution SARL" autofocus>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="email">Adresse email professionnelle <span class="required">*</span></label>
+                            <input type="email" id="email" name="email" required placeholder="contact@entreprise.com">
+                        </div>
+
+                        <div class="form-grid-2">
+                            <div class="form-group">
+                                <label for="password">Mot de passe <span class="required">*</span></label>
+                                <input type="password" id="password" name="password" required placeholder="8 caractères min.">
+                            </div>
+                            <div class="form-group">
+                                <label for="password_confirm">Confirmation <span class="required">*</span></label>
+                                <input type="password" id="password_confirm" name="password_confirm" required placeholder="Répétez le mot de passe">
+                            </div>
+                        </div>
+                        <div class="step-error" id="passwordError">Les mots de passe ne correspondent pas.</div>
+                    </div>
+
+                    <!-- Étape 2 : Coordonnées, Devise & Logo (optionnel) -->
+                    <div class="step" data-step-id="details">
+                        <div class="step-title">2. Paramètres commerciaux &amp; coordonnées <span class="optional-badge">Modifiable plus tard</span></div>
+                        <div class="step-hint">Ces informations seront utilisées par défaut sur vos factures PDF.</div>
+
+                        <div class="form-grid-2">
+                            <div class="form-group">
+                                <label for="default_currency">Devise principale</label>
+                                <select id="default_currency" name="default_currency">
+                                    <option value="XOF" selected>Franc CFA (FCFA)</option>
+                                    <option value="EUR">Euro (€)</option>
+                                    <option value="USD">Dollar US ($)</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="phone">Téléphone professionnel</label>
+                                <input type="tel" id="phone" name="phone" placeholder="Ex : +221 77 000 00 00">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="logo">Logo de l'entreprise (optionnel)</label>
+                            <div class="logo-upload-row">
+                                <div id="logoPreview" class="logo-preview">Logo</div>
+                                <input type="file" id="logo" name="logo" accept="image/*">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="address">Adresse du siège ou dépôt</label>
+                            <textarea id="address" name="address" placeholder="Adresse complète figurant sur vos factures"></textarea>
+                        </div>
+                    </div>
+
+                    <!-- Étape 3 : Plan d'abonnement -->
+                    <div class="step" data-step-id="subscription_plan">
+                        <div class="step-title">3. Sélectionnez votre formule</div>
+                        <div class="step-hint">7 jours d'essai gratuit inclus sur toutes les formules.</div>
+
+                        <div class="form-group plan-choice-group">
+                            <label class="plan-choice">
+                                <input type="radio" name="subscription_plan" value="essential_monthly" checked>
+                                <span class="plan-choice-card">
+                                    <div>
+                                        <span class="plan-choice-title">Essentiel — Mensuel</span>
+                                        <div style="font-size:11.5px; color:var(--text-muted); margin-top:2px;">Jusqu'à 10 vendeurs actifs</div>
+                                    </div>
+                                    <span class="plan-choice-price">6 000 FCFA<span class="plan-choice-period">/mois</span></span>
+                                </span>
+                            </label>
+                            <label class="plan-choice">
+                                <input type="radio" name="subscription_plan" value="essential_annual">
+                                <span class="plan-choice-card">
+                                    <div>
+                                        <span class="plan-choice-title">Essentiel — Annuel <span class="plan-choice-badge">Économie</span></span>
+                                        <div style="font-size:11.5px; color:var(--text-muted); margin-top:2px;">Jusqu'à 10 vendeurs actifs</div>
+                                    </div>
+                                    <span class="plan-choice-price">50 000 FCFA<span class="plan-choice-period">/an</span></span>
+                                </span>
+                            </label>
+                            <label class="plan-choice">
+                                <input type="radio" name="subscription_plan" value="business_monthly">
+                                <span class="plan-choice-card">
+                                    <div>
+                                        <span class="plan-choice-title">Business — Mensuel</span>
+                                        <div style="font-size:11.5px; color:var(--text-muted); margin-top:2px;">Plus de 10 vendeurs (illimité)</div>
+                                    </div>
+                                    <span class="plan-choice-price">8 000 FCFA<span class="plan-choice-period">/mois</span></span>
+                                </span>
+                            </label>
+                            <label class="plan-choice">
+                                <input type="radio" name="subscription_plan" value="business_annual">
+                                <span class="plan-choice-card">
+                                    <div>
+                                        <span class="plan-choice-title">Business — Annuel <span class="plan-choice-badge">Économie</span></span>
+                                        <div style="font-size:11.5px; color:var(--text-muted); margin-top:2px;">Plus de 10 vendeurs (illimité)</div>
+                                    </div>
+                                    <span class="plan-choice-price">60 000 FCFA<span class="plan-choice-period">/an</span></span>
+                                </span>
+                            </label>
+                        </div>
+
+                        <div class="form-group" style="margin-top:16px;">
+                            <label for="promo_code">Code promotionnel <span class="optional-badge">Optionnel</span></label>
+                            <input type="text" id="promo_code" name="promo_code" placeholder="Ex : A3F9-K2QZ">
+                        </div>
+                    </div>
+                </div>
+
+                <div id="message" class="message"></div>
+
+                <div class="nav-row" id="navRow">
+                    <button type="button" class="btn-ghost" id="backBtn" style="display:none;">&larr; Précédent</button>
+                    <button type="button" class="btn-skip" id="skipBtn" style="display:none;">Passer</button>
+                    <button type="button" class="btn-primary" id="nextBtn">Continuer &rarr;</button>
+                    <button type="submit" class="btn-primary" id="submitBtn" style="display:none; background: var(--mb-orange); border-color: var(--mb-orange);">Créer mon compte</button>
+                </div>
+
+                <div class="login-link">
+                    Vous avez déjà un compte ? <a href="{% url 'login' %}">Se connecter</a>
+                </div>
+            </form>
         </div>
-
-        <div class="progress-wrap">
-            <div class="progress-label">
-                <span id="stepCounter">Étape 1 sur 7</span>
-                <span id="stepPercent">14%</span>
-            </div>
-            <div class="progress-track">
-                <div class="progress-fill" id="progressFill"></div>
-            </div>
-        </div>
-
-        <form id="registerForm" enctype="multipart/form-data" novalidate>
-            {% csrf_token %}
-
-            <div class="step-viewport">
-
-                <!-- Étape 1 : Nom de l'entreprise -->
-                <div class="step active" data-step-id="company_name">
-                    <div class="step-icon">🏢</div>
-                    <div class="step-title">Le nom de votre entreprise</div>
-                    <div class="step-hint">Il apparaîtra sur vos factures et documents</div>
-                    <div class="form-group">
-                        <label for="company_name">Nom de l'entreprise <span class="required">*</span></label>
-                        <input type="text" id="company_name" name="company_name" required placeholder="Ex : Atlas Distribution" autofocus>
-                    </div>
-                </div>
-
-                <!-- Étape 2 : Email -->
-                <div class="step" data-step-id="email">
-                    <div class="step-icon">✉️</div>
-                    <div class="step-title">Votre adresse email</div>
-                    <div class="step-hint">Utilisée pour vous connecter à votre compte</div>
-                    <div class="form-group">
-                        <label for="email">Email <span class="required">*</span></label>
-                        <input type="email" id="email" name="email" required placeholder="utilisateur@exemple.com">
-                    </div>
-                </div>
-
-                <!-- Étape 3 : Mot de passe -->
-                <div class="step" data-step-id="password">
-                    <div class="step-icon">🔒</div>
-                    <div class="step-title">Choisissez un mot de passe</div>
-                    <div class="step-hint">Au moins 8 caractères recommandés</div>
-                    <div class="form-group">
-                        <label for="password">Mot de passe <span class="required">*</span></label>
-                        <input type="password" id="password" name="password" required placeholder="Entrez un mot de passe">
-                    </div>
-                    <div class="form-group">
-                        <label for="password_confirm">Confirmer le mot de passe <span class="required">*</span></label>
-                        <input type="password" id="password_confirm" name="password_confirm" required placeholder="Confirmez le mot de passe">
-                    </div>
-                    <div class="step-error" id="passwordError">Les mots de passe ne correspondent pas.</div>
-                </div>
-
-                <!-- Étape 4 : Téléphone (optionnel) -->
-                <div class="step" data-step-id="phone">
-                    <div class="step-icon">📞</div>
-                    <div class="step-title">Votre téléphone <span class="optional-badge">Optionnel</span></div>
-                    <div class="step-hint">Vous pourrez l'ajouter ou le modifier plus tard dans les paramètres</div>
-                    <div class="form-group">
-                        <label for="phone">Téléphone</label>
-                        <input type="tel" id="phone" name="phone" placeholder="Entrez votre numéro de téléphone">
-                    </div>
-                </div>
-
-                <!-- Étape 5 : Devise -->
-                <div class="step" data-step-id="default_currency">
-                    <div class="step-icon">💱</div>
-                    <div class="step-title">Devise de votre entreprise <span class="optional-badge">Optionnel</span></div>
-                    <div class="step-hint">Utilisée automatiquement pour vos produits, approvisionnements et ventes. Modifiable à tout moment dans les paramètres.</div>
-                    <div class="form-group">
-                        <label for="default_currency">Devise</label>
-                        <select id="default_currency" name="default_currency">
-                            <option value="EUR" selected>Euro (€)</option>
-                            <option value="USD">Dollar US ($)</option>
-                            <option value="XOF">Franc CFA (FCFA)</option>
-                        </select>
-                    </div>
-                </div>
-
-                <!-- Étape 5bis : Plan d'abonnement -->
-                <div class="step" data-step-id="subscription_plan">
-                    <div class="step-icon">💳</div>
-                    <div class="step-title">Choisissez votre plan</div>
-                    <div class="step-hint">7 jours d'essai gratuit sur tous les plans. Vous ne serez débité qu'après cette période.</div>
-                    <div class="form-group plan-choice-group">
-                        <label class="plan-choice">
-                            <input type="radio" name="subscription_plan" value="essential_monthly" checked>
-                            <span class="plan-choice-card">
-                                <div>
-                                    <span class="plan-choice-title">Essentiel — Mensuel</span>
-                                    <div style="font-size:11.5px; color:var(--text-muted); margin-top:2px;">Jusqu'à 10 vendeurs</div>
-                                </div>
-                                <span class="plan-choice-price">6 000 FCFA<span class="plan-choice-period">/mois</span></span>
-                            </span>
-                        </label>
-                        <label class="plan-choice">
-                            <input type="radio" name="subscription_plan" value="essential_annual">
-                            <span class="plan-choice-card">
-                                <div>
-                                    <span class="plan-choice-title">Essentiel — Annuel <span class="plan-choice-badge">Économisez</span></span>
-                                    <div style="font-size:11.5px; color:var(--text-muted); margin-top:2px;">Jusqu'à 10 vendeurs</div>
-                                </div>
-                                <span class="plan-choice-price">50 000 FCFA<span class="plan-choice-period">/an</span></span>
-                            </span>
-                        </label>
-                        <label class="plan-choice">
-                            <input type="radio" name="subscription_plan" value="business_monthly">
-                            <span class="plan-choice-card">
-                                <div>
-                                    <span class="plan-choice-title">Business — Mensuel</span>
-                                    <div style="font-size:11.5px; color:var(--text-muted); margin-top:2px;">Plus de 10 vendeurs</div>
-                                </div>
-                                <span class="plan-choice-price">8 000 FCFA<span class="plan-choice-period">/mois</span></span>
-                            </span>
-                        </label>
-                        <label class="plan-choice">
-                            <input type="radio" name="subscription_plan" value="business_annual">
-                            <span class="plan-choice-card">
-                                <div>
-                                    <span class="plan-choice-title">Business — Annuel <span class="plan-choice-badge">Économisez</span></span>
-                                    <div style="font-size:11.5px; color:var(--text-muted); margin-top:2px;">Plus de 10 vendeurs</div>
-                                </div>
-                                <span class="plan-choice-price">60 000 FCFA<span class="plan-choice-period">/an</span></span>
-                            </span>
-                        </label>
-                    </div>
-                    <div class="form-group" style="margin-top:16px;">
-                        <label for="promo_code">Code promo <span class="optional-badge">Optionnel</span></label>
-                        <input type="text" id="promo_code" name="promo_code" placeholder="Ex: A3F9-K2QZ">
-                    </div>
-                </div>
-
-                <!-- Étape 6 : Logo (optionnel) -->
-                <div class="step" data-step-id="logo">
-                    <div class="step-icon">🖼️</div>
-                    <div class="step-title">Logo de l'entreprise <span class="optional-badge">Optionnel</span></div>
-                    <div class="step-hint">Affiché sur vos factures. Vous pourrez l'ajouter plus tard dans les paramètres.</div>
-                    <div id="logoPreview" class="logo-preview">🏢</div>
-                    <div class="form-group">
-                        <label for="logo">Logo</label>
-                        <input type="file" id="logo" name="logo" accept="image/*">
-                    </div>
-                </div>
-
-                <!-- Étape 7 : Adresse (optionnel) -->
-                <div class="step" data-step-id="address">
-                    <div class="step-icon">📍</div>
-                    <div class="step-title">Adresse <span class="optional-badge">Optionnel</span></div>
-                    <div class="step-hint">Vous pourrez la renseigner plus tard dans les paramètres</div>
-                    <div class="form-group">
-                        <label for="address">Adresse</label>
-                        <textarea id="address" name="address" placeholder="Entrez l'adresse de votre entreprise"></textarea>
-                    </div>
-                </div>
-
-            </div>
-
-            <div id="message" class="message"></div>
-
-            <div class="nav-row" id="navRow">
-                <button type="button" class="btn-ghost" id="backBtn" style="display:none;">← Précédent</button>
-                <button type="button" class="btn-skip" id="skipBtn" style="display:none;">Passer</button>
-                <button type="button" class="btn-primary" id="nextBtn">Suivant →</button>
-                <button type="submit" class="btn-primary" id="submitBtn" style="display:none;">Créer mon compte</button>
-            </div>
-
-            <div class="login-link">
-                Vous avez déjà un compte ? <a href="{% url 'login' %}">Se connecter</a>
-            </div>
-        </form>
     </div>
 
     <script>
         const form = document.getElementById('registerForm');
         const steps = Array.from(document.querySelectorAll('.step'));
-        const optionalStepIds = ['phone', 'default_currency', 'logo', 'address'];
+        const optionalStepIds = ['details'];
         const messageDiv = document.getElementById('message');
 
         const backBtn = document.getElementById('backBtn');
@@ -467,11 +642,11 @@
             if (isLastStep) {
                 nextBtn.style.display = 'none';
                 submitBtn.style.display = 'inline-flex';
-                submitBtn.textContent = isOptional ? 'Créer mon compte' : 'Créer mon compte';
+                submitBtn.textContent = 'Créer mon compte';
             } else {
                 nextBtn.style.display = 'inline-flex';
                 submitBtn.style.display = 'none';
-                nextBtn.textContent = isOptional ? 'Suivant →' : 'Suivant →';
+                nextBtn.textContent = 'Continuer →';
             }
 
             passwordError.classList.remove('show');
@@ -524,24 +699,22 @@
         skipBtn.addEventListener('click', goSkip);
         backBtn.addEventListener('click', goBack);
 
-        // Aperçu instantané du logo
         document.getElementById('logo').addEventListener('change', function() {
             const file = this.files[0];
             const preview = document.getElementById('logoPreview');
             if (!file) {
-                preview.textContent = '🏢';
+                preview.textContent = 'Logo';
                 return;
             }
             const reader = new FileReader();
             reader.onload = e => {
-                preview.innerHTML = `<img src="${e.target.result}" alt="Aperçu du logo" style="width:100%;height:100%;object-fit:contain;border-radius:12px;">`;
+                preview.innerHTML = `<img src="${e.target.result}" alt="Aperçu du logo" style="width:100%;height:100%;object-fit:contain;border-radius:8px;">`;
             };
             reader.readAsDataURL(file);
         });
 
-        // Empêche la touche Entrée de soumettre prématurément sur une étape non finale
         form.addEventListener('keydown', function(e) {
-            if (e.key === 'Enter' && steps[currentStep] !== steps[steps.length - 1]) {
+            if (e.key === 'Enter' && e.target.tagName !== 'TEXTAREA' && steps[currentStep] !== steps[steps.length - 1]) {
                 e.preventDefault();
                 goNext();
             }
@@ -580,7 +753,7 @@
             } catch (error) {
                 messageDiv.classList.remove('success');
                 messageDiv.classList.add('error', 'show');
-                messageDiv.textContent = 'Erreur lors de l\'inscription. Veuillez réessayer.';
+                messageDiv.textContent = "Erreur lors de l'inscription. Veuillez réessayer.";
                 submitBtn.disabled = false;
                 submitBtn.textContent = 'Créer mon compte';
             }

@@ -81,12 +81,6 @@ def delete_supplier(request):
     if not supplier:
         return JsonResponse({"success": True, "message": "Fournisseur supprimé"})
         
-    if supplier.supplies.exists():
-        return JsonResponse({
-            "success": False,
-            "error": "Impossible de supprimer ce fournisseur car des approvisionnements lui sont associés."
-        }, status=400)
-        
     supplier.delete()
     return JsonResponse({"success": True, "message": "Fournisseur supprimé"})
 
@@ -202,6 +196,8 @@ def delete_supply(request):
             return JsonResponse({"success": False, "error": "Approvisionnement introuvable"}, status=404)
 
         for item in supply.supply_items.select_related('product').all():
+            if not item.product:
+                continue
             item.product.refresh_from_db(fields=['stock_quantity'])
             item.product.stock_quantity = max(0, item.product.stock_quantity - item.quantity)
             item.product.save(update_fields=['stock_quantity'])

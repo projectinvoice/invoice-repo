@@ -1,407 +1,135 @@
-<!DOCTYPE html>
 {% load static %}
+<!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Approvisionnements — {{ company_name }}</title>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
-
-        :root {
-            --bg-base: #0F1629;
-            --bg-card: #1A2238;
-            --bg-card-hover: #1F2A44;
-            --border: rgba(99, 102, 241, 0.15);
-            --indigo: #6366F1;
-            --indigo-light: #818CF8;
-            --emerald: #10B981;
-            --amber: #F59E0B;
-            --rose: #F43F5E;
-            --sky: #38BDF8;
-            --text-primary: #E2E8F0;
-            --text-secondary: #94A3B8;
-            --text-muted: #64748B;
-            --radius: 16px;
-            --radius-sm: 10px;
-            --shadow: 0 4px 24px rgba(0,0,0,0.4);
-        }
-
-        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-
-        body {
-            font-family: 'Inter', sans-serif;
-            background: var(--bg-base);
-            color: var(--text-primary);
-            min-height: 100vh;
-            font-size: 14px;
-            line-height: 1.6;
-        }
-
-        .sidebar {
-            position: fixed; left: 0; top: 0; bottom: 0;
-            width: 240px; background: var(--bg-card);
-            border-right: 1px solid var(--border);
-            display: flex; flex-direction: column; z-index: 100;
-        }
-
-        .sidebar-logo {
-            padding: 24px 20px 20px; border-bottom: 1px solid var(--border);
-            display: flex; align-items: center; gap: 12px;
-        }
-
-        .logo-mark {
-            width: 36px; height: 36px; background: linear-gradient(135deg, var(--indigo), #9333EA);
-            border-radius: 10px; display: flex; align-items: center; justify-content: center;
-            font-size: 18px; font-weight: 800; color: white; flex-shrink: 0;
-        }
-
-        .logo-text { font-size: 15px; font-weight: 700; color: var(--text-primary); }
-
-        .sidebar-nav { flex: 1; padding: 16px 12px; overflow-y: auto; }
-
-        .nav-section-label {
-            font-size: 10px; font-weight: 600; color: var(--text-muted);
-            text-transform: uppercase; letter-spacing: 0.12em; padding: 12px 8px 6px;
-        }
-
-        .nav-item {
-            display: flex; align-items: center; gap: 10px; padding: 9px 12px;
-            border-radius: var(--radius-sm); color: var(--text-secondary);
-            text-decoration: none; font-weight: 500; font-size: 13.5px;
-            transition: all 0.18s; margin-bottom: 2px;
-        }
-
-        .nav-item:hover, .nav-item.active {
-            background: rgba(99, 102, 241, 0.12); color: var(--indigo-light);
-        }
-        .nav-item.active { font-weight: 600; }
-        .nav-item .nav-icon { font-size: 16px; width: 20px; text-align: center; }
-        .nav-badge { margin-left: auto; background: rgba(99,102,241,0.2); color: var(--indigo-light); font-size: 11px; font-weight: 600; padding: 2px 7px; border-radius: 20px; }
-
-        .sidebar-footer { padding: 16px 12px; border-top: 1px solid var(--border); }
-
-        .user-block {
-            display: flex; align-items: center; gap: 10px; padding: 10px;
-            border-radius: var(--radius-sm); background: rgba(255,255,255,0.04);
-        }
-
-        .user-avatar {
-            width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, var(--emerald), #059669);
-            display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; color: white; flex-shrink: 0;
-        }
-        .user-name { font-weight: 600; font-size: 13px; }
-        .user-role { font-size: 11px; color: var(--text-muted); }
-
-        .logout-btn {
-            margin-top: 10px; display: block; text-align: center; padding: 8px;
-            background: rgba(244, 63, 94, 0.1); color: var(--rose);
-            border-radius: var(--radius-sm); text-decoration: none; font-size: 13px; font-weight: 500;
-        }
-        .logout-btn:hover { background: rgba(244, 63, 94, 0.2); }
-
-        .main { margin-left: 240px; min-height: 100vh; display: flex; flex-direction: column; }
-
-        .topbar {
-            background: var(--bg-card); border-bottom: 1px solid var(--border);
-            padding: 14px 32px; display: flex; align-items: center; justify-content: space-between;
-            position: sticky; top: 0; z-index: 50;
-        }
-
-        .topbar-title { font-size: 17px; font-weight: 700; }
-        .topbar-sub { font-size: 12px; color: var(--text-muted); margin-top: 1px; }
-        .topbar-actions { display: flex; gap: 10px; align-items: center; }
-
-        .btn {
-            display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px;
-            border-radius: var(--radius-sm); font-size: 13px; font-weight: 600;
-            cursor: pointer; text-decoration: none; border: none; transition: all 0.2s;
-            font-family: 'Inter', sans-serif;
-        }
-        .btn-primary { background: var(--indigo); color: white; }
-        .btn-primary:hover { background: #5254CC; transform: translateY(-1px); }
-        .btn-ghost {
-            background: rgba(255,255,255,0.06); color: var(--text-secondary);
-            border: 1px solid var(--border);
-        }
-        .btn-ghost:hover { background: rgba(255,255,255,0.1); color: var(--text-primary); }
-        .btn-sm { padding: 6px 12px; font-size: 12px; }
-        .btn-danger-soft {
-            background: rgba(244,63,94,0.1); color: var(--rose);
-            border: 1px solid rgba(244,63,94,0.2);
-        }
-        .btn-danger-soft:hover { background: rgba(244,63,94,0.22); }
-        .btn-edit-soft {
-            background: rgba(99,102,241,0.1); color: var(--indigo-light);
-            border: 1px solid rgba(99,102,241,0.2);
-        }
-        .btn-edit-soft:hover { background: rgba(99,102,241,0.2); }
-
-        .content { padding: 28px 32px; flex: 1; }
-
-        .toolbar { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
-        .search-wrap { position: relative; flex: 1; min-width: 220px; }
-        .search-icon {
-            position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
-            color: var(--text-muted); font-size: 15px; pointer-events: none;
-        }
-        .search-input {
-            width: 100%; background: var(--bg-card); border: 1px solid var(--border);
-            border-radius: var(--radius-sm); padding: 9px 14px 9px 36px; color: var(--text-primary);
-            font-size: 13px; outline: none; transition: border-color 0.2s;
-        }
-        .search-input::placeholder { color: var(--text-muted); }
-        .search-input:focus { border-color: var(--indigo); }
-
-        .table-card {
-            background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius);
-            box-shadow: var(--shadow); overflow: hidden;
-        }
-
-        .table { width: 100%; border-collapse: collapse; }
-        .table th {
-            background: rgba(255,255,255,0.04); color: var(--text-secondary); text-align: left;
-            padding: 12px 16px; font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
-        }
-        .table td {
-            padding: 14px 16px; border-top: 1px solid var(--border); color: var(--text-primary); vertical-align: middle;
-        }
-        .supply-row:hover { background: var(--bg-card-hover); }
-        .supply-meta { color: var(--text-secondary); font-size: 12px; }
-        .supply-total { font-weight: 700; color: var(--emerald); }
-        .empty-state { padding: 24px; text-align: center; color: var(--text-secondary); }
-        .supply-item-stack { display: flex; flex-direction: column; gap: 6px; }
-        .supply-item-line { display: block; padding: 4px 0; line-height: 1.45; }
-        .supply-item-meta { color: var(--text-secondary); font-size: 11px; margin-top: 2px; }
-
-        .modal-overlay {
-            position: fixed; inset: 0; background: rgba(0, 0, 0, 0.7); display: none;
-            align-items: center; justify-content: center; z-index: 1000; padding: 24px;
-        }
-        .modal-overlay.show { display: flex; }
-        .modal-content {
-            background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius);
-            padding: 28px; max-width: 640px; width: 100%; max-height: 85vh; overflow-y: auto;
-            box-shadow: var(--shadow); animation: slideIn 0.25s ease;
-        }
-        @keyframes slideIn { from { transform: translateY(-20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-        .close-btn { float: right; font-size: 28px; font-weight: bold; color: var(--text-muted); cursor: pointer; }
-        .close-btn:hover { color: var(--text-primary); }
-
-        .modal-box { text-align: center; max-width: 420px; }
-        .modal-icon { font-size: 36px; margin-bottom: 12px; }
-        .modal-title { font-size: 17px; font-weight: 700; }
-        .modal-msg { font-size: 13.5px; color: var(--text-secondary); margin-bottom: 24px; line-height: 1.7; }
-        .modal-msg strong { color: var(--text-primary); }
-        .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 8px; }
-        .btn-danger-solid { background: var(--rose); color: white; border: none; }
-        .btn-danger-solid:hover { background: #e0294a; }
-
-        .form-label { display: block; margin-bottom: 6px; color: var(--text-secondary); font-size: 13px; font-weight: 600; }
-        .form-control, .form-select { width: 100%; background: rgba(255,255,255,0.04); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; color: var(--text-primary); outline: none; }
-        .form-control:focus, .form-select:focus { border-color: var(--indigo); box-shadow: 0 0 0 3px rgba(99,102,241,0.15); }
-        .form-select, select {
-            cursor: pointer;
-            color-scheme: dark;
-        }
-        .form-select option, select option {
-            background-color: #1E293B !important;
-            color: #F8FAFC !important;
-            padding: 8px 12px;
-        }
-        .form-select optgroup, select optgroup {
-            background-color: #0F172A !important;
-            color: #94A3B8 !important;
-        }
-        .mb-3 { margin-bottom: 14px; }
-        .row { display: flex; gap: 12px; flex-wrap: wrap; }
-        .col-md-4 { flex: 1; min-width: 180px; }
-        .d-flex { display: flex; gap: 10px; flex-wrap: wrap; }
-        .alert { padding: 10px 12px; border-radius: 10px; margin-top: 12px; }
-        .alert-success { background: rgba(16,185,129,0.15); color: #A7F3D0; }
-        .alert-danger { background: rgba(244,63,94,0.15); color: #FECACA; }
-
-        @media (max-width: 900px) {
-            .main { margin-left: 0; }
-            .topbar { padding: 12px 16px; }
-            .content { padding: 16px 12px; }
-        }
-    </style>
+    <title>Approvisionnements — {{ company_name }} | MerchandBlock</title>
+    <link rel="stylesheet" href="{% static 'InvoiceApp/css/merchandblock.css' %}">
     <link rel="stylesheet" href="{% static 'InvoiceApp/css/responsive.css' %}">
+    <script src="{% static 'InvoiceApp/js/merchandblock.js' %}"></script>
+    <style>
+        .supply-meta { font-weight: 600; color: var(--text-primary); }
+        .supply-item-stack { display: flex; flex-direction: column; gap: 6px; }
+        .supply-item-line {
+            padding: 6px 10px;
+            background: var(--bg-subtle);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+        }
+        .supply-item-meta { font-size: 11.5px; color: var(--text-secondary); margin-top: 2px; }
+        .supply-total { font-weight: 700; color: var(--mb-orange); }
+        .mb-3 { margin-bottom: 14px; }
+        .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+        .col-md-4 { flex: 2; min-width: 150px; }
+        .col-md-3 { flex: 1; min-width: 90px; }
+        .col-md-2 { flex: 0 0 auto; }
+        .d-flex { display: flex; gap: 10px; flex-wrap: wrap; }
+    </style>
 </head>
 <body>
 
-<div class="sidebar">
-    <div class="sidebar-logo">
-        {% if company_logo_url %}
-        <img src="{{ company_logo_url }}" alt="Logo" style="width:36px;height:36px;object-fit:contain;border-radius:10px;background:#fff;padding:4px;">
-        {% else %}
-        <div class="logo-mark">{{ company_name|first|upper }}</div>
-        {% endif %}
-        <div class="logo-text">{{ company_name }}</div>
-        <button type="button" class="sidebar-close-btn" id="sidebarCloseBtn" aria-label="Fermer le menu">&times;</button>
-    </div>
-
-    <nav class="sidebar-nav">
-        <div class="nav-section-label">Général</div>
-        <a href="{% url 'dashboard' %}" class="nav-item">
-            <span class="nav-icon">📊</span> Tableau de bord
-        </a>
-
-        <div class="nav-section-label">Gestion</div>
-        <a href="{% url 'list_agents' %}" class="nav-item">
-            <span class="nav-icon">👥</span> Agents
-        </a>
-        <a href="{% url 'manage_agent_roles' %}" class="nav-item">
-            <span class="nav-icon">🎭</span> Rôles
-        </a>
-        <a href="{% url 'list_engines' %}" class="nav-item">
-            <span class="nav-icon">⚙️</span> Engins
-        </a>
-        <a href="{% url 'list_stock_loads' %}" class="nav-item">
-            <span class="nav-icon">🚚</span> Stock Vendeurs
-        </a>
-        <a href="{% url 'list_products' %}" class="nav-item">
-            <span class="nav-icon">📦</span> Produits
-        </a>
-
-        <div class="nav-section-label">Commerce</div>
-        <a href="{% url 'list_clients' %}" class="nav-item">
-            <span class="nav-icon">🤝</span> Clients
-        </a>
-        <a href="{% url 'list_suppliers' %}" class="nav-item">
-            <span class="nav-icon">🏭</span> Fournisseurs
-        </a>
-        <a href="{% url 'list_sales' %}" class="nav-item">
-            <span class="nav-icon">💹</span> Ventes
-        </a>
-        <a href="{% url 'list_supplies' %}" class="nav-item active">
-            <span class="nav-icon">🛒</span> Appros <span class="nav-badge">{{ supplies|length }}</span>
-        </a>
-        <a href="{% url 'list_invoices' %}" class="nav-item">
-            <span class="nav-icon">🧾</span> Factures
-        </a>
-
-        <div class="nav-section-label">Entreprise</div>
-        <a href="{% url 'company_settings' %}" class="nav-item">
-            <span class="nav-icon">⚙️</span> Paramètres
-        </a>
-        <a href="{% url 'subscription' %}" class="nav-item">
-            <span class="nav-icon">💳</span> Abonnement
-        </a>
-        {% if request.user.is_staff %}
-        <a href="{% url 'promo_codes_admin' %}" class="nav-item">
-            <span class="nav-icon">🎟️</span> Codes promo
-        </a>
-        {% endif %}
-    </nav>
-
-    <div class="sidebar-footer">
-        <div class="user-block">
-            <div class="user-avatar">{{ company_name|slice:":1"|upper|default:"A" }}</div>
-            <div>
-                <div class="user-name">{{ company_name|default:request.user.username }}</div>
-                <div class="user-role">Administrateur</div>
-            </div>
-        </div>
-        <a href="{% url 'logout' %}" class="logout-btn">🚪 Se déconnecter</a>
-    </div>
-</div>
-<div class="sidebar-overlay" id="sidebarOverlay"></div>
+{% include 'includes/sidebar.html' with active_page='supplies' %}
 
 <div class="main">
-    <div class="topbar">
-        <div style="display:flex; align-items:center; gap:12px;">
+    <header class="topbar">
+        <div class="topbar-left">
             <button type="button" class="sidebar-toggle-btn" id="sidebarToggleBtn" aria-label="Menu de navigation">
                 <span></span><span></span><span></span>
             </button>
             <div>
-                <div class="topbar-title">Liste des approvisionnements</div>
+                <div class="topbar-title">Approvisionnements & Achats</div>
                 <div class="topbar-sub">{{ supplies|length }} approvisionnement{{ supplies|length|pluralize }} enregistré{{ supplies|length|pluralize }}</div>
             </div>
         </div>
         <div class="topbar-actions">
-            <a href="#" onclick="openSupplyModal(null); return false;" class="btn btn-primary">＋ Ajouter</a>
+            <a href="#" onclick="openSupplyModal(null); return false;" class="btn btn-primary">+ Nouvel approvisionnement</a>
             <a href="{% url 'dashboard' %}" class="btn btn-ghost">← Tableau de bord</a>
         </div>
-    </div>
+    </header>
 
-    <div class="content">
+    <main class="content">
         <div class="toolbar">
             <div class="search-wrap">
-                <span class="search-icon">🔎</span>
-                <input type="text" class="search-input" id="searchInput" placeholder="Rechercher un approvisionnement...">
+                <span class="search-icon">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                </span>
+                <input type="text" class="search-input" id="searchInput" placeholder="Rechercher un approvisionnement par fournisseur ou produit...">
             </div>
         </div>
 
         <div class="table-card">
-            <table class="table">
-                <thead>
-                    <tr>
-                        <th>#</th>
-                        <th>Fournisseur</th>
-                        <th>Produits</th>
-                        <th>Total</th>
-                        <th>Date</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for supply in supplies %}
-                    <tr class="supply-row">
-                        <td>{{ forloop.counter }}</td>
-                        <td>
-                            {% if supply.supplier %}
-                                <div class="supply-meta">{{ supply.supplier.name }}</div>
-                            {% else %}
-                                <span class="supply-meta">-</span>
-                            {% endif %}
-                        </td>
-                        <td>
-                            {% if supply.supply_items.all %}
-                                <div class="supply-item-stack">
-                                    {% for item in supply.supply_items.all %}
-                                    <div class="supply-item-line">
-                                        <div class="supply-meta">{{ item.product.name }}</div>
-                                        <div class="supply-item-meta">Qté {{ item.quantity }} • Prix {{ item.unit_price|floatformat:2 }} • Total {{ item.total_price|floatformat:2 }} {{ supply.get_currency_display }}</div>
+            <div class="table-wrap">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Fournisseur</th>
+                            <th>Produits réceptionnés</th>
+                            <th>Montant total</th>
+                            <th>Date</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for supply in supplies %}
+                        <tr class="supply-row">
+                            <td>{{ forloop.counter }}</td>
+                            <td>
+                                {% if supply.supplier %}
+                                    <div class="supply-meta">{{ supply.supplier.name }}</div>
+                                {% else %}
+                                    <span class="supply-meta">—</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if supply.supply_items.all %}
+                                    <div class="supply-item-stack">
+                                        {% for item in supply.supply_items.all %}
+                                        <div class="supply-item-line">
+                                            <div class="supply-meta">{% if item.product %}{{ item.product.name }}{% else %}Produit supprimé{% endif %}</div>
+                                            <div class="supply-item-meta">Qté {{ item.quantity }} • Prix {{ item.unit_price|floatformat:2 }} • Total {{ item.total_price|floatformat:2 }} {{ supply.get_currency_display }}</div>
+                                        </div>
+                                        {% endfor %}
                                     </div>
-                                    {% endfor %}
-                                </div>
-                            {% else %}
-                                <span class="supply-meta">-</span>
-                            {% endif %}
-                        </td>
-                        <td><span class="supply-total">{{ supply.formatted_total_price }}</span></td>
-                        <td>{{ supply.date|date:"d/m/Y" }}</td>
-                        <td>
-                            <button type="button"
-                                    class="btn btn-edit-soft btn-sm"
-                                    data-supply-id="{{ supply.id }}"
-                                    data-supplier-id="{{ supply.supplier.id|default:'' }}"
-                                    data-items='{{ supply.serialized_items|escapejs }}'
-                                    onclick="openSupplyModalFromButton(this)">
-                                Modifier
-                            </button>
-                            <button type="button" onclick="openDeleteModal({{ supply.id }})" class="btn btn-danger-soft btn-sm">Supprimer</button>
-                        </td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="6"><div class="empty-state">Aucun approvisionnement enregistré</div></td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+                                {% else %}
+                                    <span class="supply-meta">—</span>
+                                {% endif %}
+                            </td>
+                            <td><span class="supply-total">{{ supply.formatted_total_price }}</span></td>
+                            <td>{{ supply.date|date:"d/m/Y" }}</td>
+                            <td>
+                                <button type="button"
+                                        class="btn btn-edit-soft btn-sm"
+                                        data-supply-id="{{ supply.id }}"
+                                        data-supplier-id="{% if supply.supplier %}{{ supply.supplier.id }}{% endif %}"
+                                        data-items='{{ supply.serialized_items|escapejs }}'
+                                        onclick="openSupplyModalFromButton(this)">
+                                    Modifier
+                                </button>
+                                <button type="button" onclick="openDeleteModal({{ supply.id }})" class="btn btn-danger-soft btn-sm">Supprimer</button>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6"><div class="empty-state">Aucun approvisionnement enregistré</div></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         </div>
-    </div>
+    </main>
 </div>
 
 <div class="modal-overlay" id="supplyModal">
     <div class="modal-content">
-        <span class="close-btn" onclick="closeSupplyModal()">&times;</span>
-        <h3 id="modalTitle">Ajouter un Approvisionnement</h3>
+        <div class="modal-header">
+            <h3 class="modal-title" id="modalTitle">Ajouter un Approvisionnement</h3>
+            <span class="close-btn" onclick="closeSupplyModal()">&times;</span>
+        </div>
 
-        <form id="supplyForm" style="margin-top: 20px;">
+        <form id="supplyForm">
             {% csrf_token %}
             <input type="hidden" id="supplyId" name="supply_id" value="">
 
@@ -418,14 +146,14 @@
             <div class="mb-3">
                 <label class="form-label">Produits *</label>
                 <div id="supplyItemsContainer"></div>
-                <button type="button" class="btn btn-ghost btn-sm" style="margin-top: 10px;" onclick="addSupplyItemRow()">＋ Ajouter une ligne</button>
+                <button type="button" class="btn btn-ghost btn-sm" style="margin-top: 10px;" onclick="addSupplyItemRow()">+ Ajouter une ligne</button>
             </div>
 
             <input type="hidden" id="supplyItemsInput" name="supply_items" value="[]">
 
-            <div class="d-flex">
-                <button type="submit" class="btn btn-primary">💾 Enregistrer</button>
+            <div class="d-flex" style="justify-content:flex-end; margin-top:18px;">
                 <button type="button" class="btn btn-ghost" onclick="closeSupplyModal()">Annuler</button>
+                <button type="submit" class="btn btn-primary">Enregistrer</button>
             </div>
         </form>
 
@@ -433,18 +161,20 @@
     </div>
 </div>
 
-<!-- ══════════════ MODAL CONFIRMATION SUPPRESSION ══════════════ -->
+<!-- MODAL CONFIRMATION SUPPRESSION -->
 <div class="modal-overlay" id="deleteModal">
-    <div class="modal-content modal-box">
-        <div class="modal-icon">⚠️</div>
-        <div class="modal-title">Confirmer la suppression</div>
-        <div class="modal-msg">
-            Êtes-vous sûr de vouloir supprimer l'approvisionnement <strong id="modal-supply-id"></strong> ?
+    <div class="modal-content modal-box" style="max-width:420px;">
+        <div class="modal-header">
+            <div class="modal-title">Confirmer la suppression</div>
+            <span class="close-btn" onclick="closeDeleteModal()">&times;</span>
+        </div>
+        <div class="modal-msg" style="font-size:13.5px; color:var(--text-secondary); margin-bottom:20px; line-height:1.6;">
+            Êtes-vous sûr de vouloir supprimer l'approvisionnement <strong id="modal-supply-id" style="color:var(--text-primary);"></strong> ?
             <br>Cette action est <strong>irréversible</strong>.
         </div>
         <div class="modal-actions">
             <button type="button" class="btn btn-ghost" onclick="closeDeleteModal()">Annuler</button>
-            <button type="button" class="btn btn-danger-solid" id="confirmDeleteBtn">🗑️ Supprimer</button>
+            <button type="button" class="btn btn-danger-solid" id="confirmDeleteBtn">Supprimer</button>
         </div>
     </div>
 </div>
@@ -458,7 +188,7 @@
         const productOptions = [{% for product in products %}{ value: '{{ product.id }}', label: '{{ product.name|escapejs }}', price: '{{ product.price|escapejs }}' }{% if not forloop.last %},{% endif %}{% endfor %}];
         const optionHtml = productOptions.map(option => {
             const selected = String(productId) === String(option.value) ? ' selected' : '';
-            return `<option value="${option.value}"${selected} style="background-color: #1E293B !important; color: #FFFFFF !important;">${option.label}</option>`;
+            return `<option value="${option.value}"${selected}>${option.label}</option>`;
         }).join('');
 
         const productLookup = Object.fromEntries(productOptions.map(option => [String(option.value), option.price || '']));
@@ -466,8 +196,8 @@
         row.innerHTML = `
             <div class="row">
                 <div class="col-md-4">
-                    <select class="form-select" style="color-scheme: dark !important; background-color: #1E293B !important; color: #FFFFFF !important;" required>
-                        <option value="" style="background-color: #1E293B !important; color: #94A3B8 !important;">Sélectionner un produit...</option>
+                    <select class="form-select" required>
+                        <option value="">Sélectionner un produit...</option>
                         ${optionHtml}
                     </select>
                 </div>
@@ -555,7 +285,6 @@
             try {
                 parsedItems = JSON.parse(rawItems);
             } catch (error) {
-                console.warn('Impossible de parser les lignes d\'approvisionnement', error);
                 parsedItems = [];
             }
         }
@@ -594,7 +323,7 @@
         return cookieValue;
     }
 
-    const csrfToken = getCookie('csrftoken');
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || getCookie('csrftoken');
 
     document.getElementById('supplyForm').addEventListener('submit', async function(e) {
         e.preventDefault();
@@ -616,19 +345,12 @@
             });
 
             const msgDiv = document.getElementById('message');
-            if (!response.ok) {
-                const text = await response.text();
-                console.error('Server error:', response.status, text);
-                msgDiv.innerHTML = '<div class="alert alert-danger">Erreur serveur: ' + response.status + '</div>';
-                return;
-            }
-
-            const data = await response.json();
-            if (data.success) {
+            const data = await response.json().catch(() => ({}));
+            if (response.ok && data.success) {
                 msgDiv.innerHTML = '<div class="alert alert-success" role="alert">' + data.message + '</div>';
                 setTimeout(() => location.reload(), 1500);
             } else {
-                msgDiv.innerHTML = '<div class="alert alert-danger" role="alert">' + data.error + '</div>';
+                msgDiv.innerHTML = '<div class="alert alert-danger" role="alert">' + (data.error || ('Erreur serveur: ' + response.status)) + '</div>';
             }
         } catch (error) {
             console.error(error);
@@ -665,19 +387,12 @@
             credentials: 'same-origin'
         });
 
-        if (!response.ok) {
-            const text = await response.text();
-            console.error('Server error:', response.status, text);
-            alert('Erreur serveur: ' + response.status);
-            return;
-        }
-
-        const data = await response.json();
-        if (data.success) {
+        const data = await response.json().catch(() => ({}));
+        if (response.ok && data.success) {
             closeDeleteModal();
             location.reload();
         } else {
-            alert(data.error || 'Erreur lors de la suppression');
+            alert(data.error || ('Erreur serveur: ' + response.status));
         }
     });
 
@@ -690,9 +405,6 @@
         });
     });
 </script>
-
-
-
 <script src="{% static 'InvoiceApp/js/responsive.js' %}"></script>
 <script src="{% static 'InvoiceApp/js/ai_assistant.js' %}"></script>
 </body>

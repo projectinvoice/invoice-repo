@@ -1,56 +1,29 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Supprimer le Compte</title>
+    <title>Supprimer le compte — MerchandBlock</title>
+    <link rel="stylesheet" href="{% static 'InvoiceApp/css/merchandblock.css' %}">
+    <script src="{% static 'InvoiceApp/js/merchandblock.js' %}"></script>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+        .auth-page-wrap {
             min-height: 100vh;
             display: flex;
-            justify-content: center;
             align-items: center;
-            padding: 20px;
+            justify-content: center;
+            padding: 32px 20px;
         }
 
         .container {
-            background: white;
-            border-radius: 10px;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
-            max-width: 600px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-lg);
+            max-width: 540px;
             width: 100%;
-            padding: 40px;
-        }
-
-        .header-section {
-            text-align: center;
-            margin-bottom: 30px;
-            padding-bottom: 20px;
-            border-bottom: 2px solid #f0f0f0;
-        }
-
-        .warning-icon {
-            font-size: 48px;
-            margin-bottom: 15px;
-        }
-
-        h1 {
-            color: #e74c3c;
-            font-size: 28px;
-            margin-bottom: 10px;
-        }
-
-        .subtitle {
-            color: #666;
-            font-size: 14px;
+            padding: 36px;
         }
 
         .breadcrumb {
@@ -58,286 +31,283 @@
         }
 
         .breadcrumb a {
-            color: #667eea;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            color: var(--text-secondary);
             text-decoration: none;
-            font-size: 14px;
+            font-size: 13px;
+            font-weight: 600;
         }
 
         .breadcrumb a:hover {
-            text-decoration: underline;
+            color: var(--mb-navy);
+        }
+
+        .header-section {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin-bottom: 22px;
+            padding-bottom: 18px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .warning-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 10px;
+            background: rgba(225, 29, 72, 0.1);
+            color: var(--rose);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        h1 {
+            font-size: 20px;
+            font-weight: 800;
+            color: var(--text-primary);
+        }
+
+        .subtitle {
+            color: var(--rose);
+            font-size: 12.5px;
+            font-weight: 600;
         }
 
         .warning-box {
-            background: #fff3cd;
-            border: 1px solid #ffc107;
-            border-radius: 5px;
-            padding: 20px;
-            margin-bottom: 25px;
+            background: rgba(217, 119, 6, 0.08);
+            border: 1px solid rgba(217, 119, 6, 0.25);
+            border-left: 4px solid var(--amber);
+            padding: 16px 18px;
+            margin-bottom: 16px;
+            border-radius: var(--radius-sm);
         }
 
         .warning-box h3 {
-            color: #856404;
-            margin-bottom: 10px;
-            font-size: 16px;
+            color: var(--amber);
+            margin-bottom: 8px;
+            font-size: 14px;
+            font-weight: 700;
         }
 
         .warning-box ul {
-            margin-left: 20px;
-            color: #856404;
-            font-size: 14px;
+            margin-left: 18px;
+            color: var(--text-secondary);
+            font-size: 13px;
+            line-height: 1.7;
         }
 
-        .warning-box li {
-            margin-bottom: 8px;
+        .info-text {
+            background: var(--bg-subtle);
+            border: 1px solid var(--border);
+            padding: 13px 16px;
+            border-radius: var(--radius-sm);
+            margin-bottom: 16px;
+            font-size: 13px;
+            color: var(--text-secondary);
         }
 
         .danger-box {
-            background: #f8d7da;
-            border: 1px solid #f5c6cb;
-            border-radius: 5px;
-            padding: 20px;
-            margin-bottom: 25px;
-        }
-
-        .danger-box h4 {
-            color: #721c24;
-            margin-bottom: 10px;
-            font-size: 16px;
-        }
-
-        .danger-box p {
-            color: #721c24;
-            font-size: 14px;
-            line-height: 1.6;
-        }
-
-        .confirmation-section {
-            background: #f0f0f0;
-            border-radius: 5px;
-            padding: 20px;
-            margin-bottom: 25px;
-        }
-
-        .form-group {
+            background: rgba(225, 29, 72, 0.06);
+            border: 1px solid rgba(225, 29, 72, 0.22);
+            border-radius: var(--radius-sm);
+            padding: 16px 18px;
             margin-bottom: 20px;
         }
 
-        label {
+        .danger-box h4 {
+            color: var(--rose);
+            margin-bottom: 6px;
+            font-size: 14px;
+            font-weight: 700;
+        }
+
+        .danger-box p {
+            color: var(--text-secondary);
+            font-size: 13px;
+        }
+
+        .confirmation-section {
+            background: var(--bg-subtle);
+            border: 1px solid var(--border);
+            padding: 20px;
+            border-radius: var(--radius-sm);
+            margin-bottom: 20px;
+        }
+
+        .form-group small {
             display: block;
-            margin-bottom: 8px;
-            color: #555;
-            font-weight: 500;
-            font-size: 14px;
-        }
-
-        input[type="email"],
-        input[type="text"],
-        input[type="password"] {
-            width: 100%;
-            padding: 12px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            font-size: 14px;
-            transition: border-color 0.3s;
-        }
-
-        input[type="email"]:focus,
-        input[type="text"]:focus,
-        input[type="password"]:focus {
-            outline: none;
-            border-color: #e74c3c;
-            box-shadow: 0 0 0 3px rgba(231, 76, 60, 0.1);
+            color: var(--text-muted);
+            font-size: 11.5px;
+            margin-top: 4px;
         }
 
         .checkbox-group {
             display: flex;
-            align-items: center;
+            align-items: flex-start;
             gap: 10px;
-            margin-bottom: 15px;
+            margin-bottom: 12px;
         }
 
-        input[type="checkbox"] {
-            width: 20px;
-            height: 20px;
+        .checkbox-group:last-child {
+            margin-bottom: 0;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            margin-top: 2px;
             cursor: pointer;
+            accent-color: var(--rose);
         }
 
         .checkbox-group label {
             margin: 0;
             cursor: pointer;
-            font-weight: normal;
+            font-weight: 500;
+            color: var(--text-secondary);
+            font-size: 13px;
         }
 
         .button-group {
             display: flex;
-            gap: 10px;
-        }
-
-        button {
-            flex: 1;
-            padding: 12px;
-            border: none;
-            border-radius: 5px;
-            font-size: 16px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: all 0.3s;
+            gap: 12px;
         }
 
         button.delete {
-            background: #e74c3c;
-            color: white;
-        }
-
-        button.delete:hover:not(:disabled) {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(231, 76, 60, 0.3);
+            flex: 1;
+            padding: 11px 16px;
+            background: var(--rose);
+            color: #FFFFFF;
+            border: 1px solid var(--rose);
+            border-radius: var(--radius-sm);
+            font-size: 13.5px;
+            font-weight: 600;
+            font-family: inherit;
+            cursor: pointer;
+            transition: all 0.15s ease;
         }
 
         button.delete:disabled {
-            opacity: 0.5;
+            opacity: 0.45;
             cursor: not-allowed;
         }
 
-        button.cancel {
-            background: #95a5a6;
-            color: white;
-        }
-
-        button.cancel:hover {
-            background: #7f8c8d;
-        }
-
-        .alert {
-            padding: 15px;
-            border-radius: 5px;
-            margin-bottom: 20px;
-            display: none;
+        .btn-cancel-link {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex: 1;
+            padding: 11px 16px;
+            background: var(--bg-subtle);
+            color: var(--text-secondary);
+            text-decoration: none;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            font-size: 13.5px;
+            font-weight: 600;
         }
 
         .alert.error {
-            background: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
-            display: block;
+            background: rgba(225, 29, 72, 0.08);
+            color: var(--rose);
+            border: 1px solid rgba(225, 29, 72, 0.25);
+            padding: 12px 14px;
+            border-radius: var(--radius-sm);
+            margin-bottom: 18px;
         }
 
         .loading {
             display: none;
             text-align: center;
-            padding: 20px;
+            padding: 14px 0 0;
+            font-size: 13px;
+            color: var(--rose);
         }
 
         .loading.active {
             display: block;
-            color: #e74c3c;
-        }
-
-        .info-text {
-            background: #e3f2fd;
-            border-left: 4px solid #2196f3;
-            padding: 15px;
-            border-radius: 3px;
-            margin-bottom: 20px;
-            font-size: 14px;
-            color: #1565c0;
-        }
-
-        @media (max-width: 600px) {
-            body { padding: 12px; }
-            .container {
-                padding: 22px 16px;
-            }
-
-            h1 {
-                font-size: 20px;
-            }
-
-            .button-group {
-                flex-direction: column;
-                gap: 8px;
-            }
-            button {
-                min-height: 42px;
-                font-size: 15px;
-            }
-        }
-        @media (max-width: 360px) {
-            .container { padding: 18px 12px; }
-            h1 { font-size: 18px; }
-            .warning-box, .danger-box, .confirmation-section { padding: 14px 12px; }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="breadcrumb">
-            <a href="{% url 'dashboard' %}">← Retour au Dashboard</a>
-        </div>
+    <div class="auth-page-wrap">
+        <div class="container">
+            <div class="breadcrumb">
+                <a href="{% url 'dashboard' %}">&larr; Retour au tableau de bord</a>
+            </div>
 
-        <div class="header-section">
-            <div class="warning-icon">⚠️</div>
-            <h1>Supprimer le Compte</h1>
-            <p class="subtitle">Action irréversible</p>
-        </div>
-
-        <div class="alert error" id="errorAlert" style="display: none;"></div>
-
-        <div class="warning-box">
-            <h3>⚡ Attention - Opération Dangereuse</h3>
-            <ul>
-                <li><strong>Toutes vos données</strong> seront supprimées définitivement</li>
-                <li>Tous les agents liés à votre compte seront <strong>supprimés</strong></li>
-                <li>Tous les produits, clients et factures seront <strong>perdus</strong></li>
-                <li>Cette action <strong>ne peut pas être annulée</strong></li>
-            </ul>
-        </div>
-
-        <div class="info-text">
-            💡 Si vous avez des questions, veuillez <strong>contacter notre support</strong> avant de supprimer votre compte.
-        </div>
-
-        <div class="danger-box">
-            <h4>🚨 Êtes-vous sûr?</h4>
-            <p>La suppression de votre compte entreprise supprimera également tous les enregistrements associés. Cette action est <strong>permanente et irréversible</strong>.</p>
-        </div>
-
-        <form id="deleteAccountForm">
-            {% csrf_token %}
-
-            <div class="confirmation-section">
-                <div class="form-group">
-                    <label for="email">Confirmez votre email <span style="color: #e74c3c;">*</span></label>
-                    <input type="email" id="email" name="email" required placeholder="Entrez votre adresse email" value="{{ user.email }}">
-                    <small>Pour confirmer votre identité</small>
+            <div class="header-section">
+                <div class="warning-icon">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
                 </div>
-
-                <div class="form-group">
-                    <label for="password">Mot de passe <span style="color: #e74c3c;">*</span></label>
-                    <input type="password" id="password" name="password" required placeholder="Entrez votre mot de passe">
-                    <small>Pour des raisons de sécurité</small>
-                </div>
-
-                <div class="checkbox-group">
-                    <input type="checkbox" id="understand" name="understand" required>
-                    <label for="understand">Je comprends que cette action est <strong>irréversible</strong></label>
-                </div>
-
-                <div class="checkbox-group">
-                    <input type="checkbox" id="confirm_deletion" name="confirm_deletion" required>
-                    <label for="confirm_deletion">Je confirme la suppression de mon compte et <strong>toutes ses données</strong></label>
+                <div>
+                    <h1>Supprimer le compte entreprise</h1>
+                    <p class="subtitle">Action définitive et irréversible</p>
                 </div>
             </div>
 
-            <div class="button-group">
-                <button type="submit" class="delete" id="deleteBtn" disabled>Supprimer Définitivement</button>
-                <a href="{% url 'dashboard' %}" style="display: flex; align-items: center; justify-content: center; flex: 1; background: #95a5a6; color: white; text-decoration: none; border-radius: 5px; font-weight: bold; transition: all 0.3s;">Annuler</a>
+            <div class="alert error" id="errorAlert" style="display: none;"></div>
+
+            <div class="warning-box">
+                <h3>Conséquences de la suppression</h3>
+                <ul>
+                    <li><strong>Toutes vos données commerciales</strong> seront supprimées définitivement</li>
+                    <li>Tous les accès agents rattachés à votre entreprise seront <strong>révoqués</strong></li>
+                    <li>Tous les produits, clients, ventes et factures seront <strong>effacés</strong></li>
+                    <li>Cette opération <strong>ne peut pas être annulée</strong></li>
+                </ul>
             </div>
 
-            <div class="loading" id="loading">
-                <p>⏳ Suppression du compte...</p>
+            <div class="info-text">
+                En cas de besoin, vous pouvez contacter notre support technique avant de procéder à la clôture de votre compte.
             </div>
-        </form>
+
+            <div class="danger-box">
+                <h4>Confirmation de sécurité requise</h4>
+                <p>Veuillez confirmer vos identifiants ci-dessous pour valider la suppression définitive de votre espace MerchandBlock.</p>
+            </div>
+
+            <form id="deleteAccountForm">
+                {% csrf_token %}
+
+                <div class="confirmation-section">
+                    <div class="form-group">
+                        <label for="email">Confirmez votre email <span style="color: var(--rose);">*</span></label>
+                        <input type="email" id="email" name="email" required placeholder="Entrez votre adresse email" value="{{ user.email }}">
+                        <small>Vérification de l'identité du titulaire</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="password">Mot de passe <span style="color: var(--rose);">*</span></label>
+                        <input type="password" id="password" name="password" required placeholder="Entrez votre mot de passe">
+                        <small>Mot de passe administrateur requis</small>
+                    </div>
+
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="understand" name="understand" required>
+                        <label for="understand">Je comprends que cette action est <strong>irréversible</strong></label>
+                    </div>
+
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="confirm_deletion" name="confirm_deletion" required>
+                        <label for="confirm_deletion">Je confirme la suppression de mon compte et de <strong>toutes ses données</strong></label>
+                    </div>
+                </div>
+
+                <div class="button-group">
+                    <button type="submit" class="delete" id="deleteBtn" disabled>Supprimer définitivement</button>
+                    <a href="{% url 'dashboard' %}" class="btn-cancel-link">Annuler</a>
+                </div>
+
+                <div class="loading" id="loading">
+                    <p>Suppression du compte en cours...</p>
+                </div>
+            </form>
+        </div>
     </div>
 
     <script>
@@ -346,7 +316,6 @@
         const understandCheckbox = document.getElementById('understand');
         const deleteBtn = document.getElementById('deleteBtn');
 
-        // Activer/désactiver le bouton de suppression
         function updateButtonState() {
             const emailValid = emailInput.value === '{{ user.email }}';
             const confirmedDeletion = confirmCheckbox.checked;
@@ -402,7 +371,7 @@
                 }
             } catch (error) {
                 showLoading(false);
-                showError('Erreur réseau: ' + error.message);
+                showError('Erreur réseau : ' + error.message);
             }
         });
 

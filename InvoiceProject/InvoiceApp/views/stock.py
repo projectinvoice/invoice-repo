@@ -176,27 +176,20 @@ def delete_stock_load(request):
 
     items = list(load.items.select_related('product').all())
 
-    # On ne peut annuler ce chargement que si le vendeur a encore toutes les quantités
-    # correspondantes dans son stock personnel (sinon il en a déjà vendu ou retourné une partie).
-    for item in items:
-        agent_stock = AgentStock.objects.filter(agent=load.agent, product=item.product).first()
-        available = agent_stock.quantity if agent_stock else 0
-        if available < item.quantity:
-            return JsonResponse({
-                "success": False,
-                "error": f"Impossible de supprimer : {load.agent.name} a déjà utilisé une partie du stock de {item.product.name} chargé"
-            }, status=400)
-
     with transaction.atomic():
         for item in items:
-            item.product.refresh_from_db(fields=['stock_quantity'])
-            item.product.stock_quantity += item.quantity
-            item.product.save(update_fields=['stock_quantity'])
-
+            if not item.product:
+                continue
             agent_stock = AgentStock.objects.filter(agent=load.agent, product=item.product).first()
-            if agent_stock:
-                agent_stock.quantity -= item.quantity
+            available = agent_stock.quantity if agent_stock else 0
+            restored = min(available, item.quantity)
+            if agent_stock and restored > 0:
+                agent_stock.quantity -= restored
                 agent_stock.save(update_fields=['quantity'])
+            if restored > 0:
+                item.product.refresh_from_db(fields=['stock_quantity'])
+                item.product.stock_quantity += restored
+                item.product.save(update_fields=['stock_quantity'])
 
         load.delete()  # cascade supprime les StockLoadItem associées
 
@@ -333,21 +326,15 @@ def delete_stock_return(request):
 
     items = list(stock_return.items.select_related('product').all())
 
-    # On ne peut annuler ce retour que si le stock magasin contient encore au moins
-    # ces quantités (sinon elles ont déjà été revendues ou rechargées ailleurs).
-    for item in items:
-        item.product.refresh_from_db(fields=['stock_quantity'])
-        if item.product.stock_quantity < item.quantity:
-            return JsonResponse({
-                "success": False,
-                "error": f"Impossible de supprimer : le stock magasin de {item.product.name} a déjà été utilisé depuis ce retour"
-            }, status=400)
-
     with transaction.atomic():
         for item in items:
+            if not item.product:
+                continue
             item.product.refresh_from_db(fields=['stock_quantity'])
-            item.product.stock_quantity -= item.quantity
-            item.product.save(update_fields=['stock_quantity'])
+            deducted = min(item.product.stock_quantity, item.quantity)
+            if deducted > 0:
+                item.product.stock_quantity -= deducted
+                item.product.save(update_fields=['stock_quantity'])
 
             agent_stock, _ = AgentStock.objects.get_or_create(
                 agent=stock_return.agent, product=item.product,

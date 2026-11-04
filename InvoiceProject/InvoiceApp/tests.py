@@ -833,63 +833,60 @@ class AuditSecurityAndDataIntegrityTests(TestCase):
         self.product_a = Product.objects.create(company=self.company_a, name='Product A', price='20.00', stock_quantity=10)
         self.client_b = Client.objects.create(company=self.company_b, name='Client B')
 
-    def test_cannot_delete_client_with_sales(self):
-        """Un client avec des ventes enregistrées ne peut pas être supprimé (protège l'historique de facturation)."""
-        from .models import Invoice, Payment
+    def test_delete_client_with_sales(self):
+        """Un client (même avec des ventes associées) peut être supprimé."""
         self.client.force_login(self.company_a)
         sale = Sale.objects.create(company=self.company_a, client=self.client_a)
         SaleItem.objects.create(sale=sale, product=self.product_a, quantity=2, unit_price='20.00')
 
         resp = self.client.post(reverse('delete_client'), {'client_id': self.client_a.id})
-        self.assertEqual(resp.status_code, 400)
+        self.assertEqual(resp.status_code, 200)
         data = resp.json()
-        self.assertFalse(data['success'])
-        self.assertIn("ventes ou factures lui sont associées", data['error'])
-        self.assertTrue(Client.objects.filter(id=self.client_a.id).exists())
+        self.assertTrue(data['success'])
+        self.assertFalse(Client.objects.filter(id=self.client_a.id).exists())
 
-    def test_cannot_delete_product_with_sales(self):
-        """Un produit lié à des ventes passées ne peut pas être supprimé."""
+    def test_delete_product_with_sales(self):
+        """Un produit (même lié à des ventes passées) peut être supprimé."""
         self.client.force_login(self.company_a)
         sale = Sale.objects.create(company=self.company_a, client=self.client_a)
         SaleItem.objects.create(sale=sale, product=self.product_a, quantity=1, unit_price='20.00')
 
         resp = self.client.post(reverse('delete_product'), {'product_id': self.product_a.id})
-        self.assertEqual(resp.status_code, 400)
+        self.assertEqual(resp.status_code, 200)
         data = resp.json()
-        self.assertFalse(data['success'])
-        self.assertIn("ventes, approvisionnements ou chargements", data['error'])
-        self.assertTrue(Product.objects.filter(id=self.product_a.id).exists())
+        self.assertTrue(data['success'])
+        self.assertFalse(Product.objects.filter(id=self.product_a.id).exists())
 
-    def test_cannot_delete_supplier_with_supplies(self):
-        """Un fournisseur avec des approvisionnements ne peut pas être supprimé."""
+    def test_delete_supplier_with_supplies(self):
+        """Un fournisseur (même avec des approvisionnements) peut être supprimé."""
         from .models import Supplier, Supply
         supplier = Supplier.objects.create(company=self.company_a, name='Supplier X')
         Supply.objects.create(company=self.company_a, supplier=supplier)
 
         self.client.force_login(self.company_a)
         resp = self.client.post(reverse('delete_supplier'), {'supplier_id': supplier.id})
-        self.assertEqual(resp.status_code, 400)
+        self.assertEqual(resp.status_code, 200)
         data = resp.json()
-        self.assertFalse(data['success'])
-        self.assertIn("approvisionnements lui sont associés", data['error'])
-        self.assertTrue(Supplier.objects.filter(id=supplier.id).exists())
+        self.assertTrue(data['success'])
+        self.assertFalse(Supplier.objects.filter(id=supplier.id).exists())
 
-    def test_cannot_delete_agent_with_stock_or_sales(self):
-        """Un agent détenant du stock ou lié à des ventes ne peut pas être supprimé."""
+    def test_delete_agent_with_stock_or_sales(self):
+        """Un agent détenant du stock ou lié à des ventes peut être supprimé et son stock retourne en magasin."""
         from .models import Agent, AgentStock
         agent = Agent.objects.create(company=self.company_a, name='Agent Mohamed')
         AgentStock.objects.create(agent=agent, product=self.product_a, quantity=5, unit_price='20.00')
 
         self.client.force_login(self.company_a)
         resp = self.client.post(reverse('delete_agent'), {'agent_id': agent.id})
-        self.assertEqual(resp.status_code, 400)
+        self.assertEqual(resp.status_code, 200)
         data = resp.json()
-        self.assertFalse(data['success'])
-        self.assertIn("stock personnel", data['error'])
-        self.assertTrue(Agent.objects.filter(id=agent.id).exists())
+        self.assertTrue(data['success'])
+        self.assertFalse(Agent.objects.filter(id=agent.id).exists())
+        self.product_a.refresh_from_db()
+        self.assertEqual(self.product_a.stock_quantity, 15)
 
-    def test_cannot_delete_invoice_with_recorded_payments(self):
-        """Une facture ayant des règlements partiels ou complets ne peut pas être supprimée."""
+    def test_delete_invoice_with_recorded_payments(self):
+        """Une facture ayant des règlements partiels ou complets peut être supprimée."""
         from .models import Invoice, Payment
         from django.utils import timezone
         sale = Sale.objects.create(company=self.company_a, client=self.client_a)
@@ -902,11 +899,10 @@ class AuditSecurityAndDataIntegrityTests(TestCase):
 
         self.client.force_login(self.company_a)
         resp = self.client.post(reverse('delete_invoice'), {'invoice_id': invoice.id})
-        self.assertEqual(resp.status_code, 400)
+        self.assertEqual(resp.status_code, 200)
         data = resp.json()
-        self.assertFalse(data['success'])
-        self.assertIn("versements ou paiements", data['error'])
-        self.assertTrue(Invoice.objects.filter(id=invoice.id).exists())
+        self.assertTrue(data['success'])
+        self.assertFalse(Invoice.objects.filter(id=invoice.id).exists())
 
     def test_tenant_isolation_on_cross_company_delete(self):
         """Une entreprise A ne peut pas supprimer un client appartenant à une entreprise B."""
@@ -930,6 +926,90 @@ class AuditSecurityAndDataIntegrityTests(TestCase):
         self.assertEqual(agent_stock.quantity, 5)  # 2 restants + 3 récrédités
 
 
+    def test_delete_supply_engine_role_and_stock_loads(self):
+        """Vérifie que les suppressions d'approvisionnements, engins, rôles, chargements et retours fonctionnent sans blocage."""
+        from .models import Supplier, Supply, SupplyItem, Engine, AgentRole, Agent, AgentStock, StockLoad, StockLoadItem, StockReturn, StockReturnItem
+        self.client.force_login(self.company_a)
+
+        # 1. Approvisionnement (même si le stock a été partiellement vendu ensuite)
+        supplier = Supplier.objects.create(company=self.company_a, name='Fournisseur Global')
+        supply = Supply.objects.create(company=self.company_a, supplier=supplier)
+        SupplyItem.objects.create(supply=supply, product=self.product_a, quantity=50, unit_price='10.00')
+        resp_supply = self.client.post(reverse('delete_supply'), {'supply_id': supply.id})
+        self.assertEqual(resp_supply.status_code, 200)
+        self.assertTrue(resp_supply.json()['success'])
+        self.assertFalse(Supply.objects.filter(id=supply.id).exists())
+
+        # 2. Engin lié à un agent
+        engine = Engine.objects.create(company=self.company_a, name='Tricycle 01', status='active')
+        role = AgentRole.objects.create(company=self.company_a, name='Chauffeur-Livreur')
+        agent = Agent.objects.create(company=self.company_a, name='Agent Test', role=role, engine=engine)
+
+        resp_engine = self.client.post(reverse('delete_engine'), {'engine_id': engine.id})
+        self.assertEqual(resp_engine.status_code, 200)
+        self.assertTrue(resp_engine.json()['success'])
+        self.assertFalse(Engine.objects.filter(id=engine.id).exists())
+
+        # 3. Rôle lié à un agent
+        resp_role = self.client.post(reverse('delete_agent_role'), {'role_id': role.id})
+        self.assertEqual(resp_role.status_code, 200)
+        self.assertTrue(resp_role.json()['success'])
+        self.assertFalse(AgentRole.objects.filter(id=role.id).exists())
+
+        # 4. Chargement de stock (même si le vendeur a déjà vendu une partie)
+        AgentStock.objects.create(agent=agent, product=self.product_a, quantity=3, unit_price='20.00')
+        load = StockLoad.objects.create(company=self.company_a, agent=agent)
+        StockLoadItem.objects.create(load=load, product=self.product_a, quantity=10, unit_price='20.00')
+        resp_load = self.client.post(reverse('delete_stock_load'), {'load_id': load.id})
+        self.assertEqual(resp_load.status_code, 200)
+        self.assertTrue(resp_load.json()['success'])
+        self.assertFalse(StockLoad.objects.filter(id=load.id).exists())
+
+        # 5. Retour de stock
+        stock_return = StockReturn.objects.create(company=self.company_a, agent=agent)
+        StockReturnItem.objects.create(stock_return=stock_return, product=self.product_a, quantity=5)
+        resp_return = self.client.post(reverse('delete_stock_return'), {'return_id': stock_return.id})
+        self.assertEqual(resp_return.status_code, 200)
+        self.assertTrue(resp_return.json()['success'])
+        self.assertFalse(StockReturn.objects.filter(id=stock_return.id).exists())
 
 
-
+    def test_independent_deletion_client_sale_invoice(self):
+        """Vérifie que supprimer un client ne supprime ni la vente ni la facture, et que supprimer une vente ne supprime pas la facture."""
+        from .models import Invoice
+        from django.utils import timezone
+        self.client.force_login(self.company_a)
+
+        sale = Sale.objects.create(company=self.company_a, client=self.client_a)
+        SaleItem.objects.create(sale=sale, product=self.product_a, quantity=2, unit_price='20.00')
+        sale.save()
+        invoice = Invoice.objects.create(
+            company=self.company_a, sale=sale, invoice_number='FAC-IND-001',
+            due_date=timezone.now().date(), amount_paid=Decimal('40.00'), status='paid'
+        )
+
+        # 1. Suppression du client -> le client est supprimé, mais la vente et la facture restent intactes
+        resp_c = self.client.post(reverse('delete_client'), {'client_id': self.client_a.id})
+        self.assertEqual(resp_c.status_code, 200)
+        self.assertFalse(Client.objects.filter(id=self.client_a.id).exists())
+        self.assertTrue(Sale.objects.filter(id=sale.id).exists())
+        self.assertTrue(Invoice.objects.filter(id=invoice.id).exists())
+        self.assertEqual(self.client.get(reverse('list_sales')).status_code, 200)
+        self.assertEqual(self.client.get(reverse('list_invoices')).status_code, 200)
+
+        # 2. Suppression de la vente -> la vente est supprimée, mais la facture reste intacte et son PDF reste téléchargeable
+        resp_s = self.client.post(reverse('delete_sale'), {'sale_id': sale.id})
+        self.assertEqual(resp_s.status_code, 200)
+        self.assertFalse(Sale.objects.filter(id=sale.id).exists())
+        self.assertTrue(Invoice.objects.filter(id=invoice.id).exists())
+        self.assertEqual(self.client.get(reverse('list_sales')).status_code, 200)
+        self.assertEqual(self.client.get(reverse('list_invoices')).status_code, 200)
+
+        resp_pdf = self.client.get(reverse('invoice_pdf', args=[invoice.id]))
+        self.assertEqual(resp_pdf.status_code, 200)
+        self.assertEqual(self.client.get(reverse('list_invoices')).status_code, 200)
+
+        # 3. Suppression de la facture -> la facture est supprimée individuellement
+        resp_i = self.client.post(reverse('delete_invoice'), {'invoice_id': invoice.id})
+        self.assertEqual(resp_i.status_code, 200)
+        self.assertFalse(Invoice.objects.filter(id=invoice.id).exists())

@@ -126,6 +126,7 @@ def vendor_add_sale(request):
     new_client_name = request.POST.get("new_client_name", "").strip()
     new_client_shop_name = request.POST.get("new_client_shop_name", "").strip()
     new_client_phone = request.POST.get("new_client_phone", "").strip()
+    new_client_email = request.POST.get("new_client_email", "").strip()
     sale_items_payload = request.POST.get("sale_items")
     payment_type = request.POST.get("payment_type", "full")  # full | credit | partial
     amount_paid_input = request.POST.get("amount_paid", "")
@@ -140,7 +141,7 @@ def vendor_add_sale(request):
         if not client:
             return JsonResponse({"success": False, "error": "Client introuvable"}, status=404)
     elif new_client_name:
-        client = Client.objects.create(company=company, name=new_client_name, shop_name=new_client_shop_name, phone=new_client_phone)
+        client = Client.objects.create(company=company, name=new_client_name, shop_name=new_client_shop_name, phone=new_client_phone, email=new_client_email)
     else:
         return JsonResponse({"success": False, "error": "Sélectionnez un client ou renseignez son nom"}, status=400)
 

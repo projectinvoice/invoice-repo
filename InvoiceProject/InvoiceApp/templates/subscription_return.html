@@ -1,60 +1,103 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Retour de paiement</title>
+    <title>Statut du paiement — MerchandBlock</title>
+    <link rel="stylesheet" href="{% static 'InvoiceApp/css/merchandblock.css' %}">
+    <script src="{% static 'InvoiceApp/js/merchandblock.js' %}"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap');
-        :root {
-            --bg-base: #0F1629; --bg-card: #1A2238; --border: rgba(99, 102, 241, 0.15);
-            --indigo: #6366F1; --emerald: #10B981; --amber: #F59E0B; --rose: #F43F5E;
-            --text-primary: #E2E8F0; --text-secondary: #94A3B8; --radius: 16px; --radius-sm: 10px;
+        .return-wrap {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 32px 20px;
         }
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: 'Inter', sans-serif; background: var(--bg-base); color: var(--text-primary);
-            min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px;
-        }
+
         .card {
-            background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius);
-            padding: 36px 32px; max-width: 420px; width: 100%; text-align: center;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 38px 36px;
+            max-width: 460px;
+            width: 100%;
+            text-align: center;
+            box-shadow: var(--shadow-lg);
         }
-        .icon { font-size: 44px; margin-bottom: 14px; }
-        .title { font-size: 19px; font-weight: 700; margin-bottom: 8px; }
-        .detail { font-size: 13.5px; color: var(--text-secondary); margin-bottom: 24px; }
-        .success .title { color: var(--emerald); }
-        .pending .title { color: var(--amber); }
-        .failed .title { color: var(--rose); }
-        .btn {
-            display: inline-flex; padding: 10px 22px; border-radius: var(--radius-sm);
-            background: var(--indigo); color: white; text-decoration: none; font-weight: 600; font-size: 13.5px;
+
+        .icon-circle {
+            width: 56px;
+            height: 56px;
+            border-radius: 14px;
+            margin: 0 auto 18px;
+            display: flex;
+            align-items: center;
             justify-content: center;
         }
-        @media (max-width: 480px) {
-            body { padding: 12px; }
-            .card { padding: 24px 18px; border-radius: 14px; }
-            .title { font-size: 17px; }
-            .btn { width: 100%; min-height: 42px; align-items: center; }
+
+        .icon-circle.ok { background: rgba(5, 150, 105, 0.12); color: var(--emerald); }
+        .icon-circle.wait { background: rgba(217, 119, 6, 0.12); color: var(--amber); }
+        .icon-circle.fail { background: rgba(225, 29, 72, 0.12); color: var(--rose); }
+
+        h1 {
+            font-size: 20px;
+            font-weight: 800;
+            margin-bottom: 10px;
+            color: var(--text-primary);
+        }
+
+        p {
+            font-size: 14px;
+            color: var(--text-secondary);
+            line-height: 1.6;
+            margin-bottom: 24px;
+        }
+
+        .actions {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
         }
     </style>
 </head>
 <body>
-    <div class="card {% if payment.status == 'success' %}success{% elif payment.status == 'failed' %}failed{% else %}pending{% endif %}">
-        {% if payment.status == 'success' %}
-            <div class="icon">✅</div>
-            <div class="title">Paiement confirmé</div>
-            <div class="detail">Votre abonnement {{ payment.get_plan_display }} est maintenant actif. Merci !</div>
-        {% elif payment.status == 'failed' %}
-            <div class="icon">❌</div>
-            <div class="title">Paiement échoué</div>
-            <div class="detail">Le paiement n'a pas abouti. Vous pouvez réessayer depuis la page d'abonnement.</div>
-        {% else %}
-            <div class="icon">⏳</div>
-            <div class="title">Paiement en cours de vérification</div>
-            <div class="detail">MoneyFusion traite votre paiement. Le statut sera mis à jour automatiquement dans quelques instants.</div>
-        {% endif %}
-        <a href="{% url 'subscription' %}" class="btn">Voir mon abonnement</a>
+    <div class="return-wrap">
+        <div class="card">
+            {% if status == 'paid' %}
+                <div class="icon-circle ok">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                </div>
+                <h1>Paiement confirmé</h1>
+                <p>Votre abonnement MerchandBlock est maintenant actif. Toutes les fonctionnalités de votre espace sont débloquées.</p>
+                <div class="actions">
+                    <a href="{% url 'dashboard' %}" class="btn btn-primary">Aller au tableau de bord</a>
+                </div>
+            {% elif status == 'pending' or status == 'unknown' %}
+                <div class="icon-circle wait">
+                    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                </div>
+                <h1>Paiement en cours de traitement</h1>
+                <p>Votre transaction est en attente de confirmation par l'opérateur. Cette page se mettra à jour automatiquement.</p>
+                <div class="actions">
+                    <a href="{{ request.get_full_path }}" class="btn btn-primary">Rafraîchir</a>
+                    <a href="{% url 'subscription' %}" class="btn btn-ghost">Page abonnement</a>
+                </div>
+                <script>setTimeout(() => location.reload(), 5000);</script>
+            {% else %}
+                <div class="icon-circle fail">
+                    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+                </div>
+                <h1>Paiement non abouti</h1>
+                <p>Le paiement n'a pas pu être finalisé ou a été annulé. Vous pouvez réessayer depuis votre espace abonnement.</p>
+                <div class="actions">
+                    <a href="{% url 'subscription' %}" class="btn btn-primary">Réessayer</a>
+                    <a href="{% url 'dashboard' %}" class="btn btn-ghost">Tableau de bord</a>
+                </div>
+            {% endif %}
+        </div>
     </div>
 </body>
 </html>

@@ -1,45 +1,49 @@
 /**
- * GESTION DE LA NAVIGATION MOBILE RESPONSIVE
- * Gère l'ouverture, la fermeture et le focus de la sidebar mobile et overlay.
+ * MerchandBlock — Responsive Navigation Script
  */
 document.addEventListener('DOMContentLoaded', function () {
-    const toggleBtn = document.getElementById('sidebarToggleBtn');
-    const closeBtn = document.getElementById('sidebarCloseBtn');
-    const overlay = document.getElementById('sidebarOverlay');
     const sidebar = document.querySelector('.sidebar');
-
     if (!sidebar) return;
 
-    function openSidebar() {
-        sidebar.classList.add('active');
-        if (overlay) overlay.classList.add('active');
-        document.body.style.overflow = 'hidden';
+    const menuSVG = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>';
+    const closeSVG = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>';
+
+    const menuBtn = document.createElement('button');
+    menuBtn.className = 'mobile-menu-btn';
+    menuBtn.type = 'button';
+    menuBtn.innerHTML = menuSVG;
+    menuBtn.setAttribute('aria-label', 'Ouvrir le menu');
+    document.body.appendChild(menuBtn);
+
+    const overlay = document.createElement('div');
+    overlay.className = 'sidebar-overlay';
+    document.body.appendChild(overlay);
+
+    function toggleMenu() {
+        const isOpen = sidebar.classList.toggle('open');
+        overlay.classList.toggle('active', isOpen);
+        menuBtn.innerHTML = isOpen ? closeSVG : menuSVG;
+        document.body.style.overflow = isOpen ? 'hidden' : '';
     }
 
-    function closeSidebar() {
-        sidebar.classList.remove('active');
-        if (overlay) overlay.classList.remove('active');
-        document.body.style.overflow = '';
-    }
+    menuBtn.addEventListener('click', toggleMenu);
+    overlay.addEventListener('click', toggleMenu);
 
-    if (toggleBtn) toggleBtn.addEventListener('click', openSidebar);
-    if (closeBtn) closeBtn.addEventListener('click', closeSidebar);
-    if (overlay) overlay.addEventListener('click', closeSidebar);
-
-    // Fermer avec la touche Échap
-    document.addEventListener('keydown', function (e) {
-        if (e.key === 'Escape' && sidebar.classList.contains('active')) {
-            closeSidebar();
-        }
-    });
-
-    // Fermer la sidebar mobile lors d'un clic sur un lien de navigation
-    const navLinks = sidebar.querySelectorAll('.nav-item');
+    const navLinks = sidebar.querySelectorAll('.nav-item, .logout-btn');
     navLinks.forEach(function (link) {
         link.addEventListener('click', function () {
-            if (window.innerWidth <= 900) {
-                closeSidebar();
+            if (window.innerWidth <= 992 && sidebar.classList.contains('open')) {
+                toggleMenu();
             }
         });
+    });
+
+    window.addEventListener('resize', function () {
+        if (window.innerWidth > 992 && sidebar.classList.contains('open')) {
+            sidebar.classList.remove('open');
+            overlay.classList.remove('active');
+            menuBtn.innerHTML = menuSVG;
+            document.body.style.overflow = '';
+        }
     });
 });

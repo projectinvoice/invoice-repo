@@ -1,464 +1,114 @@
-<!DOCTYPE html>
 {% load static %}
+<!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Agents — {{ company_name }}</title>
+    <title>Agents — {{ company_name }} | MerchandBlock</title>
+    <link rel="stylesheet" href="{% static 'InvoiceApp/css/merchandblock.css' %}">
+    <link rel="stylesheet" href="{% static 'InvoiceApp/css/responsive.css' %}">
+    <script src="{% static 'InvoiceApp/js/merchandblock.js' %}"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
-
-        :root {
-            --bg-base: #0F1629;
-            --bg-card: #1A2238;
-            --bg-card-hover: #1F2A44;
-            --border: rgba(99, 102, 241, 0.15);
-            --border-hover: rgba(99, 102, 241, 0.45);
-            --indigo: #6366F1;
-            --indigo-light: #818CF8;
-            --emerald: #10B981;
-            --amber: #F59E0B;
-            --rose: #F43F5E;
-            --sky: #38BDF8;
-            --text-primary: #E2E8F0;
-            --text-secondary: #94A3B8;
-            --text-muted: #64748B;
-            --radius: 16px;
-            --radius-sm: 10px;
-            --shadow: 0 4px 24px rgba(0,0,0,0.4);
-        }
-
-        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-
-        body {
-            font-family: 'Inter', sans-serif;
-            background: var(--bg-base);
-            color: var(--text-primary);
-            min-height: 100vh;
-            font-size: 14px;
-            line-height: 1.6;
-        }
-
-        /* ── SIDEBAR ── */
-        .sidebar {
-            position: fixed;
-            left: 0; top: 0; bottom: 0;
-            width: 240px;
-            background: var(--bg-card);
-            border-right: 1px solid var(--border);
-            display: flex;
-            flex-direction: column;
-            z-index: 100;
-        }
-
-        .sidebar-logo {
-            padding: 24px 20px 20px;
-            border-bottom: 1px solid var(--border);
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .logo-mark {
-            width: 36px; height: 36px;
-            background: linear-gradient(135deg, var(--indigo), #9333EA);
-            border-radius: 10px;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 18px; font-weight: 800; color: white;
-            flex-shrink: 0;
-        }
-
-        .logo-text {
-            font-size: 15px; font-weight: 700;
-            color: var(--text-primary);
-            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-        }
-
-        .sidebar-nav { flex: 1; padding: 16px 12px; overflow-y: auto; }
-
-        .nav-section-label {
-            font-size: 10px; font-weight: 600;
-            color: var(--text-muted);
-            text-transform: uppercase; letter-spacing: 0.12em;
-            padding: 12px 8px 6px;
-        }
-
-        .nav-item {
-            display: flex; align-items: center; gap: 10px;
-            padding: 9px 12px; border-radius: var(--radius-sm);
-            color: var(--text-secondary); text-decoration: none;
-            font-weight: 500; font-size: 13.5px;
-            transition: all 0.18s; margin-bottom: 2px;
-        }
-
-        .nav-item:hover, .nav-item.active {
-            background: rgba(99, 102, 241, 0.12);
-            color: var(--indigo-light);
-        }
-
-        .nav-item.active { font-weight: 600; }
-        .nav-item .nav-icon { font-size: 16px; width: 20px; text-align: center; }
-
-        .nav-badge {
-            margin-left: auto;
-            background: rgba(99, 102, 241, 0.2);
-            color: var(--indigo-light);
-            font-size: 11px; font-weight: 600;
-            padding: 2px 7px; border-radius: 20px;
-        }
-
-        .sidebar-footer { padding: 16px 12px; border-top: 1px solid var(--border); }
-
-        .user-block {
-            display: flex; align-items: center; gap: 10px;
-            padding: 10px; border-radius: var(--radius-sm);
-            background: rgba(255,255,255,0.04);
-        }
-
-        .user-avatar {
-            width: 32px; height: 32px; border-radius: 50%;
-            background: linear-gradient(135deg, var(--emerald), #059669);
-            display: flex; align-items: center; justify-content: center;
-            font-size: 13px; font-weight: 700; color: white; flex-shrink: 0;
-        }
-
-        .user-name { font-weight: 600; font-size: 13px; }
-        .user-role { font-size: 11px; color: var(--text-muted); }
-
-        .logout-btn {
-            margin-top: 10px; display: block; text-align: center;
-            padding: 8px;
-            background: rgba(244, 63, 94, 0.1);
-            color: var(--rose); border-radius: var(--radius-sm);
-            text-decoration: none; font-size: 13px; font-weight: 500;
-            transition: background 0.2s;
-        }
-        .logout-btn:hover { background: rgba(244, 63, 94, 0.2); }
-
-        /* ── MAIN ── */
-        .main { margin-left: 240px; min-height: 100vh; display: flex; flex-direction: column; }
-
-        .topbar {
-            background: var(--bg-card);
-            border-bottom: 1px solid var(--border);
-            padding: 14px 32px;
-            display: flex; align-items: center; justify-content: space-between;
-            position: sticky; top: 0; z-index: 50;
-        }
-
-        .topbar-title { font-size: 17px; font-weight: 700; }
-        .topbar-sub { font-size: 12px; color: var(--text-muted); margin-top: 1px; }
-        .topbar-actions { display: flex; gap: 10px; align-items: center; }
-
-        .btn {
-            display: inline-flex; align-items: center; gap: 6px;
-            padding: 8px 16px; border-radius: var(--radius-sm);
-            font-size: 13px; font-weight: 600; cursor: pointer;
-            text-decoration: none; border: none;
-            transition: all 0.2s; font-family: 'Inter', sans-serif;
-        }
-        .btn-primary { background: var(--indigo); color: white; }
-        .btn-primary:hover { background: #5254CC; transform: translateY(-1px); }
-        .btn-ghost {
-            background: rgba(255,255,255,0.06);
-            color: var(--text-secondary);
-            border: 1px solid var(--border);
-        }
-        .btn-ghost:hover { background: rgba(255,255,255,0.1); color: var(--text-primary); }
-        .btn-sm { padding: 6px 12px; font-size: 12px; }
-        .btn-danger-soft {
-            background: rgba(244,63,94,0.1);
-            color: var(--rose);
-            border: 1px solid rgba(244,63,94,0.2);
-        }
-        .btn-danger-soft:hover { background: rgba(244,63,94,0.22); }
-        .btn-edit-soft {
-            background: rgba(99,102,241,0.1);
-            color: var(--indigo-light);
-            border: 1px solid rgba(99,102,241,0.2);
-        }
-        .btn-edit-soft:hover { background: rgba(99,102,241,0.2); }
-
-        .content { padding: 28px 32px; flex: 1; }
-
-        /* ── SEARCH BAR ── */
-        .toolbar {
-            display: flex; align-items: center; gap: 12px;
-            margin-bottom: 20px; flex-wrap: wrap;
-        }
-
-        .search-wrap { position: relative; flex: 1; min-width: 220px; }
-        .search-icon {
-            position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
-            color: var(--text-muted); font-size: 15px; pointer-events: none;
-        }
-        .search-input {
-            width: 100%;
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: var(--radius-sm);
-            padding: 9px 14px 9px 36px;
-            color: var(--text-primary);
-            font-size: 13px; font-family: 'Inter', sans-serif;
-            outline: none; transition: border-color 0.2s;
-        }
-        .search-input::placeholder { color: var(--text-muted); }
-        .search-input:focus { border-color: var(--indigo); }
-
-        .filter-select {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            color: var(--text-secondary);
-            font-size: 13px; font-family: 'Inter', sans-serif;
-            padding: 9px 14px; border-radius: var(--radius-sm);
-            cursor: pointer; outline: none; transition: border-color 0.2s;
-        }
-        .filter-select:focus { border-color: var(--indigo); }
-
-        /* ── TABLE ── */
-        .table-card {
+        .vendor-code-banner {
             background: var(--bg-card);
             border: 1px solid var(--border);
             border-radius: var(--radius);
-            overflow: hidden;
+            padding: 18px 22px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 14px;
+            box-shadow: var(--shadow-sm);
         }
-        .table-wrap { overflow-x: auto; }
-        table { width: 100%; border-collapse: collapse; }
-        thead th {
-            padding: 13px 20px;
-            text-align: left;
-            font-size: 11px; font-weight: 600;
+        .vendor-code-label {
+            font-size: 11px;
             color: var(--text-muted);
-            text-transform: uppercase; letter-spacing: 0.09em;
-            background: rgba(255,255,255,0.02);
-            border-bottom: 1px solid var(--border);
-            white-space: nowrap;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            font-weight: 700;
+            margin-bottom: 4px;
         }
-        tbody tr { border-bottom: 1px solid rgba(255,255,255,0.04); transition: background 0.15s; }
-        tbody tr:last-child { border-bottom: none; }
-        tbody tr:hover { background: rgba(99,102,241,0.04); }
-        td { padding: 14px 20px; vertical-align: middle; font-size: 13.5px; color: var(--text-primary); }
-
-        .agent-cell { display: flex; align-items: center; gap: 12px; }
+        .vendor-code-val {
+            font-size: 22px;
+            font-weight: 800;
+            letter-spacing: 0.1em;
+            color: var(--mb-orange);
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+        .vendor-code-sub {
+            font-size: 12.5px;
+            color: var(--text-secondary);
+            margin-top: 4px;
+        }
+        .agent-cell { display: flex; align-items: center; gap: 11px; }
         .agent-avatar-tbl {
-            width: 36px; height: 36px; border-radius: 50%;
+            width: 34px; height: 34px; border-radius: 8px;
+            background: var(--mb-navy); color: #fff;
             display: flex; align-items: center; justify-content: center;
-            font-size: 14px; font-weight: 700; color: white; flex-shrink: 0;
-            background: linear-gradient(135deg, var(--indigo), #9333EA);
+            font-weight: 700; font-size: 13px; flex-shrink: 0;
         }
-        .agent-name-tbl { font-weight: 600; font-size: 13.5px; }
-        .agent-email-tbl { font-size: 11.5px; color: var(--text-muted); }
-
+        .agent-name-tbl { font-weight: 600; color: var(--text-primary); }
+        .agent-email-tbl { font-size: 12px; color: var(--text-muted); }
         .role-badge {
-            display: inline-flex; align-items: center;
-            padding: 3px 10px; border-radius: 20px;
-            font-size: 11.5px; font-weight: 600;
-            background: rgba(99,102,241,0.12);
-            color: var(--indigo-light);
+            display: inline-block; padding: 3px 10px; border-radius: 6px;
+            font-size: 12px; font-weight: 600;
+            background: rgba(8, 36, 75, 0.08);
+            color: var(--mb-navy);
+            border: 1px solid rgba(8, 36, 75, 0.15);
         }
-        .role-badge.no-role { background: rgba(100,116,139,0.12); color: var(--text-muted); }
-
-        .actions-col { display: flex; gap: 6px; align-items: center; }
-
-        .empty-state { text-align: center; padding: 60px 20px; color: var(--text-muted); }
-        .empty-icon { font-size: 40px; margin-bottom: 12px; }
-        .empty-title { font-size: 15px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; }
-        .empty-sub { font-size: 13px; margin-bottom: 20px; }
-
+        [data-theme="dark"] .role-badge {
+            background: rgba(242, 103, 34, 0.14);
+            color: var(--mb-orange-light);
+            border-color: rgba(242, 103, 34, 0.28);
+        }
+        .role-badge.no-role {
+            background: var(--bg-subtle);
+            color: var(--text-muted);
+            border-color: var(--border);
+        }
+        .muted-cell { color: var(--text-muted); font-size: 12.5px; }
+        .actions-col { display: flex; align-items: center; gap: 6px; }
+        .form-error {
+            background: var(--rose-bg);
+            border: 1px solid rgba(225, 29, 72, 0.28);
+            border-radius: var(--radius-sm);
+            padding: 10px 14px;
+            font-size: 12.5px; color: var(--rose);
+            margin-bottom: 14px; display: none;
+        }
         .pagination {
             display: flex; align-items: center; justify-content: space-between;
             padding: 14px 20px; border-top: 1px solid var(--border);
-            flex-wrap: wrap; gap: 10px;
         }
         .pagination-info { font-size: 12px; color: var(--text-muted); }
-        .pagination-btns { display: flex; gap: 6px; }
+        .pagination-btns { display: flex; gap: 4px; }
         .page-btn {
-            width: 32px; height: 32px; border-radius: 8px;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 13px; font-weight: 500;
-            background: rgba(255,255,255,0.05);
-            color: var(--text-secondary);
-            text-decoration: none;
-            border: 1px solid var(--border);
+            min-width: 30px; height: 30px; border-radius: 6px;
+            display: inline-flex; align-items: center; justify-content: center;
+            font-size: 12.5px; font-weight: 600;
+            background: var(--bg-subtle); color: var(--text-secondary);
+            border: 1px solid var(--border); text-decoration: none;
             transition: all 0.15s;
         }
-        .page-btn:hover, .page-btn.active {
-            background: rgba(99,102,241,0.15);
-            color: var(--indigo-light);
-            border-color: rgba(99,102,241,0.3);
-        }
+        .page-btn:hover { color: var(--text-primary); border-color: var(--border-strong); }
+        .page-btn.active { background: var(--mb-orange); color: white; border-color: var(--mb-orange); }
         .page-btn.disabled { opacity: 0.35; pointer-events: none; }
-
-        /* ── FORM (modal ajout/édition) ── */
-        .form-group { margin-bottom: 16px; }
-        .form-label { display: block; font-size: 12.5px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; }
-        .form-control, .form-select {
-            width: 100%;
-            background: rgba(255,255,255,0.04);
-            border: 1px solid var(--border);
-            border-radius: var(--radius-sm);
-            padding: 9px 12px;
-            color: var(--text-primary);
-            font-size: 13.5px; font-family: 'Inter', sans-serif;
-            outline: none; transition: border-color 0.2s;
-        }
-        .form-control:focus, .form-select:focus { border-color: var(--indigo); }
-        .form-select, select {
-            cursor: pointer;
-            color-scheme: dark;
-        }
-        .form-select option, select option {
-            background-color: #1E293B !important;
-            color: #F8FAFC !important;
-            padding: 8px 12px;
-        }
-        .form-select optgroup, select optgroup {
-            background-color: #0F172A !important;
-            color: #94A3B8 !important;
-        }
-        .form-error { color: var(--rose); font-size: 12px; margin-top: 4px; display: none; }
-
-        /* ── MODALS ── */
-        .modal-overlay {
-            display: none;
-            position: fixed; inset: 0;
-            background: rgba(0,0,0,0.65);
-            z-index: 500;
-            align-items: center; justify-content: center;
-        }
-        .modal-overlay.open { display: flex; }
-
-        .modal-box {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
-            padding: 32px;
-            max-width: 420px; width: 90%;
-            box-shadow: var(--shadow);
-            animation: pop-in 0.2s ease;
-            max-height: 90vh;
-            overflow-y: auto;
-        }
-        @keyframes pop-in {
-            from { transform: scale(0.92); opacity: 0; }
-            to   { transform: scale(1);    opacity: 1; }
-        }
-
-        .modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
-        .modal-title { font-size: 17px; font-weight: 700; }
-        .modal-close { background: none; border: none; color: var(--text-muted); font-size: 20px; cursor: pointer; line-height: 1; }
-        .modal-close:hover { color: var(--text-primary); }
-
-        .modal-icon { font-size: 36px; margin-bottom: 12px; }
-        .modal-msg { font-size: 13.5px; color: var(--text-secondary); margin-bottom: 24px; line-height: 1.7; }
-        .modal-msg strong { color: var(--text-primary); }
-        .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 8px; }
-
-        .btn-danger-solid { background: var(--rose); color: white; border: none; }
-        .btn-danger-solid:hover { background: #e0294a; }
-
-        /* ── TOAST ── */
-        .toast {
-            position: fixed; bottom: 24px; right: 24px;
-            background: #1E293B; border: 1px solid var(--border);
-            border-radius: var(--radius-sm);
-            padding: 12px 18px;
-            font-size: 13px; font-weight: 500;
-            display: flex; align-items: center; gap: 10px;
-            box-shadow: var(--shadow);
-            transform: translateY(80px); opacity: 0;
-            transition: all 0.3s cubic-bezier(0.22,1,0.36,1);
-            z-index: 999;
-            pointer-events: none;
-        }
-        .toast.show { transform: translateY(0); opacity: 1; }
-        .toast.success { border-color: rgba(16,185,129,0.4); color: var(--emerald); }
-        .toast.error { border-color: rgba(244,63,94,0.4); color: var(--rose); }
-
-        @media (max-width: 900px) {
-            .main { margin-left: 0; }
-            .content { padding: 16px 12px; }
-            .topbar { padding: 12px 16px; }
-        }
     </style>
-    <link rel="stylesheet" href="{% static 'InvoiceApp/css/responsive.css' %}">
 </head>
 <body>
 
-<!-- ══════════════ SIDEBAR ══════════════ -->
-<aside class="sidebar">
-    <div class="sidebar-logo">
-        {% if company_logo_url %}
-        <img src="{{ company_logo_url }}" alt="Logo" style="width:36px;height:36px;object-fit:contain;border-radius:10px;background:#fff;padding:4px;">
-        {% else %}
-        <div class="logo-mark">{{ company_name|first|upper }}</div>
-        {% endif %}
-        <span class="logo-text">{{ company_name }}</span>
-        <button type="button" class="sidebar-close-btn" id="sidebarCloseBtn" aria-label="Fermer le menu">&times;</button>
-    </div>
+{% include 'includes/sidebar.html' with active_page='agents' %}
 
-        <nav class="sidebar-nav">
-        <div class="nav-section-label">Général</div>
-        <a href="{% url 'dashboard' %}" class="nav-item">
-            <span class="nav-icon">📊</span> Tableau de bord
-        </a>
-
-        <div class="nav-section-label">Gestion</div>
-        <a href="{% url 'list_agents' %}" class="nav-item active">
-            <span class="nav-icon">👥</span> Agents
-        </a>
-        <a href="{% url 'manage_agent_roles' %}" class="nav-item">
-            <span class="nav-icon">🎭</span> Rôles
-        </a>
-        <a href="{% url 'list_engines' %}" class="nav-item">
-            <span class="nav-icon">⚙️</span> Engins
-        </a>
-        <a href="{% url 'list_stock_loads' %}" class="nav-item">
-            <span class="nav-icon">🚚</span> Stock Vendeurs
-        </a>
-        <a href="{% url 'list_products' %}" class="nav-item">
-            <span class="nav-icon">📦</span> Produits
-        </a>
-
-        <div class="nav-section-label">Commerce</div>
-        <a href="{% url 'list_clients' %}" class="nav-item">
-            <span class="nav-icon">🤝</span> Clients
-        </a>
-        <a href="{% url 'list_suppliers' %}" class="nav-item">
-            <span class="nav-icon">🏭</span> Fournisseurs
-        </a>
-        <a href="{% url 'list_sales' %}" class="nav-item">
-            <span class="nav-icon">💹</span> Ventes
-        </a>
-        <a href="{% url 'list_supplies' %}" class="nav-item">
-            <span class="nav-icon">🛒</span> Appros
-        </a>
-        <a href="{% url 'list_invoices' %}" class="nav-item">
-            <span class="nav-icon">🧾</span> Factures
-        </a>
-</nav>
-<div class="sidebar-footer">
-        <div class="user-block">
-            <div class="user-avatar">A</div>
-            <div>
-                <div class="user-name">Admin</div>
-                <div class="user-role">Administrateur</div>
-            </div>
-        </div>
-        <a href="{% url 'logout' %}" class="logout-btn">🚪 Se déconnecter</a>
-    </div>
-</aside>
-<div class="sidebar-overlay" id="sidebarOverlay"></div>
-
-<!-- ══════════════ MAIN ══════════════ -->
 <div class="main">
     <header class="topbar">
-        <div style="display:flex; align-items:center; gap:12px;">
+        <div class="topbar-left">
             <button type="button" class="sidebar-toggle-btn" id="sidebarToggleBtn" aria-label="Menu de navigation">
                 <span></span><span></span><span></span>
             </button>
             <div>
-                <div class="topbar-title">Agents</div>
+                <div class="topbar-title">Agents commerciaux</div>
                 <div class="topbar-sub">{{ agents_count }} agent{{ agents_count|pluralize }} enregistré{{ agents_count|pluralize }}</div>
             </div>
         </div>
@@ -469,8 +119,6 @@
     </header>
 
     <main class="content">
-
-        <!-- Messages Django (consommés par le toast au chargement) -->
         {% if messages %}
             {% for message in messages %}
             <div class="django-msg" data-type="{{ message.tags }}" data-text="{{ message }}" style="display:none;"></div>
@@ -478,22 +126,24 @@
         {% endif %}
 
         <!-- CODE VENDEUR -->
-        <div class="table-card" style="padding: 18px 22px; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+        <div class="vendor-code-banner">
             <div>
-                <div style="font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; margin-bottom: 4px;">Code de connexion vendeurs</div>
-                <div style="font-size: 22px; font-weight: 800; letter-spacing: 0.1em; color: var(--indigo-light);" id="vendorCode">{{ agent_login_code }}</div>
-                <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">Communique ce code + le PIN de chaque agent pour qu'il accède à son espace vendeur.</div>
+                <div class="vendor-code-label">Code de connexion espace vendeur</div>
+                <div class="vendor-code-val" id="vendorCode">{{ agent_login_code }}</div>
+                <div class="vendor-code-sub">Communiquez ce code entreprise + le code PIN individuel à chaque agent pour son accès terrain.</div>
             </div>
-            <div style="display: flex; gap: 8px;">
-                <button type="button" class="btn btn-ghost btn-sm" onclick="copyVendorCode()">📋 Copier le code</button>
-                <a href="{% url 'vendor_login' %}" target="_blank" class="btn btn-ghost btn-sm">🔗 Ouvrir l'espace vendeur</a>
+            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                <button type="button" class="btn btn-ghost btn-sm" onclick="copyVendorCode()">Copier le code</button>
+                <a href="{% url 'vendor_login' %}" target="_blank" class="btn btn-secondary btn-sm">Ouvrir l'espace vendeur ↗</a>
             </div>
         </div>
 
         <!-- TOOLBAR -->
         <div class="toolbar">
             <div class="search-wrap">
-                <span class="search-icon">🔍</span>
+                <span class="search-icon">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                </span>
                 <input type="text" class="search-input" id="searchInput"
                        placeholder="Rechercher un agent par nom, email ou téléphone…"
                        oninput="filterTable()">
@@ -516,7 +166,7 @@
                             <th>Agent</th>
                             <th>Téléphone</th>
                             <th>Rôle</th>
-                            <th>Engin</th>
+                            <th>Engin assigné</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
@@ -534,7 +184,7 @@
                                     <div class="agent-avatar-tbl">{{ agent.name|first|upper }}</div>
                                     <div>
                                         <div class="agent-name-tbl">{{ agent.name }}</div>
-                                        <div class="agent-email-tbl">{{ agent.email }}</div>
+                                        <div class="agent-email-tbl">{{ agent.email|default:"—" }}</div>
                                     </div>
                                 </div>
                             </td>
@@ -551,11 +201,11 @@
                                 <div class="actions-col">
                                     <button class="btn btn-sm btn-edit-soft"
                                         onclick="openAgentModal('{{ agent.id }}', '{{ agent.name|escapejs }}', '{{ agent.email|escapejs }}', '{{ agent.phone|escapejs }}', '{{ agent.role.id|default:'' }}', '{{ agent.engine.id|default:'' }}')">
-                                        ✏️ Modifier
+                                        Modifier
                                     </button>
                                     <button class="btn btn-sm btn-danger-soft"
                                         onclick="openDeleteModal('{{ agent.id }}', '{{ agent.name|escapejs }}')">
-                                        🗑️ Supprimer
+                                        Supprimer
                                     </button>
                                 </div>
                             </td>
@@ -564,9 +214,8 @@
                         <tr id="emptyRow">
                             <td colspan="6">
                                 <div class="empty-state">
-                                    <div class="empty-icon">👥</div>
                                     <div class="empty-title">Aucun agent enregistré</div>
-                                    <div class="empty-sub">Ajoutez votre premier agent pour commencer</div>
+                                    <div class="empty-sub">Ajoutez votre premier agent commercial pour démarrer le suivi terrain.</div>
                                 </div>
                             </td>
                         </tr>
@@ -600,11 +249,10 @@
             </div>
             {% endif %}
         </div>
-
     </main>
 </div>
 
-<!-- ══════════════ MODAL AJOUT / ÉDITION ══════════════ -->
+<!-- MODAL AJOUT / ÉDITION -->
 <div class="modal-overlay" id="agentModal">
     <div class="modal-box">
         <div class="modal-header">
@@ -666,23 +314,24 @@
     </div>
 </div>
 
-<!-- ══════════════ MODAL CONFIRMATION SUPPRESSION ══════════════ -->
+<!-- MODAL CONFIRMATION SUPPRESSION -->
 <div class="modal-overlay" id="deleteModal">
-    <div class="modal-box">
-        <div class="modal-icon">⚠️</div>
-        <div class="modal-title">Confirmer la suppression</div>
-        <div class="modal-msg">
-            Êtes-vous sûr de vouloir supprimer l'agent <strong id="modal-agent-name"></strong> ?
+    <div class="modal-box" style="max-width:420px;">
+        <div class="modal-header">
+            <div class="modal-title">Confirmer la suppression</div>
+            <button type="button" class="modal-close" onclick="closeDeleteModal()">&times;</button>
+        </div>
+        <div class="modal-msg" style="font-size:13.5px; color:var(--text-secondary); margin-bottom:20px; line-height:1.6;">
+            Êtes-vous sûr de vouloir supprimer l'agent <strong id="modal-agent-name" style="color:var(--text-primary);"></strong> ?
             <br>Cette action est <strong>irréversible</strong>.
         </div>
         <div class="modal-actions">
             <button type="button" class="btn btn-ghost" onclick="closeDeleteModal()">Annuler</button>
-            <button type="button" class="btn btn-danger-solid" id="confirmDeleteBtn">🗑️ Supprimer</button>
+            <button type="button" class="btn btn-danger-solid" id="confirmDeleteBtn">Supprimer</button>
         </div>
     </div>
 </div>
 
-<!-- ══════════════ TOAST ══════════════ -->
 <div class="toast" id="toast"></div>
 
 <script>
@@ -694,21 +343,18 @@
     }
     let agentToDelete = null;
 
-    /* ── TOAST ── */
     function showToast(message, type = 'success') {
         const toast = document.getElementById('toast');
-        toast.textContent = (type === 'success' ? '✅ ' : '⚠️ ') + message;
+        toast.textContent = message;
         toast.className = 'toast show ' + type;
         setTimeout(() => { toast.classList.remove('show'); }, 3500);
     }
 
-    // Affiche les messages Django (venant du serveur) au chargement
     document.querySelectorAll('.django-msg').forEach(el => {
         const type = el.dataset.type.includes('error') ? 'error' : 'success';
         showToast(el.dataset.text, type);
     });
 
-    /* ── MODAL AJOUT / ÉDITION ── */
     function openAgentModal(agentId = null, name = '', email = '', phone = '', roleId = '', engineId = '') {
         const modal = document.getElementById('agentModal');
         const modalTitle = document.getElementById('modalTitle');
@@ -739,7 +385,6 @@
         if (e.target === this) closeAgentModal();
     });
 
-    /* ── SOUMISSION DU FORMULAIRE (ajout / édition) ── */
     document.getElementById('agentForm').addEventListener('submit', async function (e) {
         e.preventDefault();
         const submitBtn = document.getElementById('submitBtn');
@@ -778,7 +423,6 @@
         }
     });
 
-    /* ── SUPPRESSION ── */
     function openDeleteModal(agentId, name) {
         agentToDelete = agentId;
         document.getElementById('modal-agent-name').textContent = name;
@@ -821,7 +465,6 @@
         }
     });
 
-    /* ── RECHERCHE + FILTRE PAR RÔLE ── */
     function filterTable() {
         const search = document.getElementById('searchInput').value.toLowerCase();
         const role = document.getElementById('roleFilter').value.toLowerCase();
@@ -835,7 +478,6 @@
         });
     }
 </script>
-
 <script src="{% static 'InvoiceApp/js/responsive.js' %}"></script>
 <script src="{% static 'InvoiceApp/js/ai_assistant.js' %}"></script>
 </body>

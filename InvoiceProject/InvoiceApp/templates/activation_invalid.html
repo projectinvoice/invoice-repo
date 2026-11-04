@@ -3,201 +3,102 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lien d'activation invalide — Plateforme de Gestion de Stock</title>
+    <title>Lien d'activation invalide — MerchandBlock</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap');
 
         :root {
-            --bg-base: #0F1629;
-            --bg-card: #1A2238;
-            --border: rgba(99, 102, 241, 0.15);
-            --indigo: #6366F1;
-            --indigo-light: #818CF8;
-            --rose: #F43F5E;
-            --text-primary: #E2E8F0;
-            --text-secondary: #94A3B8;
+            --mb-navy: #08244B;
+            --mb-navy-hover: #0D3268;
+            --bg-page: #F1F5F9;
+            --bg-card: #FFFFFF;
+            --border: #E2E8F0;
+            --text-primary: #0F172A;
             --text-muted: #64748B;
-            --radius: 16px;
-            --radius-sm: 10px;
-            --shadow: 0 4px 24px rgba(0,0,0,0.4);
+            --rose: #E11D48;
+            --radius: 14px;
+            --radius-sm: 9px;
         }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
-            font-family: 'Inter', sans-serif;
-            background: var(--bg-base);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-page);
             color: var(--text-primary);
             min-height: 100vh;
             display: flex;
-            align-items: center;
             justify-content: center;
-            padding: 20px;
+            align-items: center;
+            padding: 32px 20px;
+            -webkit-font-smoothing: antialiased;
         }
 
-        .container {
+        .card {
             background: var(--bg-card);
             border: 1px solid var(--border);
             border-radius: var(--radius);
-            padding: 40px;
-            max-width: 400px;
+            box-shadow: 0 12px 32px rgba(8, 36, 75, 0.07);
+            max-width: 440px;
             width: 100%;
-            box-shadow: var(--shadow);
-        }
-
-        .header { text-align: center; margin-bottom: 28px; }
-        .invalid-icon { font-size: 40px; text-align: center; margin-bottom: 12px; }
-        h1 { font-size: 20px; font-weight: 700; margin-bottom: 4px; color: var(--text-primary); }
-        .subtitle { font-size: 13px; color: var(--text-secondary); line-height: 1.5; }
-
-        .form-group { margin-bottom: 18px; }
-        label {
-            display: block; margin-bottom: 8px; color: var(--text-secondary);
-            font-weight: 600; font-size: 13px;
-        }
-        .required { color: var(--rose); }
-
-        input {
-            width: 100%;
-            background: rgba(255,255,255,0.04);
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            padding: 12px 14px;
-            font-size: 14px;
-            font-family: 'Inter', sans-serif;
-            color: var(--text-primary);
-            outline: none;
-            transition: border-color 0.2s, box-shadow 0.2s;
-        }
-        input::placeholder { color: var(--text-muted); }
-        input:focus {
-            border-color: var(--indigo);
-            box-shadow: 0 0 0 3px rgba(99,102,241,0.15);
-        }
-
-        .btn-group { display: flex; gap: 10px; margin-top: 24px; }
-
-        button {
-            flex: 1;
-            padding: 12px 16px;
-            border: none;
-            border-radius: 10px;
-            font-size: 14px;
-            font-weight: 600;
-            font-family: 'Inter', sans-serif;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .btn-submit { background: var(--indigo); color: white; }
-        .btn-submit:hover { background: #5254CC; transform: translateY(-1px); }
-        .btn-submit:active { transform: translateY(0); }
-        .btn-submit:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
-
-        .message {
-            margin-top: 18px;
-            padding: 12px 14px;
-            border-radius: 10px;
-            font-size: 13.5px;
-            display: none;
-        }
-        .message.show { display: block; }
-        .message.success { background: rgba(16,185,129,0.15); color: #A7F3D0; }
-        .message.error { background: rgba(244,63,94,0.15); color: #FECACA; }
-
-        .register-link {
+            padding: 38px 36px;
             text-align: center;
-            margin-top: 20px;
-            font-size: 13.5px;
-            color: var(--text-secondary);
         }
-        .register-link a { color: var(--indigo-light); text-decoration: none; font-weight: 600; }
-        .register-link a:hover { text-decoration: underline; }
 
-        @media (max-width: 420px) {
-            body { padding: 12px; }
-            .container { padding: 24px 18px; border-radius: 14px; }
-            h1 { font-size: 18px; }
-            input { padding: 10px 12px; font-size: 14px; }
-            button { padding: 11px 14px; font-size: 13.5px; }
+        .icon {
+            width: 56px;
+            height: 56px;
+            background: rgba(225, 29, 72, 0.08);
+            border: 1px solid rgba(225, 29, 72, 0.22);
+            color: var(--rose);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 18px;
         }
-        @media (max-width: 360px) {
-            .container { padding: 20px 14px; }
-            .subtitle { font-size: 12px; }
+
+        h1 {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            font-size: 20px;
+            font-weight: 800;
+            color: var(--mb-navy);
+            margin-bottom: 10px;
+        }
+
+        p {
+            color: var(--text-muted);
+            font-size: 14px;
+            line-height: 1.6;
+            margin-bottom: 24px;
+        }
+
+        .btn {
+            display: inline-block;
+            width: 100%;
+            padding: 12px;
+            background: var(--mb-navy);
+            color: #FFFFFF;
+            text-decoration: none;
+            border-radius: var(--radius-sm);
+            font-weight: 600;
+            font-size: 14px;
+            transition: background 0.15s ease;
+        }
+
+        .btn:hover {
+            background: var(--mb-navy-hover);
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <div class="invalid-icon">⚠️</div>
-            <h1>Lien d'activation invalide</h1>
-            <div class="subtitle">Ce lien n'est plus valide ou a déjà été utilisé. Saisissez votre email pour en recevoir un nouveau.</div>
+    <div class="card">
+        <div class="icon">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
         </div>
-
-        <form id="resendForm">
-            {% csrf_token %}
-            <div class="form-group">
-                <label for="email">Email <span class="required">*</span></label>
-                <input type="email" id="email" name="email" required placeholder="utilisateur@exemple.com" value="{{ email }}" autofocus>
-            </div>
-
-            <div id="message" class="message"></div>
-
-            <div class="btn-group">
-                <button type="submit" class="btn-submit" id="submitBtn">Renvoyer le lien</button>
-            </div>
-        </form>
-
-        <div class="register-link">
-            <a href="{% url 'login' %}">← Retour à la connexion</a>
-        </div>
+        <h1>Lien d'activation invalide ou expiré</h1>
+        <p>Ce lien d'activation n'est plus valide ou a déjà été utilisé. Vous pouvez demander un nouvel email d'activation depuis la page de connexion MerchandBlock.</p>
+        <a href="{% url 'login' %}" class="btn">Aller à la page de connexion</a>
     </div>
-
-    <script>
-        const form = document.getElementById('resendForm');
-        const messageDiv = document.getElementById('message');
-        const submitBtn = document.getElementById('submitBtn');
-
-        form.addEventListener('submit', async (e) => {
-            e.preventDefault();
-
-            submitBtn.disabled = true;
-            submitBtn.textContent = 'Envoi...';
-
-            const formData = new FormData(form);
-            const csrfToken = form.querySelector('[name=csrfmiddlewaretoken]').value;
-
-            try {
-                const response = await fetch('{% url "resend_activation_email" %}', {
-                    method: 'POST',
-                    body: formData,
-                    headers: { 'X-CSRFToken': csrfToken },
-                    credentials: 'same-origin',
-                });
-
-                const data = await response.json();
-
-                messageDiv.classList.remove('success', 'error');
-                messageDiv.textContent = data.message || data.error;
-                messageDiv.classList.add(data.success ? 'success' : 'error');
-                messageDiv.classList.add('show');
-
-                if (data.success) {
-                    form.querySelector('#email').disabled = true;
-                    submitBtn.textContent = 'Email envoyé';
-                } else {
-                    submitBtn.disabled = false;
-                    submitBtn.textContent = 'Renvoyer le lien';
-                }
-            } catch (error) {
-                messageDiv.classList.remove('success');
-                messageDiv.classList.add('error', 'show');
-                messageDiv.textContent = 'Erreur réseau. Veuillez réessayer.';
-                submitBtn.disabled = false;
-                submitBtn.textContent = 'Renvoyer le lien';
-            }
-        });
-    </script>
 </body>
 </html>

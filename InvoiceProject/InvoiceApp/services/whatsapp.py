@@ -95,8 +95,8 @@ def send_invoice_via_cloud_api(invoice, recipient_phone, custom_message=""):
 
     company = invoice.company
     sale = invoice.sale
-    client = sale.client
-    client_name = client.shop_name or client.name
+    client = sale.client if sale else None
+    client_name = (client.shop_name or client.name) if client else "Client"
 
     filename = f"Facture_{invoice.invoice_number}.pdf"
 
@@ -111,7 +111,7 @@ def send_invoice_via_cloud_api(invoice, recipient_phone, custom_message=""):
         caption_lines = [
             f"Bonjour {client_name},",
             f"Voici votre facture {invoice.invoice_number} emise par {company.company_name}.",
-            f"• Total : {sale.formatted_total_price}",
+            f"• Total : {sale.formatted_total_price if sale else invoice.formatted_amount_paid}",
         ]
         if invoice.status == 'paid':
             caption_lines.append("• Statut : Payee en totalite ✓")

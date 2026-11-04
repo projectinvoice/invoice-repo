@@ -1,419 +1,106 @@
-<!DOCTYPE html>
 {% load static %}
+<!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tableau de bord — {{ company_name }}</title>
-    <script>
-        // Applique le thème sauvegardé avant le rendu, pour éviter un flash visuel
-        (function() {
-            const saved = localStorage.getItem('theme');
-            if (saved === 'light') document.documentElement.setAttribute('data-theme', 'light');
-        })();
-    </script>
+    <title>Tableau de bord — {{ company_name|default:"MerchandBlock" }}</title>
+    <link rel="stylesheet" href="{% static 'InvoiceApp/css/merchandblock.css' %}">
+    <link rel="stylesheet" href="{% static 'InvoiceApp/css/responsive.css' %}">
+    <script src="{% static 'InvoiceApp/js/merchandblock.js' %}"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
-
-        :root {
-            --bg-base: #0F1629;
-            --bg-card: #1A2238;
-            --bg-card-hover: #1F2A44;
-            --border: rgba(99, 102, 241, 0.15);
-            --border-hover: rgba(99, 102, 241, 0.45);
-            --indigo: #6366F1;
-            --indigo-light: #818CF8;
-            --emerald: #10B981;
-            --amber: #F59E0B;
-            --rose: #F43F5E;
-            --sky: #38BDF8;
-            --text-primary: #E2E8F0;
-            --text-secondary: #94A3B8;
-            --text-muted: #64748B;
-            --radius: 16px;
-            --radius-sm: 10px;
-            --shadow: 0 4px 24px rgba(0,0,0,0.4);
-            --overlay-1: rgba(255,255,255,0.04);
-            --overlay-2: rgba(255,255,255,0.06);
-            --overlay-3: rgba(255,255,255,0.1);
-            --overlay-4: rgba(255,255,255,0.07);
-            --chart-grid: rgba(255,255,255,0.04);
-            --tooltip-bg: #0F1629;
+        :root, [data-theme="light"] {
+            --chart-grid: rgba(15, 23, 42, 0.06);
+            --tooltip-bg: #08244B;
+            --chart-primary: #08244B;
+            --chart-fill-top: rgba(8, 36, 75, 0.18);
+            --chart-fill-bottom: rgba(8, 36, 75, 0.01);
         }
 
-        [data-theme="light"] {
-            --bg-base: #F1F5F9;
-            --bg-card: #FFFFFF;
-            --bg-card-hover: #F8FAFC;
-            --border: rgba(99, 102, 241, 0.18);
-            --border-hover: rgba(99, 102, 241, 0.4);
-            --text-primary: #0F172A;
-            --text-secondary: #475569;
-            --text-muted: #94A3B8;
-            --shadow: 0 4px 24px rgba(15,23,42,0.08);
-            --overlay-1: rgba(15,23,42,0.04);
-            --overlay-2: rgba(15,23,42,0.05);
-            --overlay-3: rgba(15,23,42,0.08);
-            --overlay-4: rgba(15,23,42,0.07);
-            --chart-grid: rgba(15,23,42,0.07);
+        [data-theme="dark"] {
+            --chart-grid: rgba(255, 255, 255, 0.06);
             --tooltip-bg: #1E293B;
+            --chart-primary: #F26722;
+            --chart-fill-top: rgba(242, 103, 34, 0.25);
+            --chart-fill-bottom: rgba(242, 103, 34, 0.01);
         }
 
-        body { transition: background-color 0.25s ease, color 0.25s ease; }
-
-        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-
-        body {
-            font-family: 'Inter', sans-serif;
-            background: var(--bg-base);
-            color: var(--text-primary);
-            min-height: 100vh;
-            font-size: 14px;
-            line-height: 1.6;
-        }
-
-        /* ── SIDEBAR ── */
-        .sidebar {
-            position: fixed;
-            left: 0; top: 0; bottom: 0;
-            width: 240px;
-            background: var(--bg-card);
-            border-right: 1px solid var(--border);
-            display: flex;
-            flex-direction: column;
-            z-index: 100;
-            transition: transform 0.3s ease;
-        }
-
-        .sidebar-logo {
-            padding: 24px 20px 20px;
-            border-bottom: 1px solid var(--border);
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .logo-mark {
-            width: 36px; height: 36px;
-            background: linear-gradient(135deg, var(--indigo), #9333EA);
-            border-radius: 10px;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 18px; font-weight: 800; color: white;
-            flex-shrink: 0;
-        }
-
-        .logo-text {
-            font-size: 15px;
-            font-weight: 700;
-            color: var(--text-primary);
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .sidebar-nav {
-            flex: 1;
-            padding: 16px 12px;
-            overflow-y: auto;
-        }
-
-        .nav-section-label {
-            font-size: 10px;
-            font-weight: 600;
-            color: var(--text-muted);
-            text-transform: uppercase;
-            letter-spacing: 0.12em;
-            padding: 12px 8px 6px;
-        }
-
-        .nav-item {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 9px 12px;
-            border-radius: var(--radius-sm);
-            color: var(--text-secondary);
-            text-decoration: none;
-            font-weight: 500;
-            font-size: 13.5px;
-            transition: all 0.18s;
-            margin-bottom: 2px;
-        }
-
-        .nav-item:hover, .nav-item.active {
-            background: rgba(99, 102, 241, 0.12);
-            color: var(--indigo-light);
-        }
-
-        .nav-item.active { font-weight: 600; }
-
-        .nav-item .nav-icon { font-size: 16px; width: 20px; text-align: center; }
-
-        /* Grisé quand l'abonnement (essai + paiement) est expiré */
-        .locked-link {
-            pointer-events: none !important;
-            opacity: 0.4 !important;
-            filter: grayscale(40%);
-            cursor: not-allowed !important;
-        }
-
-        .subscription-banner {
-            display: flex; align-items: center; justify-content: space-between; gap: 16px;
-            flex-wrap: wrap;
-            padding: 14px 20px;
-            border-radius: var(--radius-sm);
-            margin-bottom: 22px;
-            font-size: 13.5px;
-        }
-        .subscription-banner.trial {
-            background: rgba(245, 158, 11, 0.12);
-            border: 1px solid rgba(245, 158, 11, 0.35);
-            color: #FDE68A;
-        }
-        .subscription-banner.expired {
-            background: rgba(244, 63, 94, 0.12);
-            border: 1px solid rgba(244, 63, 94, 0.4);
-            color: #FECACA;
-        }
-        .subscription-banner strong { font-weight: 700; }
-        .subscription-banner .btn {
-            flex-shrink: 0;
-        }
-
-        /* Petit pop-up discret, fermable, affiché dans les 3 derniers jours d'accès
-           (essai, code promo ou abonnement payant) */
-        .expiry-popup {
-            position: fixed; bottom: 24px; right: 24px; z-index: 500;
-            max-width: 320px;
-            background: var(--bg-card, #1A2238);
-            border: 1px solid rgba(245, 158, 11, 0.4);
-            border-radius: 14px;
-            padding: 16px 18px;
-            box-shadow: 0 12px 32px rgba(0,0,0,0.35);
-            animation: expiry-popup-in 0.3s ease-out;
-        }
-        @keyframes expiry-popup-in {
-            from { opacity: 0; transform: translateY(12px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        .expiry-popup-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; margin-bottom: 6px; }
-        .expiry-popup-title { font-size: 13.5px; font-weight: 700; }
-        .expiry-popup-close {
-            background: none; border: none; color: var(--text-secondary, #94A3B8);
-            font-size: 16px; line-height: 1; cursor: pointer; padding: 2px 4px; flex-shrink: 0;
-        }
-        .expiry-popup-close:hover { color: var(--text-primary, #E2E8F0); }
-        .expiry-popup p { font-size: 12.5px; color: var(--text-secondary, #94A3B8); margin-bottom: 10px; }
-        .expiry-popup a.btn { font-size: 12.5px; padding: 7px 14px; }
-        @media (max-width: 560px) {
-            .expiry-popup { left: 16px; right: 16px; bottom: 16px; max-width: none; }
-        }
-
-        .nav-badge {
-            margin-left: auto;
-            background: rgba(99, 102, 241, 0.2);
-            color: var(--indigo-light);
-            font-size: 11px;
-            font-weight: 600;
-            padding: 2px 7px;
-            border-radius: 20px;
-        }
-
-        .sidebar-footer {
-            padding: 16px 12px;
-            border-top: 1px solid var(--border);
-        }
-
-        .user-block {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 10px;
-            border-radius: var(--radius-sm);
-            background: var(--overlay-1);
-        }
-
-        .user-avatar {
-            width: 32px; height: 32px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, var(--emerald), #059669);
-            display: flex; align-items: center; justify-content: center;
-            font-size: 13px; font-weight: 700; color: white; flex-shrink: 0;
-        }
-
-        .user-name { font-weight: 600; font-size: 13px; }
-        .user-role { font-size: 11px; color: var(--text-muted); }
-
-        .logout-btn {
-            margin-top: 10px;
-            display: block;
-            text-align: center;
-            padding: 8px;
-            background: rgba(244, 63, 94, 0.1);
-            color: var(--rose);
-            border-radius: var(--radius-sm);
-            text-decoration: none;
-            font-size: 13px;
-            font-weight: 500;
-            transition: background 0.2s;
-        }
-        .logout-btn:hover { background: rgba(244, 63, 94, 0.2); }
-
-        /* ── MAIN LAYOUT ── */
-        .main {
-            margin-left: 240px;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .topbar {
-            background: var(--bg-card);
-            border-bottom: 1px solid var(--border);
-            padding: 14px 32px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            position: sticky;
-            top: 0;
-            z-index: 50;
-        }
-
-        .topbar-title { font-size: 17px; font-weight: 700; }
-        .topbar-sub { font-size: 12px; color: var(--text-muted); margin-top: 1px; }
-
-        .topbar-actions { display: flex; gap: 10px; align-items: center; }
-
-        .btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            padding: 8px 16px;
-            border-radius: var(--radius-sm);
-            font-size: 13px;
-            font-weight: 600;
-            cursor: pointer;
-            text-decoration: none;
-            border: none;
-            transition: all 0.2s;
-        }
-        .btn-primary {
-            background: var(--indigo);
-            color: white;
-        }
-        .btn-primary:hover { background: #5254CC; transform: translateY(-1px); }
-        .btn-ghost {
-            background: var(--overlay-2);
-            color: var(--text-secondary);
-            border: 1px solid var(--border);
-        }
-        .btn-ghost:hover { background: var(--overlay-3); color: var(--text-primary); }
-
-        .theme-toggle-btn {
-            width: 38px; height: 38px; padding: 0;
-            display: inline-flex; align-items: center; justify-content: center;
-            font-size: 16px; flex: none;
-        }
-
-        .content { padding: 28px 32px; flex: 1; }
-
-        /* ── KPI CARDS ── */
         .kpi-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            grid-template-columns: repeat(4, 1fr);
             gap: 16px;
-            margin-bottom: 28px;
+            margin-bottom: 24px;
         }
 
         .kpi-card {
             background: var(--bg-card);
             border: 1px solid var(--border);
             border-radius: var(--radius);
-            padding: 20px;
+            padding: 18px 20px;
             text-decoration: none;
             color: inherit;
-            display: block;
-            position: relative;
-            overflow: hidden;
-            transition: all 0.25s;
-        }
-
-        .kpi-card::before {
-            content: '';
-            position: absolute;
-            inset: 0;
-            opacity: 0;
-            background: linear-gradient(135deg, rgba(99,102,241,0.06), transparent);
-            transition: opacity 0.25s;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            box-shadow: var(--shadow);
+            transition: all 0.15s ease;
         }
 
         .kpi-card:hover {
-            border-color: var(--border-hover);
-            transform: translateY(-3px);
-            box-shadow: var(--shadow);
+            border-color: var(--mb-orange);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
         }
-        .kpi-card:hover::before { opacity: 1; }
 
-        .kpi-icon {
-            width: 38px; height: 38px;
-            border-radius: 10px;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 18px;
-            margin-bottom: 14px;
+        .kpi-card-body {
+            min-width: 0;
         }
 
         .kpi-label {
-            font-size: 11px;
+            font-size: 12px;
             font-weight: 600;
             color: var(--text-muted);
             text-transform: uppercase;
-            letter-spacing: 0.1em;
-            margin-bottom: 6px;
+            letter-spacing: 0.04em;
+            margin: 0;
         }
 
         .kpi-value {
-            font-size: 30px;
+            font-size: 24px;
             font-weight: 800;
             color: var(--text-primary);
-            font-variant-numeric: tabular-nums;
-            line-height: 1;
-            margin-bottom: 6px;
+            line-height: 1.2;
+            margin: 2px 0;
         }
 
-        .kpi-sub { font-size: 12px; color: var(--text-muted); }
-
-        .kpi-trend {
-            position: absolute;
-            top: 16px; right: 16px;
-            font-size: 11px;
-            font-weight: 600;
-            padding: 3px 8px;
-            border-radius: 20px;
+        .kpi-sub {
+            font-size: 12px;
+            color: var(--text-secondary);
         }
-        .trend-up { background: rgba(16,185,129,0.12); color: var(--emerald); }
-        .trend-down { background: rgba(244,63,94,0.12); color: var(--rose); }
 
-        /* ── CHARTS GRID ── */
         .charts-grid {
             display: grid;
-            grid-template-columns: 2fr 1fr;
-            gap: 16px;
-            margin-bottom: 28px;
+            grid-template-columns: 1.65fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
         }
 
-        .chart-card {
+        .chart-card, .agent-perf-card {
             background: var(--bg-card);
             border: 1px solid var(--border);
             border-radius: var(--radius);
-            padding: 24px;
+            padding: 22px 24px;
+            box-shadow: var(--shadow);
         }
 
         .chart-header {
             display: flex;
-            justify-content: space-between;
             align-items: flex-start;
-            margin-bottom: 20px;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 18px;
+            flex-wrap: wrap;
         }
 
         .chart-title {
@@ -428,17 +115,6 @@
             margin-top: 2px;
         }
 
-        .chart-period-select {
-            background: var(--overlay-2);
-            border: 1px solid var(--border);
-            color: var(--text-secondary);
-            font-size: 12px;
-            padding: 5px 10px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-family: 'Inter', sans-serif;
-        }
-
         .chart-period-range {
             display: flex;
             align-items: center;
@@ -447,14 +123,18 @@
         }
 
         .chart-date-input {
-            background: var(--overlay-2);
+            background: var(--bg-input);
             border: 1px solid var(--border);
-            color: var(--text-secondary);
+            color: var(--text-primary);
+            padding: 5px 9px;
+            border-radius: 6px;
             font-size: 12px;
-            padding: 5px 8px;
-            border-radius: 8px;
-            font-family: 'Inter', sans-serif;
-            color-scheme: light dark;
+            font-family: inherit;
+            outline: none;
+        }
+
+        .chart-date-input:focus {
+            border-color: var(--mb-navy);
         }
 
         .chart-period-sep {
@@ -462,374 +142,197 @@
             font-size: 12px;
         }
 
-        .chart-canvas-wrap { position: relative; }
-
-        /* ── AGENTS PERFORMANCE ── */
         .agents-section {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 16px;
-            margin-bottom: 28px;
+            gap: 20px;
         }
 
-        .agent-perf-card {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
-            padding: 24px;
+        .agent-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
         }
-
-        .agent-list { margin-top: 4px; }
 
         .agent-row {
             display: flex;
             align-items: center;
             gap: 12px;
-            padding: 10px 0;
-            border-bottom: 1px solid var(--overlay-1);
+            padding: 8px 0;
+            border-bottom: 1px solid var(--border);
         }
-        .agent-row:last-child { border-bottom: none; }
+
+        .agent-row:last-child {
+            border-bottom: none;
+        }
 
         .agent-avatar {
-            width: 34px; height: 34px; border-radius: 50%;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 13px; font-weight: 700; color: white; flex-shrink: 0;
-        }
-
-        .agent-info { flex: 1; min-width: 0; }
-        .agent-name { font-weight: 600; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .agent-role { font-size: 11px; color: var(--text-muted); }
-
-        .agent-bar-wrap { width: 100px; flex-shrink: 0; }
-        .agent-bar-bg {
-            height: 6px; background: var(--overlay-4);
-            border-radius: 3px; overflow: hidden;
-        }
-        .agent-bar-fill {
-            height: 100%;
-            border-radius: 3px;
-            width: 0;
-            transition: width 1s cubic-bezier(0.22, 1, 0.36, 1);
-        }
-
-        .agent-value {
-            font-size: 13px;
-            font-weight: 700;
-            font-variant-numeric: tabular-nums;
-            color: var(--text-primary);
-            width: 52px;
-            text-align: right;
-            flex-shrink: 0;
-        }
-
-        /* ── QUICK ACTIONS ── */
-        .quick-row {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-            margin-bottom: 28px;
-        }
-
-        .btn-danger {
-            background: rgba(244,63,94,0.1);
-            color: var(--rose);
-            border: 1px solid rgba(244,63,94,0.2);
-        }
-        .btn-danger:hover { background: rgba(244,63,94,0.2); }
-
-        /* ── MOBILE SIDEBAR & TOGGLE ── */
-        .sidebar-toggle-btn {
-            display: none;
-            flex-direction: column;
-            justify-content: center;
-            gap: 4px;
-            width: 38px;
-            height: 38px;
-            padding: 8px;
-            background: var(--overlay-2);
-            border: 1px solid var(--border);
-            border-radius: var(--radius-sm);
-            cursor: pointer;
-            flex-shrink: 0;
-        }
-        .sidebar-toggle-btn span {
-            display: block;
-            width: 100%;
-            height: 2px;
-            background: var(--text-primary);
-            border-radius: 2px;
-            transition: transform 0.2s, opacity 0.2s;
-        }
-        .sidebar-overlay {
-            position: fixed;
-            inset: 0;
-            background: rgba(0, 0, 0, 0.65);
-            backdrop-filter: blur(2px);
-            z-index: 998;
-            opacity: 0;
-            visibility: hidden;
-            transition: opacity 0.25s ease, visibility 0.25s ease;
-        }
-        .sidebar-overlay.active {
-            opacity: 1;
-            visibility: visible;
-        }
-        .sidebar-close-btn {
-            display: none;
-            background: transparent;
-            border: none;
-            color: var(--text-muted);
-            font-size: 24px;
-            cursor: pointer;
-            padding: 4px 8px;
-            line-height: 1;
-            margin-left: auto;
-        }
-        .sidebar-close-btn:hover { color: var(--text-primary); }
-
-        /* ── RESPONSIVE ── */
-        @media (max-width: 1100px) {
-            .charts-grid { grid-template-columns: 1fr; }
-            .agents-section { grid-template-columns: 1fr; }
-        }
-
-        @media (max-width: 900px) {
-            .sidebar {
-                transform: translateX(-100%);
-                width: 260px;
-                max-width: 82vw;
-                z-index: 999;
-                box-shadow: 0 0 32px rgba(0,0,0,0.5);
-            }
-            .sidebar.active {
-                transform: translateX(0);
-            }
-            .sidebar-toggle-btn {
-                display: flex;
-            }
-            .sidebar-close-btn {
-                display: block;
-            }
-            .main {
-                margin-left: 0;
-            }
-            .topbar {
-                padding: 12px 16px;
-            }
-            .content {
-                padding: 18px 14px;
-            }
-            .kpi-grid {
-                grid-template-columns: repeat(2, 1fr);
-                gap: 12px;
-            }
-            .chart-card, .agent-perf-card {
-                padding: 18px 16px;
-            }
-        }
-
-        @media (max-width: 600px) {
-            .chart-header {
-                flex-direction: column;
-                align-items: stretch;
-                gap: 12px;
-            }
-            .chart-period-range {
-                width: 100%;
-                display: flex;
-                align-items: center;
-                gap: 6px;
-            }
-            .chart-date-input {
-                flex: 1;
-                min-width: 0;
-            }
-            .topbar-title {
-                font-size: 15px;
-            }
-            .topbar-sub {
-                font-size: 11px;
-            }
-            .kpi-card {
-                padding: 14px 12px;
-            }
-            .kpi-value {
-                font-size: 22px;
-            }
-            .kpi-label {
-                font-size: 10px;
-            }
-            .agent-bar-wrap {
-                width: 70px;
-            }
-            .agent-value {
-                width: 44px;
-                font-size: 12px;
-            }
-        }
-
-        @media (max-width: 360px) {
-            .kpi-grid {
-                grid-template-columns: 1fr;
-            }
-            .chart-period-range {
-                flex-wrap: wrap;
-            }
-            .chart-period-range button {
-                width: 100%;
-            }
-        }
-
-        /* ── LOADER ── */
-        .chart-loader {
+            width: 34px;
+            height: 34px;
+            border-radius: 8px;
             display: flex;
             align-items: center;
             justify-content: center;
-            height: 200px;
-            color: var(--text-muted);
-            font-size: 13px;
+            font-size: 12px;
+            font-weight: 700;
+            flex-shrink: 0;
         }
 
-        /* ── TOOLTIP custom ── */
-        .status-dot {
-            width: 8px; height: 8px; border-radius: 50%; display: inline-block;
+        .agent-info {
+            min-width: 120px;
+            flex: 1;
+        }
+
+        .agent-name {
+            font-size: 13.5px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .agent-role {
+            font-size: 11.5px;
+            color: var(--text-muted);
+        }
+
+        .agent-bar-wrap {
+            flex: 1;
+            max-width: 140px;
+        }
+
+        .agent-bar-bg {
+            height: 6px;
+            background: var(--bg-subtle);
+            border-radius: 99px;
+            overflow: hidden;
+        }
+
+        .agent-bar-fill {
+            height: 100%;
+            width: 0;
+            border-radius: 99px;
+            transition: width 0.5s ease;
+        }
+
+        .agent-value {
+            font-size: 13.5px;
+            font-weight: 700;
+            min-width: 36px;
+            text-align: right;
+        }
+
+        .subscription-banner {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            padding: 14px 20px;
+            border-radius: var(--radius);
+            margin-bottom: 22px;
+            font-size: 13.5px;
+            font-weight: 500;
+            flex-wrap: wrap;
+        }
+
+        .subscription-banner.expired {
+            background: rgba(225, 29, 72, 0.08);
+            border: 1px solid rgba(225, 29, 72, 0.25);
+            color: var(--rose);
+        }
+
+        .expiry-popup {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            z-index: 300;
+            width: 340px;
+            max-width: calc(100vw - 32px);
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-left: 4px solid var(--mb-orange);
+            border-radius: var(--radius);
+            padding: 18px 20px;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .expiry-popup-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+
+        .expiry-popup-title {
+            font-weight: 700;
+            font-size: 14px;
+            color: var(--text-primary);
+        }
+
+        .expiry-popup-close {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .expiry-popup p {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-bottom: 12px;
+        }
+
+        .locked-link {
+            opacity: 0.55;
+            pointer-events: none;
+        }
+
+        @media (max-width: 1100px) {
+            .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+            .charts-grid, .agents-section { grid-template-columns: 1fr; }
         }
     </style>
 </head>
 <body>
 
-<!-- ══════════════════════════════════ SIDEBAR ══════════════════════════════════ -->
-<aside class="sidebar">
-    <div class="sidebar-logo">
-        {% if company_logo_url %}
-        <img src="{{ company_logo_url }}" alt="Logo" style="width:36px;height:36px;object-fit:contain;border-radius:10px;background:#fff;padding:4px;">
-        {% else %}
-        <div class="logo-mark">{{ company_name|first|upper }}</div>
-        {% endif %}
-        <span class="logo-text">{{ company_name }}</span>
-        <button type="button" class="sidebar-close-btn" id="sidebarCloseBtn" aria-label="Fermer le menu">&times;</button>
-    </div>
+{% include 'includes/sidebar.html' with active_page='dashboard' %}
 
-    <nav class="sidebar-nav">
-        <div class="nav-section-label">Général</div>
-        <a href="#" class="nav-item active">
-            <span class="nav-icon">📊</span> Tableau de bord
-        </a>
-
-        <div class="nav-section-label">Gestion</div>
-        <a href="{% url 'list_agents' %}" class="nav-item {% if subscription_blocked %}locked-link{% endif %}">
-            <span class="nav-icon">👥</span> Agents
-            <span class="nav-badge">{{ agents_count }}</span>
-        </a>
-        <a href="{% url 'manage_agent_roles' %}" class="nav-item {% if subscription_blocked %}locked-link{% endif %}">
-            <span class="nav-icon">🎭</span> Rôles
-        </a>
-        <a href="{% url 'list_engines' %}" class="nav-item {% if subscription_blocked %}locked-link{% endif %}">
-            <span class="nav-icon">⚙️</span> Engins
-        </a>
-        <a href="{% url 'list_stock_loads' %}" class="nav-item {% if subscription_blocked %}locked-link{% endif %}">
-            <span class="nav-icon">🚚</span> Stock Vendeurs
-        </a>
-        <a href="{% url 'list_products' %}" class="nav-item {% if subscription_blocked %}locked-link{% endif %}">
-            <span class="nav-icon">📦</span> Produits
-            <span class="nav-badge">{{ products_count }}</span>
-        </a>
-
-        <div class="nav-section-label">Commerce</div>
-        <a href="{% url 'list_clients' %}" class="nav-item {% if subscription_blocked %}locked-link{% endif %}">
-            <span class="nav-icon">🤝</span> Clients
-        </a>
-        <a href="{% url 'list_suppliers' %}" class="nav-item {% if subscription_blocked %}locked-link{% endif %}">
-            <span class="nav-icon">🏭</span> Fournisseurs
-        </a>
-        <a href="{% url 'list_sales' %}" class="nav-item {% if subscription_blocked %}locked-link{% endif %}">
-            <span class="nav-icon">💹</span> Ventes
-        </a>
-        <a href="{% url 'list_supplies' %}" class="nav-item {% if subscription_blocked %}locked-link{% endif %}">
-            <span class="nav-icon">🛒</span> Appros
-        </a>
-        <a href="{% url 'list_invoices' %}" class="nav-item {% if subscription_blocked %}locked-link{% endif %}">
-            <span class="nav-icon">🧾</span> Factures
-        </a>
-<div class="nav-section-label">Entreprise</div>
-        <a href="{% url 'company_settings' %}" class="nav-item {% if subscription_blocked %}locked-link{% endif %}">
-            <span class="nav-icon">⚙️</span> Paramètres
-        </a>
-        <a href="{% url 'subscription' %}" class="nav-item">
-            <span class="nav-icon">💳</span> Abonnement
-        </a>
-        <a href="{% url 'pricing' %}" class="nav-item">
-            <span class="nav-icon">🏷️</span> Tarifs & Plans
-        </a>
-        {% if request.user.is_staff %}
-        <a href="{% url 'promo_codes_admin' %}" class="nav-item">
-            <span class="nav-icon">🎟️</span> Codes promo
-        </a>
-        {% endif %}
-    </nav>
-
-    <div class="sidebar-footer">
-        <div class="user-block">
-            <div class="user-avatar">A</div>
-            <div>
-                <div class="user-name">Admin</div>
-                <div class="user-role">Administrateur</div>
-            </div>
-        </div>
-        <a href="{% url 'logout' %}" class="logout-btn">🚪 Se déconnecter</a>
-    </div>
-</aside>
-<div class="sidebar-overlay" id="sidebarOverlay"></div>
-
-<!-- ══════════════════════════════════ MAIN ══════════════════════════════════ -->
 <div class="main">
-
-    <!-- TOPBAR -->
     <header class="topbar">
-        <div style="display:flex; align-items:center; gap:12px;">
-            <button type="button" class="sidebar-toggle-btn" id="sidebarToggleBtn" aria-label="Menu de navigation">
-                <span></span><span></span><span></span>
-            </button>
-            <div>
-                <div class="topbar-title">Tableau de bord</div>
-                <div class="topbar-sub">Vue d'ensemble — <span id="current-date"></span></div>
-            </div>
+        <div>
+            <div class="topbar-title">Tableau de bord</div>
+            <div class="topbar-sub">Vue d'ensemble opérationnelle — <span id="current-date"></span></div>
         </div>
         <div class="topbar-actions">
-            <button type="button" class="btn btn-ghost theme-toggle-btn" id="themeToggleBtn" aria-label="Changer de thème">
-                <span id="themeToggleIcon">☀️</span>
-            </button>
+            <button type="button" class="theme-toggle-btn js-theme-toggle" id="themeToggleBtn" onclick="window.toggleTheme()" aria-label="Changer de thème"></button>
         </div>
     </header>
 
-    <!-- CONTENT -->
     <main class="content">
-
         {% if subscription_status == 'expired' %}
         <div class="subscription-banner expired">
-            <div>🔒 Votre période d'accès gratuit est terminée. Abonnez-vous pour retrouver l'accès complet à toutes les fonctionnalités.</div>
-            <a href="{% url 'subscription' %}" class="btn btn-primary">S'abonner maintenant</a>
+            <div>Votre période d'accès est arrivée à échéance. Renouvelez votre abonnement pour débloquer l'ensemble des modules.</div>
+            <a href="{% url 'subscription' %}" class="btn btn-accent">Gérer mon abonnement</a>
         </div>
         {% elif subscription_access_days_remaining is not None and subscription_access_days_remaining <= 3 %}
         <div class="expiry-popup" id="expiryPopup">
             <div class="expiry-popup-header">
                 <div class="expiry-popup-title">
-                    {% if subscription_status == 'trial' %}⏳ Fin d'essai proche
-                    {% elif subscription_status == 'promo' %}🎟️ Fin d'accès promo proche
-                    {% else %}💳 Renouvellement proche{% endif %}
+                    {% if subscription_status == 'trial' %}Fin de période d'essai proche
+                    {% elif subscription_status == 'promo' %}Fin d'accès promotionnel proche
+                    {% else %}Échéance d'abonnement proche{% endif %}
                 </div>
-                <button type="button" class="expiry-popup-close" onclick="dismissExpiryPopup()" aria-label="Fermer">✕</button>
+                <button type="button" class="expiry-popup-close" onclick="dismissExpiryPopup()" aria-label="Fermer">&times;</button>
             </div>
             <p>
                 {% if subscription_status == 'trial' %}
                     Votre essai gratuit se termine dans <strong>{{ subscription_access_days_remaining }} jour{{ subscription_access_days_remaining|pluralize }}</strong>.
                 {% elif subscription_status == 'promo' %}
-                    Votre accès offert par code promo se termine dans <strong>{{ subscription_access_days_remaining }} jour{{ subscription_access_days_remaining|pluralize }}</strong>.
+                    Votre accès promotionnel se termine dans <strong>{{ subscription_access_days_remaining }} jour{{ subscription_access_days_remaining|pluralize }}</strong>.
                 {% else %}
-                    Votre abonnement se termine dans <strong>{{ subscription_access_days_remaining }} jour{{ subscription_access_days_remaining|pluralize }}</strong>.
+                    Votre abonnement arrive à échéance dans <strong>{{ subscription_access_days_remaining }} jour{{ subscription_access_days_remaining|pluralize }}</strong>.
                 {% endif %}
             </p>
-            <a href="{% url 'subscription' %}" class="btn btn-primary">Gérer mon abonnement</a>
+            <a href="{% url 'subscription' %}" class="btn btn-primary btn-sm">Gérer mon abonnement</a>
         </div>
         <script>
             (function() {
@@ -849,69 +352,107 @@
         <!-- KPI CARDS -->
         <div class="kpi-grid">
             <a href="{% url 'list_agents' %}" class="kpi-card {% if subscription_blocked %}locked-link{% endif %}">
-                <div class="kpi-icon" style="background:rgba(99,102,241,0.12);">👥</div>
-                <div class="kpi-label">Agents</div>
-                <div class="kpi-value">{{ agents_count }}</div>
-                <div class="kpi-sub">Agents actifs</div>
+                <div class="kpi-icon">
+                    <svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                </div>
+                <div class="kpi-card-body">
+                    <div class="kpi-label">Agents</div>
+                    <div class="kpi-value">{{ agents_count }}</div>
+                    <div class="kpi-sub">Équipe commerciale</div>
+                </div>
             </a>
+
             <a href="{% url 'list_products' %}" class="kpi-card {% if subscription_blocked %}locked-link{% endif %}">
-                <div class="kpi-icon" style="background:rgba(16,185,129,0.12);">📦</div>
-                <div class="kpi-label">Produits</div>
-                <div class="kpi-value">{{ products_count }}</div>
-                <div class="kpi-sub">En stock</div>
+                <div class="kpi-icon" style="background: rgba(5, 150, 105, 0.1); color: var(--emerald);">
+                    <svg viewBox="0 0 24 24"><path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>
+                </div>
+                <div class="kpi-card-body">
+                    <div class="kpi-label">Produits</div>
+                    <div class="kpi-value">{{ products_count }}</div>
+                    <div class="kpi-sub">Références catalogue</div>
+                </div>
             </a>
+
             <a href="{% url 'list_clients' %}" class="kpi-card {% if subscription_blocked %}locked-link{% endif %}">
-                <div class="kpi-icon" style="background:rgba(56,189,248,0.12);">🤝</div>
-                <div class="kpi-label">Clients</div>
-                <div class="kpi-value">{{ clients_count }}</div>
-                <div class="kpi-sub">Enregistrés</div>
+                <div class="kpi-icon" style="background: rgba(2, 132, 199, 0.1); color: var(--sky);">
+                    <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                </div>
+                <div class="kpi-card-body">
+                    <div class="kpi-label">Clients</div>
+                    <div class="kpi-value">{{ clients_count }}</div>
+                    <div class="kpi-sub">Portefeuille actif</div>
+                </div>
             </a>
+
             <a href="{% url 'list_sales' %}" class="kpi-card {% if subscription_blocked %}locked-link{% endif %}">
-                <div class="kpi-icon" style="background:rgba(245,158,11,0.12);">💹</div>
-                <div class="kpi-label">Ventes</div>
-                <div class="kpi-value">{{ sales_count }}</div>
-                <div class="kpi-sub">Transactions</div>
+                <div class="kpi-icon" style="background: rgba(242, 103, 34, 0.12); color: var(--mb-orange);">
+                    <svg viewBox="0 0 24 24"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+                </div>
+                <div class="kpi-card-body">
+                    <div class="kpi-label">Ventes</div>
+                    <div class="kpi-value">{{ sales_count }}</div>
+                    <div class="kpi-sub">Transactions enregistrées</div>
+                </div>
             </a>
+
             <a href="{% url 'list_invoices' %}" class="kpi-card {% if subscription_blocked %}locked-link{% endif %}">
-                <div class="kpi-icon" style="background:rgba(244,63,94,0.12);">🧾</div>
-                <div class="kpi-label">Factures</div>
-                <div class="kpi-value">{{ invoices_count }}</div>
-                <div class="kpi-sub">Émises</div>
+                <div class="kpi-icon">
+                    <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                </div>
+                <div class="kpi-card-body">
+                    <div class="kpi-label">Factures</div>
+                    <div class="kpi-value">{{ invoices_count }}</div>
+                    <div class="kpi-sub">Factures émises</div>
+                </div>
             </a>
+
             <a href="{% url 'list_suppliers' %}" class="kpi-card {% if subscription_blocked %}locked-link{% endif %}">
-                <div class="kpi-icon" style="background:rgba(168,85,247,0.12);">🏭</div>
-                <div class="kpi-label">Fournisseurs</div>
-                <div class="kpi-value">{{ suppliers_count }}</div>
-                <div class="kpi-sub">Partenaires</div>
+                <div class="kpi-icon" style="background: rgba(217, 119, 6, 0.1); color: var(--amber);">
+                    <svg viewBox="0 0 24 24"><path d="M3 21h18"/><path d="M5 21V7l8-4v18"/><path d="M19 21V11l-6-4"/><path d="M9 9v.01"/><path d="M9 12v.01"/><path d="M9 15v.01"/></svg>
+                </div>
+                <div class="kpi-card-body">
+                    <div class="kpi-label">Fournisseurs</div>
+                    <div class="kpi-value">{{ suppliers_count }}</div>
+                    <div class="kpi-sub">Partenaires d'achat</div>
+                </div>
             </a>
+
             <a href="{% url 'list_supplies' %}" class="kpi-card {% if subscription_blocked %}locked-link{% endif %}">
-                <div class="kpi-icon" style="background:rgba(20,184,166,0.12);">🛒</div>
-                <div class="kpi-label">Appros</div>
-                <div class="kpi-value">{{ supplies_count }}</div>
-                <div class="kpi-sub">Achats stock</div>
+                <div class="kpi-icon" style="background: rgba(5, 150, 105, 0.1); color: var(--emerald);">
+                    <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                </div>
+                <div class="kpi-card-body">
+                    <div class="kpi-label">Approvisionnements</div>
+                    <div class="kpi-value">{{ supplies_count }}</div>
+                    <div class="kpi-sub">Réceptions de stock</div>
+                </div>
             </a>
+
             <a href="{% url 'list_engines' %}" class="kpi-card {% if subscription_blocked %}locked-link{% endif %}">
-                <div class="kpi-icon" style="background:rgba(251,191,36,0.12);">⚙️</div>
-                <div class="kpi-label">Engins</div>
-                <div class="kpi-value">{{ engines_count }}</div>
-                <div class="kpi-sub">Équipements</div>
+                <div class="kpi-icon" style="background: rgba(2, 132, 199, 0.1); color: var(--sky);">
+                    <svg viewBox="0 0 24 24"><rect x="1" y="3" width="15" height="13" rx="2"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+                </div>
+                <div class="kpi-card-body">
+                    <div class="kpi-label">Engins</div>
+                    <div class="kpi-value">{{ engines_count }}</div>
+                    <div class="kpi-sub">Véhicules de tournée</div>
+                </div>
             </a>
         </div>
 
-        <!-- CHARTS ROW 1 -->
+        <!-- CHARTS ROW -->
         <div class="charts-grid">
-            <!-- CA PAR PÉRIODE -->
             <div class="chart-card">
                 <div class="chart-header">
                     <div>
                         <div class="chart-title">Chiffre d'affaires par période</div>
-                        <div class="chart-subtitle">Choisissez une période précise</div>
+                        <div class="chart-subtitle">Évolution des ventes facturées ({{ currency_symbol }})</div>
                     </div>
                     <div class="chart-period-range">
                         <input type="date" class="chart-date-input" id="ca-start" value="{{ ca_period_start }}">
-                        <span class="chart-period-sep">→</span>
+                        <span class="chart-period-sep">&rarr;</span>
                         <input type="date" class="chart-date-input" id="ca-end" value="{{ ca_period_end }}">
-                        <button type="button" class="btn btn-primary btn-sm" id="ca-apply-btn" onclick="updateCAChart()">Appliquer</button>
+                        <button type="button" class="btn btn-primary btn-sm" id="ca-apply-btn" onclick="updateCAChart()">Filtrer</button>
                     </div>
                 </div>
                 <div class="chart-canvas-wrap">
@@ -919,12 +460,11 @@
                 </div>
             </div>
 
-            <!-- RÉPARTITION VENTES -->
             <div class="chart-card">
                 <div class="chart-header">
                     <div>
                         <div class="chart-title">Répartition des ventes</div>
-                        <div class="chart-subtitle">Par produit</div>
+                        <div class="chart-subtitle">Part par produit</div>
                     </div>
                 </div>
                 <div class="chart-canvas-wrap">
@@ -933,79 +473,67 @@
             </div>
         </div>
 
-        <!-- AGENTS PERFORMANCE -->
+        <!-- AGENTS PERFORMANCE & TOP PRODUCTS -->
         <div class="agents-section">
-            <!-- BARRES PERFORMANCE -->
             <div class="agent-perf-card">
                 <div class="chart-header">
                     <div>
-                        <div class="chart-title">Performance des agents</div>
-                        <div class="chart-subtitle">Ventes réalisées ce mois</div>
+                        <div class="chart-title">Activité commerciale des agents</div>
+                        <div class="chart-subtitle">Nombre de ventes réalisées ce mois</div>
                     </div>
                 </div>
                 <canvas id="agentsBarChart" height="240"></canvas>
             </div>
 
-            <!-- LISTE TOP PRODUITS VENDUS -->
             <div class="agent-perf-card">
                 <div class="chart-header">
                     <div>
-                        <div class="chart-title">Top produits vendus</div>
-                        <div class="chart-subtitle">Classement par quantité vendue</div>
+                        <div class="chart-title">Produits les plus vendus</div>
+                        <div class="chart-subtitle">Classement par volume écoulé</div>
                     </div>
                 </div>
-                <div class="agent-list" id="product-list-render">
-                    <!-- Rempli par JS depuis Django context -->
-                </div>
+                <div class="agent-list" id="product-list-render"></div>
             </div>
         </div>
-
     </main>
 </div>
 
-<!-- ══════════════════════════════════ SCRIPTS ══════════════════════════════════ -->
+<script src="{% static 'InvoiceApp/js/responsive.js' %}"></script>
 <script>
-// ─────────────────────────────────────────────────────────────────────────────
-// DONNÉES DEPUIS DJANGO — calculées dans InvoiceApp/views.py (fonction dashboard)
-// à partir des ventes réelles de l'entreprise connectée.
-// ─────────────────────────────────────────────────────────────────────────────
-
-// Injection Django (fallback sur données démo si vide)
-const CA_LABELS  = {{ ca_period_labels|default:'["01/08","02/08","03/08"]'|safe }};
-const CA_DATA    = {{ ca_period_data|default:'[420000,610000,530000]'|safe }};
+const CA_LABELS  = {{ ca_period_labels|default:'[]'|safe }};
+const CA_DATA    = {{ ca_period_data|default:'[]'|safe }};
 const CA_START   = "{{ ca_period_start|escapejs }}";
 const CA_END     = "{{ ca_period_end|escapejs }}";
-const CAT_LABELS = {{ sales_categories|default:'["Produit A","Produit B","Produit C","Autres"]'|safe }};
-const CAT_DATA   = {{ sales_cat_values|default:'[38,27,22,13]'|safe }};
-const AG_NAMES   = {{ agents_names|default:'["Alice M.","Bob K.","Clara D.","David P.","Emma S."]'|safe }};
-const AG_SALES   = {{ agents_sales|default:'[52,41,38,29,24]'|safe }};
-const AG_ROLES   = {{ agents_roles|default:'["Commercial","Technicien","Commercial","Livreur","Commercial"]'|safe }};
-const PROD_NAMES = {{ top_products_names|default:'["Produit A","Produit B","Produit C","Produit D","Produit E"]'|safe }};
-const PROD_QTY   = {{ top_products_qty|default:'[120,98,87,64,51]'|safe }};
-const PROD_CA    = {{ top_products_ca|default:'[1200000,980000,870000,640000,510000]'|safe }};
-const CURRENCY_SYMBOL = "{{ currency_symbol|default:'EUR'|escapejs }}";
+const CAT_LABELS = {{ sales_categories|default:'[]'|safe }};
+const CAT_DATA   = {{ sales_cat_values|default:'[]'|safe }};
+const AG_NAMES   = {{ agents_names|default:'[]'|safe }};
+const AG_SALES   = {{ agents_sales|default:'[]'|safe }};
+const AG_ROLES   = {{ agents_roles|default:'[]'|safe }};
+const PROD_NAMES = {{ top_products_names|default:'[]'|safe }};
+const PROD_QTY   = {{ top_products_qty|default:'[]'|safe }};
+const PROD_CA    = {{ top_products_ca|default:'[]'|safe }};
+const CURRENCY_SYMBOL = "{{ currency_symbol|default:'FCFA'|escapejs }}";
 
-// ─── Palette ───
-const COLORS = ['#6366F1','#10B981','#F59E0B','#38BDF8','#F43F5E','#A855F7','#14B8A6'];
+// MerchandBlock Professional B2B Palette
+const COLORS = ['#08244B', '#F26722', '#059669', '#0284C7', '#D97706', '#475569', '#0D9488'];
 
-// ─── Lecture des variables CSS (pour adapter Chart.js au thème actif) ───
 function cssVar(name) {
     return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 }
 
-// ─── Date courante ───
-document.getElementById('current-date').textContent = new Date().toLocaleDateString('fr-FR', {weekday:'long', day:'numeric', month:'long', year:'numeric'});
+document.getElementById('current-date').textContent = new Date().toLocaleDateString('fr-FR', {
+    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
+});
 
-// ─── Defaults Chart.js ───
 Chart.defaults.color = cssVar('--text-secondary');
 Chart.defaults.font.family = 'Inter, sans-serif';
 Chart.defaults.font.size = 12;
 
-// ════════════ GRAPHIQUE CA MENSUEL ════════════
+// 1. CA LINE CHART
 const caCtx = document.getElementById('caChart').getContext('2d');
-const caGrad = caCtx.createLinearGradient(0, 0, 0, 300);
-caGrad.addColorStop(0, 'rgba(99,102,241,0.35)');
-caGrad.addColorStop(1, 'rgba(99,102,241,0.02)');
+const caGrad = caCtx.createLinearGradient(0, 0, 0, 280);
+caGrad.addColorStop(0, cssVar('--chart-fill-top') || 'rgba(8,36,75,0.18)');
+caGrad.addColorStop(1, cssVar('--chart-fill-bottom') || 'rgba(8,36,75,0.01)');
 
 const caChart = new Chart(caCtx, {
     type: 'line',
@@ -1014,13 +542,13 @@ const caChart = new Chart(caCtx, {
         datasets: [{
             label: 'CA (' + CURRENCY_SYMBOL + ')',
             data: CA_DATA,
-            borderColor: '#6366F1',
+            borderColor: cssVar('--chart-primary') || '#08244B',
             backgroundColor: caGrad,
             fill: true,
-            tension: 0.42,
+            tension: 0.35,
             borderWidth: 2.5,
             pointRadius: 4,
-            pointBackgroundColor: '#6366F1',
+            pointBackgroundColor: '#F26722',
             pointBorderColor: cssVar('--bg-card'),
             pointBorderWidth: 2,
             pointHoverRadius: 6,
@@ -1033,8 +561,6 @@ const caChart = new Chart(caCtx, {
             legend: { display: false },
             tooltip: {
                 backgroundColor: cssVar('--tooltip-bg'),
-                borderColor: 'rgba(99,102,241,0.4)',
-                borderWidth: 1,
                 padding: 12,
                 callbacks: {
                     label: ctx => ' ' + ctx.parsed.y.toLocaleString('fr-FR') + ' ' + CURRENCY_SYMBOL
@@ -1046,21 +572,21 @@ const caChart = new Chart(caCtx, {
             y: {
                 grid: { color: cssVar('--chart-grid') },
                 border: { display: false },
-                ticks: { callback: v => (v/1000) + 'k' }
+                ticks: { callback: v => v >= 1000 ? (v / 1000) + 'k' : v }
             }
         }
     }
 });
 
-// ════════════ DONUT RÉPARTITION ════════════
+// 2. DONUT CHART
 const donutCtx = document.getElementById('donutChart').getContext('2d');
 const donutChart = new Chart(donutCtx, {
     type: 'doughnut',
     data: {
-        labels: CAT_LABELS,
+        labels: CAT_LABELS.length ? CAT_LABELS : ['Aucune vente'],
         datasets: [{
-            data: CAT_DATA,
-            backgroundColor: COLORS,
+            data: CAT_DATA.length ? CAT_DATA : [1],
+            backgroundColor: CAT_DATA.length ? COLORS : ['#E2E8F0'],
             borderColor: cssVar('--bg-card'),
             borderWidth: 3,
             hoverOffset: 6,
@@ -1068,18 +594,17 @@ const donutChart = new Chart(donutCtx, {
     },
     options: {
         responsive: true,
-        cutout: '68%',
+        cutout: '66%',
         plugins: {
             legend: {
                 position: 'bottom',
-                labels: { padding: 16, usePointStyle: true, pointStyleWidth: 8 }
+                labels: { padding: 14, usePointStyle: true, pointStyleWidth: 8 }
             },
             tooltip: {
                 backgroundColor: cssVar('--tooltip-bg'),
-                borderColor: 'rgba(99,102,241,0.4)',
-                borderWidth: 1,
                 callbacks: {
                     label: ctx => {
+                        if (!CAT_DATA.length) return ' Aucune donnée';
                         const total = ctx.dataset.data.reduce((a, b) => a + b, 0);
                         const pct = total ? Math.round((ctx.parsed / total) * 100) : 0;
                         return ' ' + ctx.label + ' : ' + pct + '%';
@@ -1090,7 +615,7 @@ const donutChart = new Chart(donutCtx, {
     }
 });
 
-// ════════════ BARRES AGENTS ════════════
+// 3. AGENTS BAR CHART
 const agCtx = document.getElementById('agentsBarChart').getContext('2d');
 const agentsBarChart = new Chart(agCtx, {
     type: 'bar',
@@ -1099,9 +624,9 @@ const agentsBarChart = new Chart(agCtx, {
         datasets: [{
             label: 'Nb ventes',
             data: AG_SALES,
-            backgroundColor: COLORS.map(c => c + 'CC'),
+            backgroundColor: COLORS.map(c => c + 'D9'),
             borderColor: COLORS,
-            borderWidth: 1.5,
+            borderWidth: 1,
             borderRadius: 6,
             borderSkipped: false,
         }]
@@ -1113,8 +638,6 @@ const agentsBarChart = new Chart(agCtx, {
             legend: { display: false },
             tooltip: {
                 backgroundColor: cssVar('--tooltip-bg'),
-                borderColor: 'rgba(99,102,241,0.4)',
-                borderWidth: 1,
                 callbacks: { label: ctx => ' ' + ctx.parsed.x + ' vente(s)' }
             }
         },
@@ -1125,10 +648,13 @@ const agentsBarChart = new Chart(agCtx, {
     }
 });
 
-// ════════════ LISTE TOP PRODUITS VENDUS ════════════
+// 4. TOP PRODUCTS LIST
 (function renderProductList() {
     const el = document.getElementById('product-list-render');
-    if (!PROD_NAMES.length) { el.innerHTML = '<p style="color:#64748B;font-size:13px;padding:16px 0">Aucun produit vendu</p>'; return; }
+    if (!PROD_NAMES.length) {
+        el.innerHTML = '<p style="color:var(--text-muted);font-size:13px;padding:16px 0">Aucun produit vendu sur la période.</p>';
+        return;
+    }
 
     function escapeHtml(str) {
         const div = document.createElement('div');
@@ -1137,18 +663,18 @@ const agentsBarChart = new Chart(agCtx, {
     }
 
     const maxQty = Math.max(...PROD_QTY);
-    const sortedIdx = PROD_QTY.map((v,i) => i).sort((a,b) => PROD_QTY[b]-PROD_QTY[a]);
+    const sortedIdx = PROD_QTY.map((v, i) => i).sort((a, b) => PROD_QTY[b] - PROD_QTY[a]);
 
     el.innerHTML = sortedIdx.map((i, rank) => {
         const pct = maxQty ? Math.round((PROD_QTY[i] / maxQty) * 100) : 0;
         const color = COLORS[rank % COLORS.length];
-        const initials = PROD_NAMES[i].split(/[\s.]+/).filter(Boolean).map(w=>w[0]).join('').slice(0,2).toUpperCase();
+        const initials = PROD_NAMES[i].split(/[\s.]+/).filter(Boolean).map(w => w[0]).join('').slice(0, 2).toUpperCase();
         return `
         <div class="agent-row">
-            <div class="agent-avatar" style="background:${color}22;color:${color};">${escapeHtml(initials)}</div>
+            <div class="agent-avatar" style="background:${color}18;color:${color};">${escapeHtml(initials)}</div>
             <div class="agent-info">
                 <div class="agent-name">${escapeHtml(PROD_NAMES[i])}</div>
-                <div class="agent-role">${(PROD_CA[i]/1000).toFixed(0)}k ${CURRENCY_SYMBOL} de CA</div>
+                <div class="agent-role">${Number(PROD_CA[i] || 0).toLocaleString('fr-FR')} ${CURRENCY_SYMBOL} de CA</div>
             </div>
             <div class="agent-bar-wrap">
                 <div class="agent-bar-bg">
@@ -1159,7 +685,6 @@ const agentsBarChart = new Chart(agCtx, {
         </div>`;
     }).join('');
 
-    // Animer les barres au chargement
     requestAnimationFrame(() => {
         document.querySelectorAll('.agent-bar-fill').forEach(bar => {
             bar.style.width = bar.dataset.pct + '%';
@@ -1167,13 +692,9 @@ const agentsBarChart = new Chart(agCtx, {
     });
 })();
 
-// ════════════ CA PAR PÉRIODE (dates précises) ════════════
 function updateCAChart() {
-    const startInput = document.getElementById('ca-start');
-    const endInput = document.getElementById('ca-end');
-    const start = startInput.value;
-    const end = endInput.value;
-
+    const start = document.getElementById('ca-start').value;
+    const end = document.getElementById('ca-end').value;
     if (!start || !end) return;
     if (start > end) { alert('La date de début doit précéder la date de fin.'); return; }
 
@@ -1192,15 +713,16 @@ function updateCAChart() {
         .finally(() => { btn.disabled = false; });
 }
 
-// ════════════ THÈME CLAIR / SOMBRE ════════════
-function applyChartTheme() {
+window.onMerchandBlockThemeChange = function () {
     const cardBg = cssVar('--bg-card');
     const gridColor = cssVar('--chart-grid');
     const tooltipBg = cssVar('--tooltip-bg');
     const textColor = cssVar('--text-secondary');
+    const primaryColor = cssVar('--chart-primary');
 
     Chart.defaults.color = textColor;
 
+    caChart.data.datasets[0].borderColor = primaryColor;
     caChart.data.datasets[0].pointBorderColor = cardBg;
     caChart.options.plugins.tooltip.backgroundColor = tooltipBg;
     caChart.options.scales.x.grid.color = gridColor;
@@ -1214,55 +736,8 @@ function applyChartTheme() {
     agentsBarChart.options.plugins.tooltip.backgroundColor = tooltipBg;
     agentsBarChart.options.scales.x.grid.color = gridColor;
     agentsBarChart.update();
-}
-
-function setTheme(theme) {
-    document.documentElement.setAttribute('data-theme', theme);
-    localStorage.setItem('theme', theme);
-    const icon = document.getElementById('themeToggleIcon');
-    if (icon) icon.textContent = theme === 'light' ? '🌙' : '☀️';
-    applyChartTheme();
-}
-
-function toggleTheme() {
-    const current = document.documentElement.getAttribute('data-theme') || 'dark';
-    setTheme(current === 'light' ? 'dark' : 'light');
-}
-
-document.getElementById('themeToggleBtn').addEventListener('click', toggleTheme);
-
-// Synchronise l'icône avec le thème déjà appliqué au chargement (voir script inline dans <head>)
-(function initThemeIcon() {
-    const current = document.documentElement.getAttribute('data-theme') || 'dark';
-    const icon = document.getElementById('themeToggleIcon');
-    if (icon) icon.textContent = current === 'light' ? '🌙' : '☀️';
-})();
-
-// Gestion de la sidebar mobile
-(function initMobileSidebar() {
-    const toggleBtn = document.getElementById('sidebarToggleBtn');
-    const closeBtn = document.getElementById('sidebarCloseBtn');
-    const overlay = document.getElementById('sidebarOverlay');
-    const sidebar = document.querySelector('.sidebar');
-    if (!sidebar) return;
-
-    function openSidebar() {
-        sidebar.classList.add('active');
-        if (overlay) overlay.classList.add('active');
-        document.body.style.overflow = 'hidden';
-    }
-    function closeSidebar() {
-        sidebar.classList.remove('active');
-        if (overlay) overlay.classList.remove('active');
-        document.body.style.overflow = '';
-    }
-
-    if (toggleBtn) toggleBtn.addEventListener('click', openSidebar);
-    if (closeBtn) closeBtn.addEventListener('click', closeSidebar);
-    if (overlay) overlay.addEventListener('click', closeSidebar);
-})();
+};
 </script>
-
 <script src="{% static 'InvoiceApp/js/ai_assistant.js' %}"></script>
 </body>
 </html>

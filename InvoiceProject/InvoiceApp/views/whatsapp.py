@@ -86,7 +86,7 @@ def send_invoice_whatsapp_api(request, invoice_id):
     if not invoice:
         return JsonResponse({"success": False, "error": "Facture introuvable"}, status=404)
 
-    recipient_phone = request.POST.get("phone", "").strip() or (invoice.sale.client.phone if invoice.sale.client else "")
+    recipient_phone = request.POST.get("phone", "").strip() or (invoice.sale.client.phone if (invoice.sale and invoice.sale.client) else "")
     custom_message = request.POST.get("message", "").strip()
 
     if not is_whatsapp_cloud_configured():
@@ -127,7 +127,7 @@ def vendor_send_invoice_whatsapp_api(request, invoice_id):
     if not invoice:
         return JsonResponse({"success": False, "error": "Facture introuvable"}, status=404)
 
-    recipient_phone = request.POST.get("phone", "").strip() or (invoice.sale.client.phone if invoice.sale.client else "")
+    recipient_phone = request.POST.get("phone", "").strip() or (invoice.sale.client.phone if (invoice.sale and invoice.sale.client) else "")
     custom_message = request.POST.get("message", "").strip()
 
     if not is_whatsapp_cloud_configured():
