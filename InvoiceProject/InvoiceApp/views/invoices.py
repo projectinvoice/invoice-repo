@@ -89,7 +89,7 @@ def delete_invoice(request):
     if not invoice:
         return JsonResponse({"success": True, "message": "Facture supprimée"})
         
-    if invoice.amount_paid > 0 or invoice.payments.exists():
+    if False:  # Suppression directe autorisée (Payment supprimé en cascade)
         return JsonResponse({
             "success": False,
             "error": "Impossible de supprimer une facture ayant des versements ou paiements enregistrés."
@@ -161,16 +161,16 @@ def _build_invoice_pdf_bytes(invoice):
     compact, moderne, élégant et parfaitement paginé."""
     company = invoice.company
     sale = invoice.sale
-    client = sale.client
-    raw_items = list(sale.sale_items.select_related('product').all())
-    currency = sale.currency
+    client = sale.client if sale else None
+    raw_items = list(sale.sale_items.select_related('product').all()) if sale else []
+    currency = sale.currency if sale else (company.default_currency or 'EUR')
 
     buffer = BytesIO()
     p = pdf_canvas.Canvas(buffer, pagesize=A5)
     width, height = A5  # 148 mm x 210 mm
 
-    PRIMARY = colors.HexColor('#4F46E5')     # Indigo moderne
-    DARK = colors.HexColor('#0F172A')        # Slate 900
+    PRIMARY = colors.HexColor('#F26722')     # MerchandBlock Orange
+    DARK = colors.HexColor('#08244B')        # MerchandBlock Deep Navy
     BODY = colors.HexColor('#334155')        # Slate 700
     MUTED = colors.HexColor('#64748B')       # Slate 500
     BORDER = colors.HexColor('#E2E8F0')      # Slate 200
@@ -305,22 +305,22 @@ def _build_invoice_pdf_bytes(invoice):
 
     p.setFillColor(DARK)
     p.setFont("Helvetica-Bold", 8.5)
-    display_client = client.shop_name or client.name
+    display_client = (client.shop_name or client.name) if client else "Client"
     p.drawString(margin_left + 3 * mm, client_card_y + 9 * mm, display_client[:35])
 
     p.setFont("Helvetica", 7)
     p.setFillColor(BODY)
     c_sub = []
-    if client.shop_name and client.name:
+    if client and client.shop_name and client.name:
         c_sub.append(f"Contact: {client.name}")
-    if client.phone:
+    if client and client.phone:
         c_sub.append(f"Tél: {client.phone}")
     if c_sub:
         p.drawString(margin_left + 3 * mm, client_card_y + 5 * mm, " | ".join(c_sub)[:45])
-    if client.address:
+    if client and client.address:
         p.drawString(margin_left + 3 * mm, client_card_y + 1.5 * mm, client.address[:45])
 
-    agent_name = sale.agent.name if sale.agent else None
+    agent_name = sale.agent.name if (sale and sale.agent) else None
     if agent_name:
         p.setFillColor(MUTED)
         p.setFont("Helvetica-Bold", 6.5)
@@ -351,12 +351,12 @@ def _build_invoice_pdf_bytes(invoice):
     items = raw_items
     if not items:
         class _LegacyItem:
-            quantity = sale.quantity or 1
-            unit_price = sale.unit_price or Decimal('0.00')
-            total_price = sale.total_price or Decimal('0.00')
-            currency = sale.currency
+            quantity = (sale.quantity or 1) if sale else 1
+            unit_price = (sale.unit_price or Decimal('0.00')) if sale else invoice.amount_paid
+            total_price = (sale.total_price or Decimal('0.00')) if sale else invoice.amount_paid
+            currency = sale.currency if sale else (company.default_currency or 'EUR') if sale else (company.default_currency or 'EUR')
             class product:
-                name = sale.product.name if sale.product else "Produit"
+                name = sale.product.name if (sale and sale.product) else "Produit"
         items = [_LegacyItem()]
 
     for i, item in enumerate(items):
@@ -404,7 +404,7 @@ def _build_invoice_pdf_bytes(invoice):
 
     p.setFillColor(PRIMARY)
     p.setFont("Helvetica-Bold", 9.5)
-    p.drawRightString(margin_right - 3 * mm, tot_y - 5.2 * mm, sale.formatted_total_price)
+    p.drawRightString(margin_right - 3 * mm, tot_y - 5.2 * mm, sale.formatted_total_price if sale else invoice.formatted_amount_paid)
 
     curr_tot_y = tot_y - 7.5 * mm
 
@@ -470,8 +470,8 @@ def _send_invoice_email_core(invoice, recipient_email, custom_message=""):
 
     company = invoice.company
     sale = invoice.sale
-    client = sale.client
-    client_name = client.shop_name or client.name
+    client = sale.client if sale else None
+    client_name = (client.shop_name or client.name) if client else "Client"
 
     subject = f"Facture {invoice.invoice_number} — {company.company_name}"
 
@@ -479,7 +479,7 @@ def _send_invoice_email_core(invoice, recipient_email, custom_message=""):
         f"Bonjour {client_name},\n",
         f"Veuillez trouver ci-joint votre facture N° {invoice.invoice_number} émise le {invoice.issued_date.strftime('%d/%m/%Y')} par {company.company_name}.",
         "",
-        f"• Montant total : {sale.formatted_total_price}",
+        f"• Montant total : {sale.formatted_total_price if sale else invoice.formatted_amount_paid}",
     ]
     if invoice.status == 'paid':
         body_lines.append("• Statut : Payée en totalité.")
@@ -522,8 +522,15 @@ def _send_invoice_email_core(invoice, recipient_email, custom_message=""):
         return True, f"Facture envoyée avec succès par email à {recipient_email}."
     except Exception as e:
         err_msg = str(e)
-        if "401" in err_msg or "Unauthorized" in err_msg:
-            err_msg = "Clé API d'envoi d'emails invalide, révoquée ou expirée (Brevo 401 Unauthorized). Veuillez renouveler votre BREVO_API_KEY."
+        backend_lower = getattr(settings, 'EMAIL_BACKEND', '').lower()
+        if "401" in err_msg or "Unauthorized" in err_msg or "Key not found" in err_msg:
+            if "brevo" in backend_lower:
+                err_msg = (
+                    "Clé API Brevo invalide, révoquée ou expirée (401 Unauthorized). "
+                    "Vérifiez votre variable BREVO_API_KEY (clé API v3 au format xkeysib-...)."
+                )
+            else:
+                err_msg = "Clé API d'envoi d'emails invalide, révoquée ou expirée (401 Unauthorized)."
         elif "Connection refused" in err_msg:
             err_msg = "Impossible de joindre le serveur d'envoi d'emails. Vérifiez la connexion réseau."
         return False, f"Échec de l'envoi de l'email : {err_msg}"

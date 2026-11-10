@@ -6,7 +6,6 @@ charset-normalizer==3.4.9
 cryptography==50.0.1
 dj-database-url==2.3.0
 Django==6.0.6
-django-anymail==15.2
 django-storages==1.14.6
 gunicorn==23.0.0
 idna==3.19

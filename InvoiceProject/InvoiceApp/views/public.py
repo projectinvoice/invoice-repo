@@ -68,6 +68,23 @@ def service_status(request):
     except Exception:
         db_ok = False
 
+    email_backend = getattr(settings, 'EMAIL_BACKEND', '')
+    email_lower = email_backend.lower()
+    if 'console' in email_lower or 'locmem' in email_lower:
+        email_status = 'degraded'
+        email_detail = 'Mode développement : emails affichés dans les logs serveur, non réellement envoyés'
+    elif 'brevo' in email_lower:
+        brevo_key = getattr(settings, 'BREVO_API_KEY', '')
+        if brevo_key:
+            email_status = 'operational'
+            email_detail = 'Emails transactionnels via Brevo (activation, réinitialisation, factures...)'
+        else:
+            email_status = 'degraded'
+            email_detail = 'Backend Brevo actif mais BREVO_API_KEY non configurée'
+    else:
+        email_status = 'operational'
+        email_detail = 'Emails transactionnels (activation, réinitialisation...)'
+
     components = [
         {
             'name': 'Application web',
@@ -91,9 +108,8 @@ def service_status(request):
         },
         {
             'name': 'Envoi d\'emails',
-            'status': 'operational' if 'console' not in settings.EMAIL_BACKEND else 'degraded',
-            'detail': 'Emails transactionnels (activation, réinitialisation...)' if 'console' not in settings.EMAIL_BACKEND
-                       else 'Mode développement : emails affichés dans les logs serveur, non réellement envoyés',
+            'status': email_status,
+            'detail': email_detail,
         },
     ]
 
