@@ -13,16 +13,12 @@ sur les objets de l'entreprise B. Le comportement attendu est toujours : soit un
 erreur 404/400 explicite, soit un JSON {"success": False}, et dans tous les cas
 AUCUNE modification des données de l'entreprise B.
 
-Ils couvrent aussi les 5 fonctions "outils" ajoutées pour l'assistant IA (Gemini
-function calling), qui doivent respecter la même règle : une entreprise ne peut
-jamais recevoir, même indirectement via l'IA, les données d'une autre entreprise.
 """
 import json
 from datetime import date, timedelta
 from decimal import Decimal
-from unittest.mock import patch
 
-from django.test import TestCase, Client as DjangoTestClient, override_settings
+from django.test import TestCase, Client as DjangoTestClient
 from django.contrib.auth import get_user_model
 from django.urls import reverse
 
@@ -30,7 +26,6 @@ from .models import (
     Agent, AgentRole, Client, Engine, Invoice,
     Product, Sale, Supplier, Supply,
 )
-from . import views as invoice_views
 
 User = get_user_model()
 
@@ -238,135 +233,3 @@ class ListViewIsolationTests(MultiTenantFixtureMixin, TestCase):
         content = resp.content.decode('utf-8')
         self.assertNotIn('Agent de B', content)
 
-
-class AiToolFunctionsIsolationTests(MultiTenantFixtureMixin, TestCase):
-    """Les 5 fonctions appelées par Gemini (function calling) prennent la société
-    comme premier argument Python — jamais depuis les arguments fournis par le
-    modèle. On vérifie ici qu'aucune ne peut, de quelque façon que ce soit,
-    renvoyer une donnée appartenant à une autre entreprise."""
-
-    def test_get_ventes_only_returns_own_sales(self):
-        result = invoice_views._ai_tool_get_ventes(self.company_a, {})
-        clients_mentionnes = [v['client'] for v in result['ventes_detaillees']]
-        self.assertNotIn('Client de B', clients_mentionnes)
-
-    def test_get_ventes_ignores_attempt_to_target_other_client_name(self):
-        """Même si on essaie de filtrer sur le nom d'un client de B, la requête
-        reste bornée par company=company_a en amont : aucun résultat ne doit sortir."""
-        result = invoice_views._ai_tool_get_ventes(self.company_a, {'client_nom': 'Client de B'})
-        self.assertEqual(result['ventes_detaillees'], [])
-        self.assertEqual(result['nombre_total_ventes_correspondantes'], 0)
-
-    def test_get_etat_financier_only_counts_own_company(self):
-        result = invoice_views._ai_tool_get_etat_financier(self.company_a, {})
-        # Le CA de B (100.00 EUR : 2 x 50.00) ne doit apparaître nulle part pour A.
-        totals = [row['total'] for row in result['chiffre_affaires_par_devise']]
-        self.assertNotIn(100.0, totals)
-
-    def test_get_produits_stock_only_returns_own_products(self):
-        result = invoice_views._ai_tool_get_produits_stock(self.company_a, {})
-        noms = [p['nom'] for p in result['tous_les_produits']]
-        self.assertIn('Produit de A', noms)
-        self.assertNotIn('Produit de B', noms)
-
-    def test_get_clients_only_returns_own_clients(self):
-        result = invoice_views._ai_tool_get_clients(self.company_a, {})
-        noms = [c['nom'] for c in result['meilleurs_clients']]
-        self.assertIn('Client de A', noms)
-        self.assertNotIn('Client de B', noms)
-
-    def test_get_factures_only_returns_own_invoices(self):
-        result = invoice_views._ai_tool_get_factures(self.company_a, {})
-        numeros = [f['numero'] for f in result['factures']]
-        self.assertNotIn('B-0001', numeros)
-
-    def test_unknown_function_name_is_rejected_safely(self):
-        result = invoice_views._ai_run_tool('fonction_inexistante', self.company_a, {})
-        self.assertIn('erreur', result)
-
-
-class AiChatEndpointIsolationTests(MultiTenantFixtureMixin, TestCase):
-    """Test de bout en bout de /api/ai-chat/ avec un appel Gemini simulé (mock),
-    pour vérifier que la boucle d'exécution des fonctions reste bien bornée à
-    l'entreprise connectée, même quand le modèle « demande » explicitement les
-    données d'une autre entreprise dans ses arguments de fonction."""
-
-    def _fake_gemini_response(self, status_code=200, json_data=None):
-        class FakeResponse:
-            def __init__(self, sc, data):
-                self.status_code = sc
-                self._data = data
-            def json(self):
-                return self._data
-        return FakeResponse(status_code, json_data or {})
-
-    @override_settings(GEMINI_API_KEY='fake-key-for-tests')
-    @patch('InvoiceApp.views.ai_assistant.http_requests.post')
-    def test_function_call_result_is_scoped_to_logged_in_company(self, mock_post):
-        """Le modèle « essaie » de récupérer les ventes en précisant un nom de
-        client qui appartient à l'entreprise B. La fonction doit renvoyer une
-        liste vide (aucune fuite), car elle est bornée par request.user, pas
-        par les arguments envoyés par le modèle."""
-        first_call = self._fake_gemini_response(200, {
-            'candidates': [{
-                'content': {
-                    'role': 'model',
-                    'parts': [{'functionCall': {'name': 'get_ventes', 'args': {'client_nom': 'Client de B'}}}],
-                }
-            }]
-        })
-        second_call = self._fake_gemini_response(200, {
-            'candidates': [{
-                'content': {'role': 'model', 'parts': [{'text': "Aucune vente trouvée pour ce client."}]}
-            }]
-        })
-        mock_post.side_effect = [first_call, second_call]
-
-        resp = self.http.post(
-            reverse('ai_chat_api'),
-            data=json.dumps({'message': "Montre-moi les ventes du Client de B", 'contents': []}),
-            content_type='application/json',
-        )
-        self.assertEqual(resp.status_code, 200)
-        data = resp.json()
-
-        # La réponse finale du modèle ne doit contenir aucune trace de données de B.
-        self.assertEqual(data['reply'], "Aucune vente trouvée pour ce client.")
-
-        # On isole précisément le RÉSULTAT métier (functionResponse) envoyé au 2e
-        # round de Gemini — pas la requête entière, qui contiendra forcément la
-        # chaîne "Client de B" puisque c'est l'argument que le modèle a lui-même
-        # fourni dans son functionCall (ça, ce n'est pas une fuite, juste l'écho
-        # de sa propre question). Ce qui compte : le résultat *calculé* par notre
-        # fonction ne doit renvoyer aucune vente de B.
-        second_request_payload = mock_post.call_args_list[1].kwargs['json']
-        function_response_payloads = [
-            part['functionResponse']['response']
-            for turn in second_request_payload['contents']
-            if turn.get('role') == 'user'
-            for part in turn.get('parts', [])
-            if 'functionResponse' in part
-        ]
-        self.assertTrue(function_response_payloads, "Aucun functionResponse trouvé dans la requête envoyée à Gemini")
-        for payload in function_response_payloads:
-            self.assertEqual(payload.get('ventes_detaillees'), [])
-            self.assertNotIn('Client de B', json.dumps(payload))
-
-    @override_settings(GEMINI_API_KEY='')
-    def test_ai_chat_disabled_gracefully_without_api_key(self):
-        resp = self.http.post(
-            reverse('ai_chat_api'),
-            data=json.dumps({'message': 'Bonjour', 'contents': []}),
-            content_type='application/json',
-        )
-        self.assertEqual(resp.status_code, 200)
-        self.assertIn('pas encore configuré', resp.json()['reply'])
-
-    def test_ai_chat_requires_authentication(self):
-        anonymous = DjangoTestClient()
-        resp = anonymous.post(
-            reverse('ai_chat_api'),
-            data=json.dumps({'message': 'Bonjour', 'contents': []}),
-            content_type='application/json',
-        )
-        self.assertNotEqual(resp.status_code, 200)

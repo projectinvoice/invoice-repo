@@ -57,7 +57,7 @@ def contact(request):
 
 def service_status(request):
     """Statut du service : vérifie en direct la disponibilité des composants clés
-    (base de données, assistant IA, paiement des abonnements) plutôt que d'afficher
+    (base de données, paiement des abonnements, envoi d'emails) plutôt que d'afficher
     une page purement statique."""
 
     # Base de données : une requête triviale suffit à vérifier la connexion
@@ -95,11 +95,6 @@ def service_status(request):
             'name': 'Base de données',
             'status': 'operational' if db_ok else 'down',
             'detail': 'Stockage des ventes, clients, factures et stock',
-        },
-        {
-            'name': 'Assistant IA',
-            'status': 'operational' if settings.GEMINI_API_KEY else 'disabled',
-            'detail': 'Assistant conversationnel Gemini' if settings.GEMINI_API_KEY else "Non configuré sur cette instance",
         },
         {
             'name': 'Paiement des abonnements',

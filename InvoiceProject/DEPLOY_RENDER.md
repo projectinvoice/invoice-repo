@@ -51,8 +51,6 @@ Vérifiez que `db.sqlite3` et `media/` ne sont **pas** commités (le `.gitignore
 | `DATABASE_URL` | l'Internal Database URL Postgres (auto-lié via `render.yaml`) |
 | `ALLOWED_HOSTS` | laissez vide au premier déploiement (Render s'auto-ajoute), sinon `votre-app.onrender.com` |
 | `CSRF_TRUSTED_ORIGINS` | `https://votre-app.onrender.com` (à ajouter une fois l'URL connue) |
-| `GEMINI_API_KEY` | votre clé [aistudio.google.com](https://aistudio.google.com/app/apikey) (facultatif) |
-| `GEMINI_MODEL` | `gemini-2.5-flash` |
 | `MONEYFUSION_API_URL` | si vous utilisez les abonnements payants |
 | `SITE_BASE_URL` | `https://votre-app.onrender.com` |
 | `EMAIL_BACKEND` | `InvoiceApp.email_backends.BrevoEmailBackend` (API transactionnelle Brevo) |
@@ -78,7 +76,6 @@ python manage.py createsuperuser
 - L'app répond sur `https://votre-app.onrender.com`
 - Le CSS/JS s'affiche correctement (WhiteNoise sert les statiques)
 - Connexion et création d'une facture fonctionnent (Postgres bien utilisé)
-- Si l'assistant IA est configuré, le widget répond bien
 
 ## Limites du plan gratuit Render à connaître
 - Le service **s'endort après 15 min d'inactivité** ; la requête suivante prend ~30-60s pour le réveiller.

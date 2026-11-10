@@ -5,7 +5,6 @@ imports partages). Ce fichier ré-exporte tout pour que le code existant qui fai
 continue de fonctionner sans aucune modification.
 """
 
-from .ai_assistant import GEMINI_API_URL_TEMPLATE, CURRENCY_SYMBOLS, _ai_parse_date, _ai_money, _ai_tool_get_ventes, _ai_tool_get_etat_financier, _ai_tool_get_produits_stock, _ai_tool_get_clients, _ai_tool_get_factures, AI_TOOL_FUNCTIONS, AI_FUNCTION_DECLARATIONS, AI_SYSTEM_PROMPT, _ai_run_tool, ai_chat_init, ai_chat_api
 from .auth import landing, _send_activation_email, register_company, login_view, forgot_password, reset_password_confirm, activate_account, resend_activation_email, change_password, delete_account, logout_view
 from .subscription import _moneyfusion_configured, subscription_page, apply_promo_code, promo_codes_admin, create_promo_code, toggle_promo_code, initiate_subscription_payment, _verify_and_apply_payment, moneyfusion_webhook, moneyfusion_return
 from .dashboard import MONTH_LABELS_FR, _monthly_revenue, _sales_breakdown_by_product, _revenue_by_period, _top_products, _agents_performance, dashboard, api_dashboard_ca
