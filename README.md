@@ -194,22 +194,37 @@ La sécurité du token repose sur `django.contrib.auth.tokens.default_token_gene
 mécanisme standard et éprouvé utilisé par Django lui-même — le lien devient automatiquement invalide
 dès que le mot de passe est changé ou que le délai expire.
 
-### Configuration email à faire avant la mise en production
+### Configuration email Brevo (API transactionnelle & Render)
 
-Par défaut, les emails s'affichent seulement dans la console du serveur (pratique pour tester en
-développement, mais **aucun email n'est réellement envoyé**). Pour un envoi réel, configurez un
-serveur SMTP via variables d'environnement, par exemple avec Gmail :
+MerchandBlock utilise l'**API transactionnelle v3 de Brevo** via `InvoiceApp.email_backends.BrevoEmailBackend` pour tous les emails
+de la plateforme :
+- activation de compte lors de l'inscription d'une entreprise (`_send_activation_email` / renvoi) ;
+- réinitialisation de mot de passe (`forgot_password`) ;
+- envoi des factures PDF A5 aux clients (espaces administrateur et vendeur) ;
+- formulaire de contact public (`/contact/`).
 
-```bash
-export EMAIL_BACKEND="django.core.mail.backends.smtp.EmailBackend"
-export EMAIL_HOST="smtp.gmail.com"
-export EMAIL_PORT="587"
-export EMAIL_USE_TLS="True"
-export EMAIL_HOST_USER="votre-adresse@gmail.com"
-export EMAIL_HOST_PASSWORD="votre-mot-de-passe-application"   # pas votre mot de passe Gmail normal
-export DEFAULT_FROM_EMAIL="no-reply@votre-domaine.com"
+Par défaut en développement, `EMAIL_BACKEND` vaut `django.core.mail.backends.console.EmailBackend`
+(les emails s'affichent dans les logs du serveur sans être envoyés).
+
+#### Variables d'environnement à configurer (`.env` local et tableau de bord Render)
+
+```env
+EMAIL_BACKEND=InvoiceApp.email_backends.BrevoEmailBackend
+BREVO_API_KEY=xkeysib-votre-cle-api-brevo
+DEFAULT_FROM_EMAIL=co@merchandblock.com
+SUPPORT_EMAIL=co@merchandblock.com
+PASSWORD_RESET_TIMEOUT=86400
 ```
 
-Pour Gmail, il faut générer un **mot de passe d'application** (pas votre mot de passe habituel) depuis
-les paramètres de sécurité du compte Google. En production, un service dédié (SendGrid, Mailgun,
-Brevo, Amazon SES...) est recommandé plutôt qu'une boîte Gmail classique, pour la délivrabilité.
+> ⚠️ **Important :** Utilisez bien une **clé API v3** générée dans Brevo sous *Paramètres > Clés SMTP & API > onglet **Clés API*** (`xkeysib-...`, avec le droit *Email transactionnel : Tout*), et non une clé SMTP (`xsmtpsib-...`). Ne versionnez jamais `BREVO_API_KEY` dans le code ou sur GitHub.
+
+#### Authentification du domaine d'expédition (`merchandblock.com`)
+
+Pour garantir une délivrabilité optimale et éviter le classement en spam, le domaine configuré dans
+`DEFAULT_FROM_EMAIL` doit être authentifié dans **Brevo > Expéditeurs, domaines et IP dédiées** :
+1. **Domaine** : ajouter les enregistrements DNS fournis par Brevo :
+   - **Code Brevo** (`TXT` à la racine `@`) : `brevo-code:...`
+   - **DKIM** (`CNAME` `brevo1._domainkey` et `brevo2._domainkey`)
+   - **DMARC** (`TXT` `_dmarc`) : `v=DMARC1; p=none; rua=mailto:rua@dmarc.brevo.com` (ou politique plus stricte selon vos besoins)
+   - **SPF** *(recommandé si vous n'avez pas d'autre SPF sur le domaine)* : `v=spf1 include:spf.brevo.com ~all`
+2. **Expéditeur** : vérifier que l'adresse `co@merchandblock.com` est bien créée et validée dans la section *Expéditeurs* de Brevo.
