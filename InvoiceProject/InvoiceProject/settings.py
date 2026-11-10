@@ -299,30 +299,33 @@ MONEYFUSION_STATUS_CHECK_TEMPLATE = os.environ.get(
 SITE_BASE_URL = os.environ.get('SITE_BASE_URL', 'http://127.0.0.1:8000')
 
 # ═══════════════════════════════════════════════════════════════
-# Configuration email — envoi via l'API REST de SendGrid (django-sendgrid-v5)
+# Configuration email — API transactionnelle Brevo (v3)
 # ═══════════════════════════════════════════════════════════════
-# Par défaut (développement) : les emails sont affichés dans la console au lieu
-# d'être réellement envoyés (voir EMAIL_BACKEND dans .env). En production,
-# EMAIL_BACKEND doit valoir 'sendgrid_backend.SendgridBackend' : le code métier
-# (send_mail, EmailMessage...) ne change pas, seul ce backend change la façon
-# dont les emails partent réellement (ici via l'API REST de SendGrid, pas SMTP).
+# En développement : console.EmailBackend (emails affichés dans les logs).
+# En production (Render) : EMAIL_BACKEND=InvoiceApp.email_backends.BrevoEmailBackend
+# avec BREVO_API_KEY (clé API v3 xkeysib-...) et DEFAULT_FROM_EMAIL validé.
+def _extract_brevo_api_key(raw_value):
+    val = (raw_value or '').strip().strip('"\'')
+    if val.startswith('eyJ'):
+        try:
+            import base64
+            import json
+            decoded = json.loads(base64.b64decode(val).decode('utf-8'))
+            if isinstance(decoded, dict) and decoded.get('api_key'):
+                return str(decoded['api_key']).strip()
+        except Exception:
+            pass
+    return val
+
+
 EMAIL_BACKEND = os.environ.get(
     'EMAIL_BACKEND',
     'django.core.mail.backends.console.EmailBackend',
 )
-DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'no-reply@votre-domaine.com')
+DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'co@merchandblock.com')
 
-# Clé API SendGrid (Settings > API Keys sur app.sendgrid.com). Requise dès que
-# EMAIL_BACKEND = 'sendgrid_backend.SendgridBackend'.
-SENDGRID_API_KEY = os.environ.get('SENDGRID_API_KEY', '')
-# En DEBUG, django-sendgrid-v5 active le "sandbox mode" par défaut : les emails
-# sont acceptés par l'API SendGrid mais jamais réellement délivrés. On force ici
-# un comportement explicite piloté par .env plutôt que la valeur par défaut.
-SENDGRID_SANDBOX_MODE_IN_DEBUG = os.environ.get('SENDGRID_SANDBOX_MODE_IN_DEBUG', 'True') == 'True'
-# Active le suivi des ouvertures/clics dans le tableau de bord SendGrid.
-SENDGRID_TRACK_EMAIL_OPENS = os.environ.get('SENDGRID_TRACK_EMAIL_OPENS', 'True') == 'True'
-SENDGRID_TRACK_CLICKS_HTML = os.environ.get('SENDGRID_TRACK_CLICKS_HTML', 'True') == 'True'
-SENDGRID_TRACK_CLICKS_PLAIN = os.environ.get('SENDGRID_TRACK_CLICKS_PLAIN', 'True') == 'True'
+BREVO_API_KEY = _extract_brevo_api_key(os.environ.get('BREVO_API_KEY', ''))
+BREVO_API_URL = os.environ.get('BREVO_API_URL', 'https://api.brevo.com/v3/smtp/email')
 
 # Configuration SMTP standard (si EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend')
 EMAIL_HOST = os.environ.get('EMAIL_HOST', 'smtp.gmail.com')

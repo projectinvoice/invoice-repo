@@ -522,8 +522,15 @@ def _send_invoice_email_core(invoice, recipient_email, custom_message=""):
         return True, f"Facture envoyée avec succès par email à {recipient_email}."
     except Exception as e:
         err_msg = str(e)
-        if "401" in err_msg or "Unauthorized" in err_msg:
-            err_msg = "Clé API d'envoi d'emails invalide, révoquée ou expirée (SendGrid 401 Unauthorized). Veuillez renouveler votre SENDGRID_API_KEY."
+        backend_lower = getattr(settings, 'EMAIL_BACKEND', '').lower()
+        if "401" in err_msg or "Unauthorized" in err_msg or "Key not found" in err_msg:
+            if "brevo" in backend_lower:
+                err_msg = (
+                    "Clé API Brevo invalide, révoquée ou expirée (401 Unauthorized). "
+                    "Vérifiez votre variable BREVO_API_KEY (clé API v3 au format xkeysib-...)."
+                )
+            else:
+                err_msg = "Clé API d'envoi d'emails invalide, révoquée ou expirée (401 Unauthorized)."
         elif "Connection refused" in err_msg:
             err_msg = "Impossible de joindre le serveur d'envoi d'emails. Vérifiez la connexion réseau."
         return False, f"Échec de l'envoi de l'email : {err_msg}"

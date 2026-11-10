@@ -1013,3 +1013,212 @@ class AuditSecurityAndDataIntegrityTests(TestCase):
         resp_i = self.client.post(reverse('delete_invoice'), {'invoice_id': invoice.id})
         self.assertEqual(resp_i.status_code, 200)
         self.assertFalse(Invoice.objects.filter(id=invoice.id).exists())
+
+
+class BrevoEmailMigrationTests(TestCase):
+    """Tests de la configuration Brevo et des flux email transactionnels (hors envoi réel)."""
+
+    def setUp(self):
+        self.User = get_user_model()
+        self.company = self.User.objects.create_user(
+            username='brevo-company@example.com',
+            email='brevo-company@example.com',
+            password='StrongPassword123!',
+            company_name='Brevo Test SAS',
+            company_email='brevo-company@example.com',
+            is_active=True,
+        )
+        from .models import Subscription, Client, Product, Sale, SaleItem, Invoice
+        from django.utils import timezone
+        Subscription.objects.create(
+            company=self.company,
+            plan='monthly',
+            trial_end_date=timezone.now() + timezone.timedelta(days=7),
+        )
+        self.client_obj = Client.objects.create(
+            company=self.company,
+            name='Client Brevo',
+            email='client.brevo@example.com',
+        )
+        self.product = Product.objects.create(
+            company=self.company,
+            name='Produit Test Brevo',
+            price=Decimal('5000.00'),
+            stock_quantity=10,
+        )
+        self.sale = Sale.objects.create(
+            company=self.company,
+            client=self.client_obj,
+            currency='XOF',
+        )
+        SaleItem.objects.create(
+            sale=self.sale,
+            product=self.product,
+            quantity=2,
+            unit_price=Decimal('5000.00'),
+            total_price=Decimal('10000.00'),
+            currency='XOF',
+        )
+        self.sale.save()
+        self.invoice = Invoice.objects.create(
+            company=self.company,
+            sale=self.sale,
+            invoice_number='FAC-BREVO-001',
+            due_date=timezone.now().date(),
+            amount_paid=Decimal('10000.00'),
+            status='paid',
+        )
+
+    def _mock_brevo_response(self, status_code=201, payload=None):
+        from unittest.mock import MagicMock
+        resp = MagicMock()
+        resp.status_code = status_code
+        data = payload if payload is not None else {'messageId': '<test-brevo-msg-id@brevo.com>'}
+        resp.content = json.dumps(data).encode('utf-8')
+        resp.text = json.dumps(data)
+        resp.json.return_value = data
+        return resp
+
+    def test_brevo_settings_configured(self):
+        """Vérifie la présence des paramètres Brevo et DEFAULT_FROM_EMAIL dans settings."""
+        from django.conf import settings
+        self.assertTrue(hasattr(settings, 'BREVO_API_KEY'))
+        self.assertTrue(hasattr(settings, 'BREVO_API_URL'))
+        self.assertTrue(bool(settings.DEFAULT_FROM_EMAIL))
+        self.assertTrue(bool(settings.SUPPORT_EMAIL))
+
+    def test_registration_and_resend_activation_via_brevo_backend(self):
+        """Inscription et renvoi d'activation appellent l'API Brevo v3 avec HTML + texte et lien valide."""
+        from unittest.mock import patch
+        from django.test import override_settings
+
+        mock_resp = self._mock_brevo_response(201)
+        with override_settings(
+            EMAIL_BACKEND='InvoiceApp.email_backends.BrevoEmailBackend',
+            DEFAULT_FROM_EMAIL='co@merchandblock.com',
+            BREVO_API_KEY='xkeysib-test-fake-key-for-unit-tests',
+        ):
+            with patch('InvoiceApp.email_backends.requests.post', return_value=mock_resp) as mock_post:
+                resp = self.client.post(reverse('register'), {
+                    'company_name': 'Nouvelle Entreprise',
+                    'email': 'nouvelle@example.com',
+                    'password': 'StrongPassword123!',
+                    'password_confirm': 'StrongPassword123!',
+                    'default_currency': 'XOF',
+                    'subscription_plan': 'monthly',
+                })
+                self.assertEqual(resp.status_code, 200)
+                data = resp.json()
+                self.assertTrue(data['success'])
+                self.assertTrue(data['activation_email_sent'])
+
+                self.assertEqual(mock_post.call_count, 1)
+                args, kwargs = mock_post.call_args
+                req_url = args[0] if len(args) > 0 else kwargs.get('url')
+                self.assertEqual(req_url, 'https://api.brevo.com/v3/smtp/email')
+                self.assertEqual(kwargs['headers'].get('api-key'), 'xkeysib-test-fake-key-for-unit-tests')
+                body = kwargs['json']
+                self.assertEqual(body['sender']['email'], 'co@merchandblock.com')
+                self.assertEqual(body['to'][0]['email'], 'nouvelle@example.com')
+                self.assertIn('Activez votre compte', body['subject'])
+                self.assertIn('htmlContent', body)
+                self.assertIn('textContent', body)
+                self.assertIn('/activer-compte/', body['textContent'])
+
+                resp_resend = self.client.post(reverse('resend_activation_email'), {'email': 'nouvelle@example.com'})
+                self.assertEqual(resp_resend.status_code, 200)
+                self.assertTrue(resp_resend.json()['success'])
+                self.assertEqual(mock_post.call_count, 2)
+
+    def test_forgot_password_via_brevo_backend(self):
+        """La réinitialisation du mot de passe envoie le lien via l'API Brevo v3."""
+        from unittest.mock import patch
+        from django.test import override_settings
+
+        mock_resp = self._mock_brevo_response(201)
+        with override_settings(
+            EMAIL_BACKEND='InvoiceApp.email_backends.BrevoEmailBackend',
+            DEFAULT_FROM_EMAIL='co@merchandblock.com',
+            BREVO_API_KEY='xkeysib-test-fake-key-for-unit-tests',
+        ):
+            with patch('InvoiceApp.email_backends.requests.post', return_value=mock_resp) as mock_post:
+                resp = self.client.post(reverse('forgot_password'), {'email': 'brevo-company@example.com'})
+                self.assertEqual(resp.status_code, 200)
+                self.assertTrue(resp.json()['success'])
+                self.assertEqual(mock_post.call_count, 1)
+                body = mock_post.call_args.kwargs['json']
+                self.assertEqual(body['to'][0]['email'], 'brevo-company@example.com')
+                self.assertIn('Réinitialisation', body['subject'])
+                self.assertIn('/reinitialiser-mot-de-passe/', body['textContent'])
+
+    def test_send_invoice_email_pdf_and_401_error_via_brevo_backend(self):
+        """L'envoi de facture PDF et la gestion d'erreur 401 Brevo fonctionnent correctement."""
+        from unittest.mock import patch
+        from django.test import override_settings
+
+        self.client.force_login(self.company)
+        mock_resp_ok = self._mock_brevo_response(201)
+        with override_settings(
+            EMAIL_BACKEND='InvoiceApp.email_backends.BrevoEmailBackend',
+            DEFAULT_FROM_EMAIL='co@merchandblock.com',
+            BREVO_API_KEY='xkeysib-test-fake-key-for-unit-tests',
+        ):
+            with patch('InvoiceApp.email_backends.requests.post', return_value=mock_resp_ok) as mock_post:
+                resp = self.client.post(
+                    reverse('send_invoice_email', args=[self.invoice.id]),
+                    {'recipient_email': 'client.brevo@example.com', 'message': 'Merci.'},
+                )
+                self.assertEqual(resp.status_code, 200)
+                self.assertTrue(resp.json()['success'])
+                body = mock_post.call_args.kwargs['json']
+                self.assertEqual(body['sender']['email'], 'co@merchandblock.com')
+                self.assertEqual(body['replyTo']['email'], 'brevo-company@example.com')
+                self.assertEqual(len(body['attachment']), 1)
+                self.assertEqual(body['attachment'][0]['name'], 'Facture_FAC-BREVO-001.pdf')
+
+            mock_resp_401 = self._mock_brevo_response(401, {'message': 'Key not found', 'code': 'unauthorized'})
+            with patch('InvoiceApp.email_backends.requests.post', return_value=mock_resp_401):
+                resp_err = self.client.post(
+                    reverse('send_invoice_email', args=[self.invoice.id]),
+                    {'recipient_email': 'client.brevo@example.com'},
+                )
+                self.assertEqual(resp_err.status_code, 500)
+                self.assertFalse(resp_err.json()['success'])
+                self.assertIn('BREVO_API_KEY', resp_err.json()['error'])
+
+    def test_contact_form_and_service_status_brevo(self):
+        """Le formulaire de contact et /statut-service/ gèrent correctement le backend Brevo."""
+        from unittest.mock import patch
+        from django.test import override_settings
+
+        mock_resp_ok = self._mock_brevo_response(201)
+        with override_settings(
+            EMAIL_BACKEND='InvoiceApp.email_backends.BrevoEmailBackend',
+            DEFAULT_FROM_EMAIL='co@merchandblock.com',
+            SUPPORT_EMAIL='co@merchandblock.com',
+            BREVO_API_KEY='xkeysib-test-fake-key-for-unit-tests',
+        ):
+            with patch('InvoiceApp.email_backends.requests.post', return_value=mock_resp_ok) as mock_post:
+                resp = self.client.post(reverse('contact'), {
+                    'name': 'Moussa',
+                    'email': 'moussa@example.com',
+                    'subject': 'Question Brevo',
+                    'message': 'Bonjour',
+                })
+                self.assertEqual(resp.status_code, 200)
+                self.assertEqual(mock_post.call_count, 1)
+                body = mock_post.call_args.kwargs['json']
+                self.assertEqual(body['to'][0]['email'], 'co@merchandblock.com')
+                self.assertEqual(body['replyTo']['email'], 'moussa@example.com')
+
+            status_ok = self.client.get(reverse('service_status'))
+            self.assertEqual(status_ok.status_code, 200)
+            self.assertContains(status_ok, 'Emails transactionnels via Brevo')
+
+        with override_settings(
+            EMAIL_BACKEND='InvoiceApp.email_backends.BrevoEmailBackend',
+            BREVO_API_KEY='',
+        ):
+            status_missing = self.client.get(reverse('service_status'))
+            self.assertEqual(status_missing.status_code, 200)
+            self.assertContains(status_missing, 'BREVO_API_KEY non configur')

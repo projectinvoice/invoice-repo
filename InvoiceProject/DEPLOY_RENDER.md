@@ -55,7 +55,10 @@ Vérifiez que `db.sqlite3` et `media/` ne sont **pas** commités (le `.gitignore
 | `GEMINI_MODEL` | `gemini-2.5-flash` |
 | `MONEYFUSION_API_URL` | si vous utilisez les abonnements payants |
 | `SITE_BASE_URL` | `https://votre-app.onrender.com` |
-| `EMAIL_*` | si vous voulez de vrais emails de réinitialisation de mot de passe (sinon ils restent dans les logs) |
+| `EMAIL_BACKEND` | `InvoiceApp.email_backends.BrevoEmailBackend` (API transactionnelle Brevo) |
+| `BREVO_API_KEY` | votre clé API v3 Brevo (`xkeysib-...` depuis *Paramètres > Clés SMTP & API > Clés API*) |
+| `DEFAULT_FROM_EMAIL` | `co@merchandblock.com` (expéditeur validé dans Brevo sur domaine authentifié) |
+| `SUPPORT_EMAIL` | `co@merchandblock.com` (boîte destinataire du formulaire de contact public) |
 | `CLOUDFLARE_R2_BUCKET_NAME` | nom du bucket Cloudflare R2 (ex: `smart-invoice-media`) pour le stockage persistant des logos/images |
 | `CLOUDFLARE_R2_ACCOUNT_ID` | Identifiant de compte Cloudflare (32 caractères) |
 | `CLOUDFLARE_R2_ACCESS_KEY_ID` | Clé d'accès du jeton API R2 (permissions Object Read & Write requises) |
