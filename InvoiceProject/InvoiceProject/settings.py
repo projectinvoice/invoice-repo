@@ -166,6 +166,10 @@ STATIC_URL = 'static/'
 # (obligatoire en production ; sert de racine à WhiteNoise).
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
+# Fichiers servis à la racine du site par WhiteNoise : /favicon.ico et /apple-touch-icon.png
+# (les navigateurs les réclament automatiquement, sans balise <link> dans les templates).
+WHITENOISE_ROOT = BASE_DIR / 'root_static'
+
 # ═══════════════════════════════════════════════════════════════
 # Stockage des fichiers médias (Cloudflare R2 / S3 compatible)
 # ═══════════════════════════════════════════════════════════════
